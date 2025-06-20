@@ -1,0 +1,147 @@
+import { connectDB } from "@/lib/mongodb";
+import Order from "@/models/Order";
+import { NextResponse } from "next/server";
+import { setTableFree } from "@/lib/tableStatus";
+
+// PATCH method to update order status (e.g., for pending orders)
+export async function PATCH(req, { params }) {
+  try {
+    await connectDB();
+    const { id } = await params;
+
+    if (!id) {
+      return NextResponse.json({
+        error: "Missing order ID",
+        code: "MISSING_ID"
+      }, { status: 400 });
+    }
+
+    const { status } = await req.json();
+
+    if (!status) {
+      return NextResponse.json({
+        error: "Missing status field",
+        code: "MISSING_STATUS"
+      }, { status: 400 });
+    }
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return NextResponse.json({
+        error: "Order not found",
+        code: "ORDER_NOT_FOUND"
+      }, { status: 404 });
+    }
+
+    // If order is being completed or cancelled, free the table
+    if (status === "completed" || status === "cancelled") {
+      try {
+        await setTableFree(order.userId, order.tableNumber);
+      } catch (error) {
+        console.error("Error setting table free:", error);
+        // Don't fail the order update if table status update fails
+      }
+    }
+
+    const updatedOrder = await Order.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    return NextResponse.json(updatedOrder, { status: 200 });
+  } catch (err) {
+    console.error("PATCH error:", err);
+    return NextResponse.json({
+      error: "Server error",
+      details: err.message,
+      code: "SERVER_ERROR"
+    }, { status: 500 });
+  }
+}
+
+// PUT method to mark an order as completed
+export async function PUT(req, { params }) {
+  try {
+    await connectDB();
+    const { id } = await params;
+
+    if (!id) {
+      return NextResponse.json({
+        error: "Missing order ID",
+        code: "MISSING_ID"
+      }, { status: 400 });
+    }
+
+    // Try to find the order without strict ID validation first
+    const order = await Order.findById(id);
+    if (!order) {
+      return NextResponse.json({
+        error: "Order not found",
+        code: "ORDER_NOT_FOUND"
+      }, { status: 404 });
+    }
+
+    const updatedOrder = await Order.findByIdAndUpdate(
+      id,
+      { status: "completed" },
+      { new: true }
+    );
+
+    if (!updatedOrder) {
+      return NextResponse.json({
+        error: "Failed to update order",
+        code: "UPDATE_FAILED"
+      }, { status: 500 });
+    }
+
+    await setTableFree(order.userId, order.tableNumber);
+    return NextResponse.json(updatedOrder, { status: 200 });
+  } catch (err) {
+    console.error("PUT error:", err);
+    return NextResponse.json({
+      error: "Server error",
+      details: err.message,
+      code: "SERVER_ERROR"
+    }, { status: 500 });
+  }
+}
+
+// DELETE method to delete an order
+export async function DELETE(req, { params }) {
+  try {
+    await connectDB();
+    const { id } = await params;
+
+    if (!id || typeof id !== 'string' || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return NextResponse.json({
+        error: "Invalid order ID format",
+        code: "INVALID_ID_FORMAT"
+      }, { status: 400 });
+    }
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return NextResponse.json({
+        error: "Order not found",
+        code: "ORDER_NOT_FOUND"
+      }, { status: 404 });
+    }
+
+    await Order.findByIdAndDelete(id);
+    await setTableFree(order.userId, order.tableNumber);
+
+    return NextResponse.json({
+      message: "Order deleted successfully",
+      _id: id,
+      status: "cancelled"
+    }, { status: 200 });
+  } catch (err) {
+    console.error("DELETE error:", err);
+    return NextResponse.json({
+      error: "Server error",
+      details: err.message,
+      code: "SERVER_ERROR"
+    }, { status: 500 });
+  }
+}
