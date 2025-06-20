@@ -27,8 +27,8 @@ export const authOptions = {
 
   callbacks: {
     async jwt({ token, user }) {
-      // ✅ include name and role in token
       if (user) {
+        token.id = user.id;
         token.role = user.role;
         token.name = user.name;
       }
@@ -36,26 +36,37 @@ export const authOptions = {
     },
 
     async session({ session, token }) {
-      // ✅ assign token fields to session
-      session.user.role = token.role;
-      session.user.name = token.name;
-      session.user.id = token.sub;
+      if (token) {
+        session.user.id = token.id;
+        session.user.role = token.role;
+        session.user.name = token.name;
+      }
       return session;
     },
 
     async redirect({ url, baseUrl }) {
-      if (url === "/api/auth/callback/credentials") {
+      // Only redirect after successful login
+      if (url.startsWith(baseUrl + '/api/auth/callback')) {
+        const redirectUrl = new URL(url, baseUrl);
+        const redirectParam = redirectUrl.searchParams.get('redirect');
+        if (redirectParam) {
+          return redirectParam;
+        }
         return baseUrl;
       }
       return url;
-    },
+    }
   },
+
+  session: {
+    strategy: "jwt",
+  },
+
+  secret: process.env.NEXTAUTH_SECRET,
 
   pages: {
     signIn: "/login",
   },
-
-  secret: process.env.NEXTAUTH_SECRET,
 };
 
 const handler = NextAuth(authOptions);

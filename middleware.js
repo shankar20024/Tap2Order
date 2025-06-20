@@ -6,32 +6,36 @@ export async function middleware(req) {
   const url = req.nextUrl.clone();
   const path = url.pathname;
 
-
-  // ✅ Public path allowed: /qr/anything
-  if (path.startsWith("/qr")) {
+  // Public paths that don't require authentication
+  if (
+    path.startsWith("/qr") ||
+    path === "/login" ||
+    path === "/" ||
+    path === "/favicon.ico" ||
+    path.startsWith("/_next") ||
+    path.startsWith("/api/auth")
+  ) {
     return NextResponse.next();
   }
 
-
-  // 🔒 Block all other routes if not logged in
-  if (!token && (path.startsWith("/dashboard") || path.startsWith("/admin") || path.startsWith("/menu") || path.startsWith("/table"))) {
+  // Block access to protected routes if not authenticated
+  if (!token?.id) {
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  // ✅ If logged in and visiting / or /login — redirect based on role
-  if (token && (path === "/" || path === "/login")) {
+  // If authenticated and visiting login page, redirect to appropriate dashboard
+  if (token?.id && path === "/login") {
     url.pathname = token.role === "admin" ? "/admin" : "/dashboard";
     return NextResponse.redirect(url);
   }
 
-  // 🛡️ Admin trying to access user dashboard/menu/table
-  if (token?.role === "admin" && (path.startsWith("/dashboard") || path.startsWith("/menu") || path.startsWith("/table"))) {
+  // Role-based access control
+  if (token?.role === "admin" && path.startsWith("/dashboard")) {
     url.pathname = "/admin";
     return NextResponse.redirect(url);
   }
 
-  // 🛡️ User trying to access /admin
   if (token?.role === "user" && path.startsWith("/admin")) {
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
@@ -41,5 +45,14 @@ export async function middleware(req) {
 }
 
 export const config = {
-  matcher: ["/", "/login", "/dashboard/:path*", "/admin/:path*", "/menu/:path*", "/table/:path*", "/me"],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+  ],
 };
