@@ -13,6 +13,7 @@ export default function TablePage() {
   const { data: session, status } = useSession();
   const [tableNumber, setTableNumber] = useState("");
   const [tables, setTables] = useState([]);
+  const [originalTables, setOriginalTables] = useState([]);
   const [filter, setFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -27,6 +28,14 @@ export default function TablePage() {
     freeTables: 0,
     occupiedTables: 0
   });
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -54,7 +63,7 @@ export default function TablePage() {
   const fetchTables = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/table?page=${page}&limit=${itemsPerPage}&filter=${filter}&search=${encodeURIComponent(searchTerm)}`);
+      const res = await fetch(`/api/table?page=${page}&limit=${itemsPerPage}&filter=${filter}`);
       const data = await res.json();
 
       const pagination = data?.pagination || {
@@ -64,6 +73,7 @@ export default function TablePage() {
         itemsPerPage: itemsPerPage
       };
 
+      setOriginalTables(data.tables || []);
       setTables(data.tables || []);
       setTotalPages(pagination.totalPages);
       setTotalItems(pagination.totalItems);
@@ -71,6 +81,7 @@ export default function TablePage() {
     } catch (error) {
       console.error("Error fetching tables:", error);
       toast.error("Error loading tables");
+      setOriginalTables([]);
       setTables([]);
       setTotalPages(1);
       setTotalItems(0);
@@ -167,7 +178,10 @@ export default function TablePage() {
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
-    setPage(1);
+    const filteredTables = originalTables.filter(table => 
+      table.tableNumber.toString().includes(e.target.value)
+    );
+    setTables(filteredTables);
   };
 
   const handleRefresh = () => {
