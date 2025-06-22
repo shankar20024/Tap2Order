@@ -6,26 +6,8 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
 
-    // Strict date validation
     if (!date) {
       return new Response(JSON.stringify({ error: "Date parameter is required" }), {
-        status: 400,
-      });
-    }
-
-    // Validate date format (YYYY-MM-DD)
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(date)) {
-      return new Response(JSON.stringify({ error: "Invalid date format. Please use YYYY-MM-DD" }), {
-        status: 400,
-      });
-    }
-
-    // Validate date is not in future
-    const selectedDate = new Date(date);
-    const today = new Date();
-    if (selectedDate > today) {
-      return new Response(JSON.stringify({ error: "Cannot fetch future dates" }), {
         status: 400,
       });
     }
@@ -38,12 +20,26 @@ export async function GET(request) {
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Fetch orders for the selected date only
-    const orders = await Order.find({
+    // Calculate start and end of month
+    const selectedDate = new Date(date);
+    const startOfMonth = new Date(selectedDate);
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    const endOfMonth = new Date(selectedDate);
+    endOfMonth.setMonth(endOfMonth.getMonth() + 1, 0);
+    endOfMonth.setHours(23, 59, 59, 999);
+
+    // Fetch orders for the selected date
+    const dailyOrders = await Order.find({
       createdAt: { $gte: startOfDay, $lte: endOfDay }
     }).sort({ createdAt: 1 });
 
-    // Calculate statistics only for the selected date
+    // Fetch orders for the entire month
+    const monthlyOrders = await Order.find({
+      createdAt: { $gte: startOfMonth, $lte: endOfMonth }
+    });
+
+    // Calculate item-wise sales
     const itemSales = {};
     let dailyRevenue = 0;
     const statusCounts = {
@@ -52,7 +48,8 @@ export async function GET(request) {
       cancelled: 0
     };
 
-    orders.forEach(order => {
+    // Process daily orders
+    dailyOrders.forEach(order => {
       statusCounts[order.status] = (statusCounts[order.status] || 0) + 1;
       
       if (order.status === "completed") {
@@ -64,7 +61,7 @@ export async function GET(request) {
           itemSales[key] = itemSales[key] || { 
             quantity: 0, 
             revenue: 0,
-            price: item.price
+            price: item.price // Store individual price for reference
           };
           itemSales[key].quantity += item.quantity;
           itemSales[key].revenue += itemTotal;
@@ -72,14 +69,48 @@ export async function GET(request) {
       }
     });
 
-    // Prepare response with only daily data
+    // Calculate monthly revenue
+    let monthlyRevenue = 0;
+    monthlyOrders.forEach(order => {
+      if (order.status === 'completed') {
+        order.items.forEach(item => {
+          monthlyRevenue += item.quantity * item.price;
+        });
+      }
+    });
+
+    // Calculate yearly revenue
+    const startOfYear = new Date(selectedDate);
+    startOfYear.setMonth(0, 1);
+    startOfYear.setHours(0, 0, 0, 0);
+    const endOfYear = new Date(selectedDate);
+    endOfYear.setMonth(11, 31);
+    endOfYear.setHours(23, 59, 59, 999);
+
+    const yearlyOrders = await Order.find({
+      createdAt: { $gte: startOfYear, $lte: endOfYear }
+    });
+
+    let yearlyRevenue = 0;
+    yearlyOrders.forEach(order => {
+      if (order.status === 'completed') {
+        order.items.forEach(item => {
+          yearlyRevenue += item.quantity * item.price;
+        });
+      }
+    });
+
+    // Prepare response
     const response = {
-      orders: orders.map(order => ({
+      orders: dailyOrders.map(order => ({
         ...order.toObject(),
+        // Calculate total for each order
         total: order.items.reduce((sum, item) => sum + (item.quantity * item.price), 0)
       })),
       itemSales,
       dailyRevenue,
+      monthlyRevenue,
+      yearlyRevenue,
       statusCounts,
       date
     };
