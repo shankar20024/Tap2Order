@@ -139,7 +139,7 @@ export default function OrderHistory() {
   }, [selectedDate]);
 
   return (
-    <div className="container mx-auto p-6 mt-16">
+    <div className="container mx-auto p-6 mt-20 ">
       <Header className="px-20" />
 
       <h1 className="text-4xl font-bold text-amber-700 mb-6 flex items-center justify-center  gap-2 md:hidden">

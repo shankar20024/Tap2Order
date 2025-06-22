@@ -6,7 +6,7 @@ import RefreshButton from "../components/RefreshButton";
 import LoadingSpinner from "@/app/components/LoadingSpinner";
 import QRCodePreview from "../components/QRCodePreview";
 import { motion } from "framer-motion";
-import { FaChevronDown, FaSearch } from "react-icons/fa";
+import { FaChevronDown, FaTable, FaSearch } from "react-icons/fa";
 import Header from "@/app/components/Header";
 
 export default function TablePage() {
@@ -178,7 +178,7 @@ export default function TablePage() {
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
-    const filteredTables = originalTables.filter(table => 
+    const filteredTables = originalTables.filter(table =>
       table.tableNumber.toString().includes(e.target.value)
     );
     setTables(filteredTables);
@@ -201,10 +201,11 @@ export default function TablePage() {
       <main className="container mx-auto px-4 py-8 mt-16">
         <Toaster position="top-right" />
 
-        <h1 className="text-2xl sm:text-4xl font-extrabold mb-6 text-center  bg-gradient-to-r from-amber-500 to-yellow-400 text-transparent bg-clip-text">
-  Manage Tables
-</h1>
 
+        <h1 className="text-4xl font-bold text-amber-700 mb-6 flex items-center justify-center  gap-2 text-center md:hidden">
+          <FaTable className="text-amber-700" />
+          Manage Tables
+        </h1>
 
         {/* Mobile Add Table Input */}
         <form onSubmit={createTable} className="mb-6 flex flex-wrap md:hidden justify-center space-x-2">
@@ -223,10 +224,10 @@ export default function TablePage() {
           </button>
         </form>
 
-        {/* Search and Items per page */}
+        {/* Search and Items per page for desktop with hidden mobile */}
         <div className="md:flex hidden flex-wrap items-center justify-start md:mb-1 mt-16">
           <div className="flex items-center mb-4">
-            <div className="flex space-x-96 justify-center">
+            <div className="flex space-x-86 justify-center">
               <div className="relative flex-grow">
                 <input
                   type="text"
@@ -238,6 +239,13 @@ export default function TablePage() {
                 <div className="absolute left-3 top-1/2 transform md:-translate-y-2/2 -translate-y-1/2 text-gray-400">
                   <FaSearch />
                 </div>
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold text-amber-700 mb-6 flex items-center justify-center  gap-2 ">
+                  <FaTable className="text-amber-700" />
+                  Manage Tables
+                </h1>
+
               </div>
               {/* desktop Add Table Input */}
               <form onSubmit={createTable} className="mb-4 md:flex hidden flex-wrap justify-center space-x-2">
@@ -255,6 +263,32 @@ export default function TablePage() {
                   ➕ Add
                 </button>
               </form>
+            </div>
+          </div>
+        </div>
+        {/* Table Status Summary */}
+        <div className="mt-6 space-y-6 md:mb-6">
+          <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-6 w-full mx-auto sm:scale-100 scale-[0.95] md:transform-none transform origin-top">
+            <h2 className="text-3xl font-semibold text-amber-800 mb-4">Table Status</h2>
+            <div className="flex flex-wrap sm:flex-nowrap gap-4">
+              <div className="flex-1 bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
+                <div className="text-sm text-gray-500">Total Tables</div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {analysisData.totalTables}
+                </div>
+              </div>
+              <div className="flex-1 bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+                <div className="text-sm text-gray-500">Free Tables</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {analysisData.freeTables}
+                </div>
+              </div>
+              <div className="flex-1 bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
+                <div className="text-sm text-gray-500">Occupied Tables</div>
+                <div className="text-2xl font-bold text-red-600">
+                  {analysisData.occupiedTables}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -283,7 +317,7 @@ export default function TablePage() {
           </div>
 
           <RefreshButton
-            onRefresh={handleRefresh }
+            onRefresh={handleRefresh}
             label="Refresh Tables"
             className="text-sm hidden md:flex"
             className2="hidden md:flex"
@@ -461,33 +495,6 @@ export default function TablePage() {
             </div>
           </div>
         )}
-
-        {/* Table Status Summary */}
-        <div className="mt-6 space-y-6">
-          <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-6 w-full mx-auto sm:scale-100 scale-[0.95] md:transform-none transform origin-top">
-            <h2 className="text-3xl font-semibold text-amber-800 mb-4">Table Status</h2>
-            <div className="flex flex-wrap sm:flex-nowrap gap-4">
-              <div className="flex-1 bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
-                <div className="text-sm text-gray-500">Total Tables</div>
-                <div className="text-2xl font-bold text-blue-600">
-                  {analysisData.totalTables}
-                </div>
-              </div>
-              <div className="flex-1 bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
-                <div className="text-sm text-gray-500">Free Tables</div>
-                <div className="text-2xl font-bold text-green-600">
-                  {analysisData.freeTables}
-                </div>
-              </div>
-              <div className="flex-1 bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
-                <div className="text-sm text-gray-500">Occupied Tables</div>
-                <div className="text-2xl font-bold text-red-600">
-                  {analysisData.occupiedTables}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </main>
     </div>
   );

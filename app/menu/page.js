@@ -356,7 +356,7 @@ export default function MenuPage() {
           </div>
 
           {/* Right: Scrollable Menu Section */}
-          <div className="flex-1 overflow-y-auto pt-10 border-2 border-amber-400 border-t-0 rounded-lg  bg-gray-50">
+          <div className="flex-1 overflow-y-auto pt-10 border-2 border-amber-400 border-t-0 rounded-lg  bg-gray-50 max-h-[calc(100vh-81px)]">
             {/* Menu Items Container */}
             <div className="pt-5 p-6 md:pt-0">
               <div className="mb-6 ">
