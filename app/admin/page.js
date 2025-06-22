@@ -5,48 +5,61 @@ import "react-toastify/dist/ReactToastify.css"; // Import the CSS for toast noti
 import LogoutButton from "../components/Logout";
 import Logo from "../components/Logo";
 import PasswordInput from "../components/PasswordInput";
+import LoadingSpinner from "@/app/components/LoadingSpinner"; // Import LoadingSpinner
 import { useSession } from "next-auth/react";
 
 export default function AdminPanel() {
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
     const [form, setForm] = useState({ name: "", email: "", password: "", role: "user" });
-    const [admins, setAdmins] = useState([]);
     const [users, setUsers] = useState([]);
+    const [admins, setAdmins] = useState([]);
     const [editingUserId, seteditingUserId] = useState(null);
     const [editForm, setEditForm] = useState({ name: "", email: "", role: "", password: "" });
-    
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        if (session?.user?.name) {
+            toast.success(`Hello ${session.user.name}, Let’s have some fun! `, {
+                position: "top-right",
+                autoClose: 4000,
+                theme: "colored",
+            });
+        }
+    }, [session]);
+
+    useEffect(() => {
+        fetchUsers();
+    }, []);
 
     const fetchUsers = async () => {
+        setLoading(true);
+        setError(null);
+        
         try {
             const [adminsRes, usersRes] = await Promise.all([
                 fetch("/api/admin-users?role=admin"),
                 fetch("/api/admin-users?role=user"),
             ]);
-            const adminsData = adminsRes.ok ? await adminsRes.json() : [];
-            const usersData = usersRes.ok ? await usersRes.json() : [];
+
+            if (!adminsRes.ok || !usersRes.ok) {
+                throw new Error("Failed to fetch users data");
+            }
+
+            const adminsData = await adminsRes.json();
+            const usersData = await usersRes.json();
+            
             setAdmins(adminsData);
             setUsers(usersData);
-        } catch {
+            setLoading(false);
+        } catch (error) {
+            console.error("Error fetching users:", error);
+            setError("Failed to load users data. Please try again.");
             setAdmins([]);
             setUsers([]);
+            setLoading(false);
         }
     };
-
-     useEffect(() => {
-  if (session?.user?.name) {
-    toast.success(`Hello ${session.user.name}, Let’s have some fun! `, {
-      position: "top-right",
-      autoClose: 4000,
-      theme: "colored",
-    });
-  }
-}, [session]);
-
-
-
-    useEffect(() => {
-        fetchUsers();
-    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -178,6 +191,46 @@ export default function AdminPanel() {
             });
         }
     };
+
+    if (status === "loading") {
+        return (
+            <div className="min-h-screen py-12 px-6 sm:px-12 md:px-20 bg-amber-50 relative overflow-hidden">
+                <div className="fixed inset-0 bg-white/90 flex items-center justify-center z-50 overflow-hidden">
+                    <div className="flex items-center justify-center">
+                        <LoadingSpinner size="40" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (status !== "authenticated") {
+        return <div className="text-center py-8">Please sign in to view admin panel</div>;
+    }
+
+    if (session.user.role !== "admin") {
+        return <div className="text-center py-8">You do not have permission to access this page</div>;
+    }
+
+    if (loading) {
+        return <LoadingSpinner size="40" />;
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen py-12 px-6 sm:px-12 md:px-20 bg-amber-50">
+                <div className="text-center text-red-600 py-8">
+                    <p>{error}</p>
+                    <button
+                        onClick={fetchUsers}
+                        className="mt-4 bg-amber-500 text-white px-4 py-2 rounded hover:bg-amber-600"
+                    >
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div

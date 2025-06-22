@@ -8,6 +8,7 @@ import { ToastContainer } from 'react-toastify';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Header from "../components/Header";
+import LoadingSpinner from "@/app/components/LoadingSpinner";
 
 export default function MenuPage() {
   const [items, setItems] = useState([]);
@@ -23,6 +24,7 @@ export default function MenuPage() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [username, setUsername] = useState('');
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [loading, setLoading] = useState(true);
   const { data: session, status } = useSession();
   const [isFixed, setIsFixed] = useState(false);
   const router = useRouter();
@@ -36,12 +38,29 @@ export default function MenuPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-
   useEffect(() => {
     if (status === "authenticated") {
       setUsername(session.user.name || "");
     }
   }, [status, session]);
+
+  const fetchMenu = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/menu/admin");
+      const data = await res.json();
+      setItems(data);
+    } catch (error) {
+      console.error("Error fetching menu:", error);
+      toast.error("Error loading menu");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMenu();
+  }, []);
 
   // Filter items based on search and category
   const filteredItems = items.filter(item => {
@@ -54,16 +73,6 @@ export default function MenuPage() {
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
   };
-
-  async function fetchMenu() {
-    const res = await fetch("/api/menu/admin");
-    const data = await res.json();
-    setItems(data);
-  }
-
-  useEffect(() => {
-    fetchMenu();
-  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -183,6 +192,14 @@ export default function MenuPage() {
     });
     setIsFormModalOpen(true);
   };
+
+  if (loading) return (
+    <div className="fixed inset-0 bg-white/90 flex items-center justify-center z-50 overflow-hidden">
+      <div className="flex items-center justify-center">
+        <LoadingSpinner size="40" />
+      </div>
+    </div>
+  );
 
   return (
     <>

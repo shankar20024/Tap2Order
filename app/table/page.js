@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import toast, { Toaster } from "react-hot-toast";
 import RefreshButton from "../components/RefreshButton";
+import LoadingSpinner from "@/app/components/LoadingSpinner";
+import QRCodePreview from "../components/QRCodePreview";
 
 export default function TablePage() {
   const { data: session, status } = useSession();
@@ -15,6 +17,7 @@ export default function TablePage() {
   const [totalItems, setTotalItems] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [hasTables, setHasTables] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -23,6 +26,7 @@ export default function TablePage() {
   }, [status, page, itemsPerPage, filter, searchTerm]);
 
   const fetchTables = async () => {
+    setLoading(true);
     try {
       const res = await fetch(
         `/api/table?page=${page}&limit=${itemsPerPage}&filter=${filter}&search=${encodeURIComponent(searchTerm)}`
@@ -49,6 +53,8 @@ export default function TablePage() {
       setTotalPages(1);
       setTotalItems(0);
       setHasTables(false);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -141,7 +147,13 @@ export default function TablePage() {
     setPage(1); // Reset to first page when searching
   };
 
-  if (status === "loading") return <p>Loading...</p>;
+  if (status === "loading") return (  
+    <div className="fixed inset-0 bg-white/90 flex items-center justify-center z-50 overflow-hidden">
+      <div className="flex items-center justify-center">
+        <LoadingSpinner size="40" />
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-8">
@@ -245,6 +257,15 @@ export default function TablePage() {
                 >
                   {table.status === "occupied" ? "Occupied" : "Free"}
                 </p>
+                <p className="text-sm text-gray-500">
+                  Last Updated: {new Date(table.updatedAt).toLocaleString('en-IN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }).replace(',', '')}
+                </p>
               </div>
 
               <div className="flex gap-2">
@@ -260,13 +281,14 @@ export default function TablePage() {
                     {table.status === "occupied" ? "Mark Free" : "Mark Occupied"}
                   </button>
                 )}
-                <a
+                {/* <a
                   href={`/qr/${session.user.id}/${table.tableNumber}`}
                   target="_blank"
                   className="text-blue-600 underline text-sm"
                 >
                   View QR Menu
-                </a>
+                </a> */}
+                <QRCodePreview userId={session.user.id} tableNumber={table.tableNumber} />
                 <button
                   onClick={() => deleteTable(table._id)}
                   className="text-red-600 hover:underline text-sm"

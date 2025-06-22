@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import Logo from "@/app/components/Logo";
 import Image from "next/image";
 import OrderViewer from "@/app/components/OrderViewer";
+import LoadingSpinner from "@/app/components/LoadingSpinner";
 import { FaPlus, FaTrash } from "react-icons/fa";
 import { MdOutlineRestaurantMenu, MdMessage } from "react-icons/md";
 import { HiOutlineShoppingCart } from "react-icons/hi";
@@ -367,13 +368,7 @@ export default function QRMenu(paramsPromise) {
   if (loading) return (
     <div className="fixed inset-0 bg-white/90 flex items-center justify-center z-50 overflow-hidden">
       <div className="flex items-center justify-center">
-        <Image
-          src="/loading.svg"
-          alt="Loading..."
-          width={100}
-          height={100}
-          className="w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 object-contain"
-        />
+        <LoadingSpinner size="40" />
       </div>
     </div>
   );

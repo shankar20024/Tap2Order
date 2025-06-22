@@ -5,6 +5,7 @@ import RefreshButton from "../components/RefreshButton";
 import DownloadButton from "../components/DownloadButton";
 import { HiOutlineClipboardList } from "react-icons/hi";
 import Header from "../components/Header";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 
 // Simple currency formatter
@@ -219,7 +220,9 @@ export default function OrderHistory() {
       )}
 
       {loading ? (
-        <div className="text-center py-8">Loading...</div>
+        <div className="text-center py-8">
+          <LoadingSpinner size="40" />
+        </div>
       ) : (
         <div className="space-y-6 ">
           {/* Status Summary */}
