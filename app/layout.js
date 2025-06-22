@@ -1,7 +1,8 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';  
+import { Analytics } from '@vercel/analytics/react';
 
 
 
@@ -30,6 +31,7 @@ export default function RootLayout({ children }) {
         <Providers>
           <Toaster position="top-right" />
           {children}
+          <Analytics />
         </Providers>
       </body>
     </html>
