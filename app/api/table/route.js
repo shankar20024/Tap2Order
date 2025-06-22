@@ -68,6 +68,21 @@ export async function GET(req) {
     // Get total count for pagination
     const total = await Table.countDocuments(query);
 
+    // Get counts of free and occupied tables for ALL tables of the user (not filtered)
+    const counts = await Table.aggregate([
+      { $match: { userId: session.user.id } }, // Only match tables for this user
+      { $group: {
+        _id: "$status",
+        count: { $sum: 1 }
+      }}
+    ]);
+
+    // Convert counts to object
+    const countsObj = counts.reduce((acc, item) => {
+      acc[item._id] = item.count;
+      return acc;
+    }, {});
+
     // Get paginated tables
     const tables = await Table.find(query)
       .sort({ tableNumber: 1 })
@@ -85,7 +100,12 @@ export async function GET(req) {
         totalItems: total,
         itemsPerPage: limit
       },
-      hasTables: total > 0
+      hasTables: total > 0,
+      counts: {
+        totalFreeTables: countsObj.free || 0,
+        totalOccupiedTables: countsObj.occupied || 0,
+        totalTables: total
+      }
     });
   } catch (error) {
     console.error("Error fetching tables:", error);

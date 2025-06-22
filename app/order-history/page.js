@@ -40,18 +40,18 @@ const StatusBadge = ({ status }) => {
   };
 
   return (
-    <span 
+    <span
       className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${statusColors[status]}`}
       style={{
-        backgroundColor: status === 'pending' ? '#fff3cd' : 
-                     status === 'completed' ? '#dcfce7' : 
-                     '#fee2e2',
-        color: status === 'pending' ? '#713f12' : 
-             status === 'completed' ? '#055129' : 
-             '#991b1b',
-        borderColor: status === 'pending' ? '#fbbf24' : 
-                  status === 'completed' ? '#10b981' : 
-                  '#ef4444',
+        backgroundColor: status === 'pending' ? '#fff3cd' :
+          status === 'completed' ? '#dcfce7' :
+            '#fee2e2',
+        color: status === 'pending' ? '#713f12' :
+          status === 'completed' ? '#055129' :
+            '#991b1b',
+        borderColor: status === 'pending' ? '#fbbf24' :
+          status === 'completed' ? '#10b981' :
+            '#ef4444',
         borderWidth: '1px',
         borderStyle: 'solid'
       }}
@@ -102,9 +102,9 @@ export default function OrderHistory() {
     setError(null);
 
     // Ensure we don't go beyond current date
-    if (year > currentYear || 
-        (year === currentYear && month > currentMonth) ||
-        (year === currentYear && month === currentMonth && day > currentDate)) {
+    if (year > currentYear ||
+      (year === currentYear && month > currentMonth) ||
+      (year === currentYear && month === currentMonth && day > currentDate)) {
       setLoading(false);
       setError("Cannot select future dates");
       return;
@@ -140,19 +140,19 @@ export default function OrderHistory() {
 
   return (
     <div className="container mx-auto p-6 mt-16">
-      <Header className="px-20"/> 
+      <Header className="px-20" />
 
       <h1 className="text-4xl font-bold text-amber-700 mb-6 flex items-center justify-center  gap-2 md:hidden">
         <HiOutlineClipboardList className="text-amber-700" />
-        Order History   
+        Order History
       </h1>
 
       <div className="flex flex-col gap-4 md:flex-row md:gap-0 justify-between items-center mb-6">
         <div>
-        <h1 className="text-4xl font-bold text-amber-700  md:flex items-center justify-center  gap-2 hidden ">
-        <HiOutlineClipboardList className="text-amber-700" />
-        Order History   
-      </h1>
+          <h1 className="text-4xl font-bold text-amber-700  md:flex items-center justify-center  gap-2 hidden ">
+            <HiOutlineClipboardList className="text-amber-700" />
+            Order History
+          </h1>
         </div>
         <div className="flex flex-row gap-4 items-center">
           {/* Year Select */}
@@ -183,7 +183,7 @@ export default function OrderHistory() {
             onChange={(e) => handleDateChange(getYear(selectedDate), getMonth(selectedDate), Number(e.target.value))}
             className="rounded-lg border border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 p-2"
           >
-            {Array.from({ length: getDaysInMonth(getYear(selectedDate), getMonth(selectedDate)) }, (_, index) => 
+            {Array.from({ length: getDaysInMonth(getYear(selectedDate), getMonth(selectedDate)) }, (_, index) =>
               index + 1
             ).filter(day => {
               // Only show days up to today's date for the current month
@@ -227,22 +227,22 @@ export default function OrderHistory() {
         <div className="space-y-6 ">
           {/* Status Summary */}
           <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-6 w-full  mx-auto sm:scale-100 scale-[0.95] md:transform-none transform origin-top">
-  <h2 className="text-3xl font-semibold text-amber-800 mb-4">Order Status</h2>
-  <div className="flex flex-wrap sm:flex-nowrap gap-4">
-    <div className="flex-1 bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500">
-      <div className="text-sm text-gray-500">Pending</div>
-      <div className="text-2xl font-bold text-yellow-600">{statusCounts.pending}</div>
-    </div>
-    <div className="flex-1 bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
-      <div className="text-sm text-gray-500">Completed</div>
-      <div className="text-2xl font-bold text-green-600">{statusCounts.completed}</div>
-    </div>
-    <div className="flex-1 bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
-      <div className="text-sm text-gray-500">Cancelled</div>
-      <div className="text-2xl font-bold text-red-600">{statusCounts.cancelled}</div>
-    </div>
-  </div>
-</div>
+            <h2 className="text-3xl font-semibold text-amber-800 mb-4">Order Status</h2>
+            <div className="flex flex-wrap sm:flex-nowrap gap-4">
+              <div className="flex-1 bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500">
+                <div className="text-sm text-gray-500">Pending</div>
+                <div className="text-2xl font-bold text-yellow-600">{statusCounts.pending}</div>
+              </div>
+              <div className="flex-1 bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+                <div className="text-sm text-gray-500">Completed</div>
+                <div className="text-2xl font-bold text-green-600">{statusCounts.completed}</div>
+              </div>
+              <div className="flex-1 bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
+                <div className="text-sm text-gray-500">Cancelled</div>
+                <div className="text-2xl font-bold text-red-600">{statusCounts.cancelled}</div>
+              </div>
+            </div>
+          </div>
 
 
           {/* Item-wise Sales Table */}

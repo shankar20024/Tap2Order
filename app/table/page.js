@@ -5,6 +5,9 @@ import toast, { Toaster } from "react-hot-toast";
 import RefreshButton from "../components/RefreshButton";
 import LoadingSpinner from "@/app/components/LoadingSpinner";
 import QRCodePreview from "../components/QRCodePreview";
+import { motion } from "framer-motion";
+import { FaChevronDown, FaSearch } from "react-icons/fa";
+import Header from "@/app/components/Header";
 
 export default function TablePage() {
   const { data: session, status } = useSession();
@@ -18,22 +21,42 @@ export default function TablePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [hasTables, setHasTables] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [analysisData, setAnalysisData] = useState({
+    totalTables: 0,
+    freeTables: 0,
+    occupiedTables: 0
+  });
 
   useEffect(() => {
     if (status === "authenticated") {
+      fetchAnalysisData();
       fetchTables();
     }
-  }, [status, page, itemsPerPage, filter, searchTerm]);
+  }, [status]);
+
+  const fetchAnalysisData = async () => {
+    try {
+      const res = await fetch('/api/table/analysis');
+      const data = await res.json();
+      setAnalysisData(data);
+    } catch (error) {
+      console.error("Error fetching analysis data:", error);
+      toast.error("Error loading table analysis");
+      setAnalysisData({
+        totalTables: 0,
+        freeTables: 0,
+        occupiedTables: 0
+      });
+    }
+  };
 
   const fetchTables = async () => {
     setLoading(true);
     try {
-      const res = await fetch(
-        `/api/table?page=${page}&limit=${itemsPerPage}&filter=${filter}&search=${encodeURIComponent(searchTerm)}`
-      );
+      const res = await fetch(`/api/table?page=${page}&limit=${itemsPerPage}&filter=${filter}&search=${encodeURIComponent(searchTerm)}`);
       const data = await res.json();
-      
-      // Set default values if data is undefined
+
       const pagination = data?.pagination || {
         currentPage: 1,
         totalPages: 1,
@@ -48,7 +71,6 @@ export default function TablePage() {
     } catch (error) {
       console.error("Error fetching tables:", error);
       toast.error("Error loading tables");
-      // Set default values on error
       setTables([]);
       setTotalPages(1);
       setTotalItems(0);
@@ -60,7 +82,6 @@ export default function TablePage() {
 
   const createTable = async (e) => {
     e.preventDefault();
-
     const res = await fetch("/api/table", {
       method: "POST",
       body: JSON.stringify({ tableNumber }),
@@ -82,7 +103,9 @@ export default function TablePage() {
     try {
       const res = await fetch(`/api/table/${id}`, { method: "DELETE" });
       if (res.ok) {
+        // Refresh both tables and analysis data after deletion
         fetchTables();
+        fetchAnalysisData();
         toast.success("Table deleted");
       } else {
         toast.error("Failed to delete table");
@@ -93,7 +116,6 @@ export default function TablePage() {
   };
 
   const toggleTableStatus = async (tableId) => {
-    // Check if user is authenticated
     if (!session?.user?.id) {
       toast.error("Please log in to toggle table status");
       return;
@@ -106,15 +128,16 @@ export default function TablePage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ _id: tableId, userId: session.user.id }),
+        body: JSON.stringify({ _id: tableId, userId: session.user.id })
       });
 
       if (res.ok) {
         const updatedTable = await res.json();
-        // Update the table status in the current state
-        setTables(tables.map(table => 
+        setTables(tables.map(table =>
           table._id === tableId ? updatedTable : table
         ));
+        // Refresh analysis data after status change
+        fetchAnalysisData();
         toast.success(`Table status updated to ${updatedTable.status}`);
       } else {
         const error = await res.json();
@@ -139,199 +162,319 @@ export default function TablePage() {
 
   const handleItemsPerPageChange = (e) => {
     setItemsPerPage(parseInt(e.target.value));
-    setPage(1); // Reset to first page when changing items per page
+    setPage(1);
   };
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
-    setPage(1); // Reset to first page when searching
+    setPage(1);
   };
 
-  if (status === "loading") return (  
+  const handleRefresh = () => {
+    fetchTables();
+    fetchAnalysisData();
+  };
+
+  if (status === "loading") return (
     <div className="fixed inset-0 bg-white/90 flex items-center justify-center z-50 overflow-hidden">
-      <div className="flex items-center justify-center">
-        <LoadingSpinner size="40" />
-      </div>
+      <LoadingSpinner size="40" />
     </div>
   );
 
   return (
-    <div className="p-8">
-      <Toaster position="top-right" />
-      <h1 className="text-3xl font-bold mb-4">Manage Tables</h1>
+    <div className="min-h-screen bg-gray-100">
+      <Header className="w-full" className2="bg-white shadow-md" />
+      <main className="container mx-auto px-4 py-8 mt-16">
+        <Toaster position="top-right" />
 
-      <div className="mb-4 space-x-2">
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded ${filter === 'all' ? 'bg-amber-500 text-white' : 'bg-gray-200'}`}
-        >
-          All
-        </button>
-        <button
-          onClick={() => setFilter('free')}
-          className={`px-4 py-2 rounded ${filter === 'free' ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
-        >
-          Free
-        </button>
-        <button
-          onClick={() => setFilter('occupied')}
-          className={`px-4 py-2 rounded ${filter === 'occupied' ? 'bg-red-500 text-white' : 'bg-gray-200'}`}
-        >
-          Occupied
-        </button>
-        <RefreshButton 
-          onRefresh={fetchTables} 
-          label="Refresh Tables"
-          className="ml-auto"
-        />
-      </div>
+        <h1 className="text-2xl sm:text-4xl font-extrabold mb-6 text-center  bg-gradient-to-r from-amber-500 to-yellow-400 text-transparent bg-clip-text">
+  Manage Tables
+</h1>
 
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
-          <div className="relative">
+
+        {/* Mobile Add Table Input */}
+        <form onSubmit={createTable} className="mb-6 flex flex-wrap md:hidden justify-center space-x-2">
+          <input
+            type="number"
+            placeholder="Table No."
+            value={tableNumber}
+            onChange={(e) => setTableNumber(e.target.value)}
+            className="border p-2 rounded-lg flex-grow max-w-24 text-sm"
+          />
+          <button
+            type="submit"
+            className="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm"
+          >
+            ➕ Add
+          </button>
+        </form>
+
+        {/* Search and Items per page */}
+        <div className="md:flex hidden flex-wrap items-center justify-start md:mb-1 mt-16">
+          <div className="flex items-center mb-4">
+            <div className="flex space-x-96 justify-center">
+              <div className="relative flex-grow">
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={handleSearch}
+                  className="border p-2 rounded-lg pl-10 pr-2 text-sm md:max-w-64"
+                />
+                <div className="absolute left-3 top-1/2 transform md:-translate-y-2/2 -translate-y-1/2 text-gray-400">
+                  <FaSearch />
+                </div>
+              </div>
+              {/* desktop Add Table Input */}
+              <form onSubmit={createTable} className="mb-4 md:flex hidden flex-wrap justify-center space-x-2">
+                <input
+                  type="number"
+                  placeholder="Table No."
+                  value={tableNumber}
+                  onChange={(e) => setTableNumber(e.target.value)}
+                  className="border p-2 rounded-lg flex-grow max-w-xs text-sm"
+                />
+                <button
+                  type="submit"
+                  className="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm"
+                >
+                  ➕ Add
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Buttons */}
+        <div className="mb-4 flex flex-wrap justify-between space-x-2 mr-5">
+          <div className="flex flex-wrap justify-center space-x-2">
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-3 py-2 text-sm rounded-lg ${filter === 'all' ? 'bg-amber-500 text-white' : 'bg-gray-200'}`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setFilter('free')}
+              className={`px-3 py-2 text-sm rounded-lg ${filter === 'free' ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
+            >
+              Free
+            </button>
+            <button
+              onClick={() => setFilter('occupied')}
+              className={`px-3 py-2 text-sm rounded-lg ${filter === 'occupied' ? 'bg-red-500 text-white' : 'bg-gray-200'}`}
+            >
+              Occupied
+            </button>
+          </div>
+
+          <RefreshButton
+            onRefresh={handleRefresh }
+            label="Refresh Tables"
+            className="text-sm hidden md:flex"
+            className2="hidden md:flex"
+          />
+
+          <RefreshButton
+            onRefresh={fetchTables}
+            label=""
+            className="text-sm md:hidden"
+            className2="hidden"
+          />
+        </div>
+
+        <div className="text-sm flex items-center space-x-2 justify-between md:justify-end mb-3 mr-6 ">
+          <p className="text-sm hidden md:block">Tables {tables.length} / {totalItems}</p>
+          {/* Desktop Dropdown */}
+          <div className="md:flex items-center space-x-2 hidden">
+            <select
+              value={itemsPerPage}
+              onChange={handleItemsPerPageChange}
+              className="border p-2 rounded-lg text-sm"
+            >
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="15">15</option>
+              <option value="20">20</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Mobile Search and Items per page */}
+        <div className="text-sm flex items-center space-x-2 justify-between md:hidden mb-2">
+          <div className="relative flex-grow">
             <input
               type="text"
-              placeholder="Search by table number..."
+              placeholder=""
               value={searchTerm}
               onChange={handleSearch}
-              className="border p-2 rounded pl-8 pr-2"
+              className="border p-2 rounded-lg pl-10 pr-2 text-sm max-w-20"
             />
-            <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-              </svg>
+            <div className="absolute left-3 top-1/2 transform w-8 h-8 -translate-y-1/4 text-gray-400">
+              <FaSearch />
             </div>
           </div>
-          {!searchTerm && (
-            <>
-              <label className="text-sm">Items per page:</label>
-              <select
-                value={itemsPerPage}
-                onChange={handleItemsPerPageChange}
-                className="border p-2 rounded"
+          <div className="flex items-center space-x-2">
+            <p className="text-xs md:hidden">Tables {tables.length} / {totalItems}</p>
+            {/* Mobile Dropdown */}
+            <div className="relative inline-block w-full sm:w-32">
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="border border-amber-500 px-3 py-2 rounded-lg text-sm w-full text-left"
               >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="15">15</option>
-                <option value="20">20</option>
-              </select>
-            </>
+                <span className="flex items-center justify-center space-x-2">{itemsPerPage} <span className="ml-2"><FaChevronDown /></span></span>
+              </button>
+              {showDropdown && (
+                <ul className="absolute z-10 bg-white border border-gray-200 rounded mt-1 w-full shadow-md">
+                  {[5, 10, 15, 20].map((value) => (
+                    <li
+                      key={value}
+                      onClick={() => {
+                        handleItemsPerPageChange({ target: { value } });
+                        setShowDropdown(false);
+                      }}
+                      className="px-3 py-2 hover:bg-amber-100 cursor-pointer text-sm"
+                    >
+                      {value}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Scrollable Table Container */}
+        <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
+          {hasTables ? (
+            <div className="grid md:grid-cols-2 gap-4">
+              {filteredTables.map((table) => (
+                //table card
+                <motion.div
+                  key={table._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="border border-gray-200 p-4 sm:p-6 rounded-2xl bg-white shadow-md hover:shadow-lg transition-shadow duration-300"
+                >
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-6">
+                    {/* Table Info */}
+                    <div className="flex flex-col gap-1">
+                      <h3 className="text-lg sm:text-xl font-semibold text-gray-800">
+                        Table #{table.tableNumber}
+                      </h3>
+                      <p
+                        className={`text-sm font-medium ${table.status === "occupied" ? "text-red-600" : "text-green-600"}`}
+                      >
+                        {table.status === "occupied" ? "Occupied" : "Free"}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Last Updated: {" "}
+                        {new Date(table.updatedAt).toLocaleString("en-IN", {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }).replace(",", "")}
+                      </p>
+                    </div>
+
+                    {/* Buttons and QR Section */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 w-full sm:w-auto">
+                      {/* QR Code in Center */}
+                      <div className="w-full sm:w-auto flex justify-center">
+                        <QRCodePreview userId={session.user.id} tableNumber={table.tableNumber} />
+                      </div>
+
+                      {/* Toggle + Delete Buttons Below Each Other */}
+                      <div className="flex flex-col gap-2 w-full sm:w-auto">
+                        {session?.user?.id && (
+                          <button
+                            onClick={() => toggleTableStatus(table._id)}
+                            className={`min-w-[120px] h-10 px-4 py-2 rounded-lg text-sm font-medium text-white transition-all duration-300 ${table.status === "occupied"
+                              ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                              : "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 h-14"
+                              }`}
+                          >
+                            {table.status === "occupied" ? "Mark Free" : "Mark Occupied"}
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => {
+                            if (confirm("Are you sure you want to delete this table?")) {
+                              deleteTable(table._id);
+                            }
+                          }}
+                          className="min-w-[120px] h-10 px-4 py-2 rounded-lg bg-red-100 text-red-600 text-sm font-medium hover:bg-red-200 hover:text-red-700 transition-all duration-200"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-600">No tables found matching your search criteria.</p>
+              <p className="text-sm text-gray-500 mt-2">Try a different search term or filter.</p>
+            </div>
           )}
         </div>
-        <div className="text-sm">
-          Showing {tables.length} of {totalItems} tables
-        </div>
-      </div>
 
-      <form onSubmit={createTable} className="mb-6 space-x-2">
-        <input
-          type="number"
-          placeholder="Enter Table Number"
-          value={tableNumber}
-          onChange={(e) => setTableNumber(e.target.value)}
-          className="border p-2 rounded"
-        />
-        <button
-          type="submit"
-          className="bg-amber-500 text-white px-4 py-2 rounded"
-        >
-          ➕ Add Table
-        </button>
-      </form>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-6 flex justify-center">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page === 1}
+                className="px-4 py-2 rounded hover:bg-gray-100 disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span className="px-4 py-2">Page {page} of {totalPages}</span>
+              <button
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page === totalPages}
+                className="px-4 py-2 rounded hover:bg-gray-100 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
 
-      {hasTables ? (
-        <div className="grid md:grid-cols-2 gap-4">
-          {filteredTables.map((table) => (
-            <div
-              key={table._id}
-              className="border p-4 rounded bg-white shadow flex justify-between items-center"
-            >
-              <div>
-                <strong className="text-lg">Table #{table.tableNumber}</strong>
-                <p
-                  className={`text-sm font-semibold ${
-                    table.status === "occupied"
-                      ? "text-red-600"
-                      : "text-green-600"
-                  }`}
-                >
-                  {table.status === "occupied" ? "Occupied" : "Free"}
-                </p>
-                <p className="text-sm text-gray-500">
-                  Last Updated: {new Date(table.updatedAt).toLocaleString('en-IN', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  }).replace(',', '')}
-                </p>
+        {/* Table Status Summary */}
+        <div className="mt-6 space-y-6">
+          <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-6 w-full mx-auto sm:scale-100 scale-[0.95] md:transform-none transform origin-top">
+            <h2 className="text-3xl font-semibold text-amber-800 mb-4">Table Status</h2>
+            <div className="flex flex-wrap sm:flex-nowrap gap-4">
+              <div className="flex-1 bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
+                <div className="text-sm text-gray-500">Total Tables</div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {analysisData.totalTables}
+                </div>
               </div>
-
-              <div className="flex gap-2">
-                {session?.user?.id && (
-                  <button
-                    onClick={() => toggleTableStatus(table._id)}
-                    className={`px-4 py-2 rounded ${
-                      table.status === "occupied"
-                        ? "bg-green-500 hover:bg-green-600"
-                        : "bg-red-500 hover:bg-red-600"
-                    } text-white transition-colors duration-200`}
-                  >
-                    {table.status === "occupied" ? "Mark Free" : "Mark Occupied"}
-                  </button>
-                )}
-                {/* <a
-                  href={`/qr/${session.user.id}/${table.tableNumber}`}
-                  target="_blank"
-                  className="text-blue-600 underline text-sm"
-                >
-                  View QR Menu
-                </a> */}
-                <QRCodePreview userId={session.user.id} tableNumber={table.tableNumber} />
-                <button
-                  onClick={() => deleteTable(table._id)}
-                  className="text-red-600 hover:underline text-sm"
-                >
-                  Delete
-                </button>
+              <div className="flex-1 bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+                <div className="text-sm text-gray-500">Free Tables</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {analysisData.freeTables}
+                </div>
+              </div>
+              <div className="flex-1 bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
+                <div className="text-sm text-gray-500">Occupied Tables</div>
+                <div className="text-2xl font-bold text-red-600">
+                  {analysisData.occupiedTables}
+                </div>
               </div>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-8">
-          <p className="text-gray-600">No tables found matching your search criteria.</p>
-          <p className="text-sm text-gray-500 mt-2">
-            Try a different search term or filter.
-          </p>
-        </div>
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="mt-6 flex justify-center">
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => handlePageChange(page - 1)}
-              disabled={page === 1}
-              className="px-4 py-2 rounded hover:bg-gray-100 disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <span className="px-4 py-2">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => handlePageChange(page + 1)}
-              disabled={page === totalPages}
-              className="px-4 py-2 rounded hover:bg-gray-100 disabled:opacity-50"
-            >
-              Next
-            </button>
           </div>
         </div>
-      )}
+      </main>
     </div>
   );
 }
