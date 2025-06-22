@@ -234,9 +234,9 @@ export default function TablePage() {
                   placeholder="Search..."
                   value={searchTerm}
                   onChange={handleSearch}
-                  className="border p-2 rounded-lg pl-10 pr-2 text-sm md:max-w-64"
+                  className="border p-2 mt-1 rounded-lg pl-10 pr-2 text-sm md:max-w-64"
                 />
-                <div className="absolute left-3 top-1/2 transform md:-translate-y-2/2 -translate-y-1/2 text-gray-400">
+                <div className="absolute left-3 top-1/2 transform  -translate-y-10/10 text-gray-400">
                   <FaSearch />
                 </div>
               </div>
