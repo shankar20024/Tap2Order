@@ -29,20 +29,20 @@ export default function TablePage() {
     occupiedTables: 0
   });
 
+  // Debounced search effect: fetch from backend when searchTerm changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      // setDebouncedSearchTerm(searchTerm);
-    }, 500);
-
+      fetchTables(searchTerm);
+    }, 400);
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, page, itemsPerPage, filter]);
 
   useEffect(() => {
     if (status === "authenticated") {
       fetchAnalysisData();
-      fetchTables();
+      fetchTables(searchTerm);
     }
-  }, [status, itemsPerPage]);
+  }, [status]);
 
   const fetchAnalysisData = async () => {
     try {
@@ -59,11 +59,12 @@ export default function TablePage() {
       });
     }
   };
+  
 
-  const fetchTables = async () => {
+  const fetchTables = async (searchValue = "") => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/table?page=${page}&limit=${itemsPerPage}&filter=${filter}`);
+      const res = await fetch(`/api/table?page=${page}&limit=${itemsPerPage}&filter=${filter}&search=${encodeURIComponent(searchValue)}`);
       const data = await res.json();
 
       const pagination = data?.pagination || {
@@ -102,6 +103,7 @@ export default function TablePage() {
       setTableNumber("");
       fetchTables();
       toast.success("Table added successfully!");
+      fetchAnalysisData();
     } else {
       const error = await res.json();
       toast.error(`${error.error || "Failed to add table"}`);
@@ -160,12 +162,6 @@ export default function TablePage() {
     }
   };
 
-  const filteredTables = tables.filter(table => {
-    if (filter === 'all') return true;
-    if (filter === 'free') return table.status === 'free';
-    if (filter === 'occupied') return table.status === 'occupied';
-    return true;
-  });
 
   const handlePageChange = (newPage) => {
     setPage(newPage);
@@ -178,10 +174,7 @@ export default function TablePage() {
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
-    const filteredTables = originalTables.filter(table =>
-      table.tableNumber.toString().includes(e.target.value)
-    );
-    setTables(filteredTables);
+    // fetchTables(e.target.value); // Debounced by useEffect
   };
 
   const handleRefresh = () => {
@@ -200,7 +193,6 @@ export default function TablePage() {
       <Header className="w-full" className2="bg-white shadow-md" />
       <main className="container mx-auto px-4 py-8 mt-16">
         <Toaster position="top-right" />
-
 
         <h1 className="text-4xl font-bold text-amber-700 mb-6 flex items-center justify-center  gap-2 text-center md:hidden">
           <FaTable className="text-amber-700" />
@@ -388,7 +380,7 @@ export default function TablePage() {
         <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
           {hasTables ? (
             <div className="grid md:grid-cols-2 gap-4">
-              {filteredTables.map((table) => (
+              {tables.map((table) => (
                 //table card
                 <motion.div
                   key={table._id}
