@@ -42,7 +42,7 @@ export default function TablePage() {
       fetchAnalysisData();
       fetchTables();
     }
-  }, [status]);
+  }, [status, itemsPerPage]);
 
   const fetchAnalysisData = async () => {
     try {
@@ -206,66 +206,85 @@ export default function TablePage() {
           <FaTable className="text-amber-700" />
           Manage Tables
         </h1>
-
-        {/* Mobile Add Table Input */}
-        <form onSubmit={createTable} className="mb-6 flex flex-wrap md:hidden justify-center space-x-2">
-          <input
-            type="number"
-            placeholder="Table No."
-            value={tableNumber}
-            onChange={(e) => setTableNumber(e.target.value)}
-            className="border p-2 rounded-lg flex-grow max-w-24 text-sm"
-          />
-          <button
-            type="submit"
-            className="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm"
-          >
-            ➕ Add
-          </button>
-        </form>
-
-        {/* Search and Items per page for desktop with hidden mobile */}
-        <div className="md:flex hidden flex-wrap items-center justify-start md:mb-1 mt-16">
-          <div className="flex items-center mb-4">
-            <div className="flex space-x-86 justify-center">
-              <div className="relative flex-grow">
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchTerm}
-                  onChange={handleSearch}
-                  className="border p-2 mt-1 rounded-lg pl-10 pr-2 text-sm md:max-w-64"
-                />
-                <div className="absolute left-3 top-1/2 transform  -translate-y-10/10 text-gray-400">
-                  <FaSearch />
-                </div>
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold text-amber-700 mb-6 flex items-center justify-center  gap-2 ">
-                  <FaTable className="text-amber-700" />
-                  Manage Tables
-                </h1>
-
-              </div>
-              {/* desktop Add Table Input */}
-              <form onSubmit={createTable} className="mb-4 md:flex hidden flex-wrap justify-center space-x-2">
-                <input
-                  type="number"
-                  placeholder="Table No."
-                  value={tableNumber}
-                  onChange={(e) => setTableNumber(e.target.value)}
-                  className="border p-2 rounded-lg flex-grow max-w-xs text-sm"
-                />
-                <button
-                  type="submit"
-                  className="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm"
-                >
-                  ➕ Add
-                </button>
-              </form>
+        <div className="flex items-center justify-center mx-4 md:hidden ">
+          <div className="relative flex-grow">
+            <input
+              type="text"
+              placeholder=""
+              value={searchTerm}
+              onChange={handleSearch}
+              className="border p-2 rounded-lg pl-10 pr-2 text-sm max-w-20"
+            />
+            <div className="absolute left-3 top-1/2 transform w-8 h-8 -translate-y-1/4 text-gray-400">
+              <FaSearch />
             </div>
           </div>
+
+          {/* Mobile Add Table Input */}
+          <form onSubmit={createTable} className=" flex flex-wrap md:hidden justify-center space-x-2">
+            <input
+              type="number"
+              placeholder="Table No."
+              value={tableNumber}
+              onChange={(e) => setTableNumber(e.target.value)}
+              className="border p-2 rounded-lg flex-grow max-w-24 text-sm"
+            />
+            <button
+              type="submit"
+              className="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm"
+            >
+              ➕ Add
+            </button>
+          </form>
         </div>
+        {/* Search and Items per page for desktop with hidden mobile */}
+        <div className="md:flex flex-col md:flex-row md:items-center md:justify-between mt-10 space-y-6 md:space-y-0 md:space-x-6 px-4 hidden">
+          {/* Search Input */}
+          <div className="w-full md:w-1/3">
+            <div className="flex items-center border rounded-lg h-10 w-full">
+              <div className="pl-3 text-gray-400">
+                <FaSearch />
+              </div>
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchTerm}
+                onChange={handleSearch}
+                className="flex-grow p-2 pr-3 text-sm focus:outline-none rounded-r-lg h-full"
+              />
+            </div>
+          </div>
+
+
+          {/* Heading */}
+          <div className="w-full md:w-1/3 text-center">
+            <h1 className="text-2xl sm:text-3xl font-bold text-amber-700 flex items-center justify-center gap-2">
+              <FaTable className="text-amber-700" />
+              Manage Tables
+            </h1>
+          </div>
+
+          {/* Add Table Form */}
+          <form
+            onSubmit={createTable}
+            className="w-full md:w-1/3 flex flex-col sm:flex-row items-center justify-center gap-2"
+          >
+            <input
+              type="number"
+              placeholder="Table No."
+              value={tableNumber}
+              onChange={(e) => setTableNumber(e.target.value)}
+              className="border p-2 rounded-lg text-sm w-full sm:w-auto flex-grow"
+            />
+            <button
+              type="submit"
+              className="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm w-full sm:w-auto"
+            >
+              ➕ Add
+            </button>
+          </form>
+        </div>
+
         {/* Table Status Summary */}
         <div className="mt-6 space-y-6 md:mb-6">
           <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-6 w-full mx-auto sm:scale-100 scale-[0.95] md:transform-none transform origin-top">
@@ -331,66 +350,39 @@ export default function TablePage() {
           />
         </div>
 
-        <div className="text-sm flex items-center space-x-2 justify-between md:justify-end mb-3 mr-6 ">
-          <p className="text-sm hidden md:block">Tables {tables.length} / {totalItems}</p>
-          {/* Desktop Dropdown */}
-          <div className="md:flex items-center space-x-2 hidden">
-            <select
-              value={itemsPerPage}
-              onChange={handleItemsPerPageChange}
-              className="border p-2 rounded-lg text-sm"
+        <div className="text-sm flex items-center space-x-4 justify-between mb-1 mx-2 ">
+          <p className="text-sm">Tables {tables.length} / {totalItems}</p>
+          {/* Unified Dropdown */}
+          <div className="relative inline-block">
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="border border-gray-300 px-3 py-2 rounded-lg text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
             >
-              <option value="5">5</option>
-              <option value="10">10</option>
-              <option value="15">15</option>
-              <option value="20">20</option>
-            </select>
+              <span className="flex items-center justify-between w-full">
+                {itemsPerPage}
+                <FaChevronDown className="ml-2" />
+              </span>
+            </button>
+            {showDropdown && (
+              <ul className="absolute z-10 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 w-full">
+                {[5, 10, 15, 20].map((value) => (
+                  <li
+                    key={value}
+                    onClick={() => {
+                      handleItemsPerPageChange({ target: { value: value.toString() } });
+                      setShowDropdown(false);
+                    }}
+                    className="px-3 py-2 hover:bg-amber-100 cursor-pointer text-sm transition-colors duration-200"
+                  >
+                    {value}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
 
-        {/* Mobile Search and Items per page */}
-        <div className="text-sm flex items-center space-x-2 justify-between md:hidden mb-2">
-          <div className="relative flex-grow">
-            <input
-              type="text"
-              placeholder=""
-              value={searchTerm}
-              onChange={handleSearch}
-              className="border p-2 rounded-lg pl-10 pr-2 text-sm max-w-20"
-            />
-            <div className="absolute left-3 top-1/2 transform w-8 h-8 -translate-y-1/4 text-gray-400">
-              <FaSearch />
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <p className="text-xs md:hidden">Tables {tables.length} / {totalItems}</p>
-            {/* Mobile Dropdown */}
-            <div className="relative inline-block w-full sm:w-32">
-              <button
-                onClick={() => setShowDropdown(!showDropdown)}
-                className="border border-amber-500 px-3 py-2 rounded-lg text-sm w-full text-left"
-              >
-                <span className="flex items-center justify-center space-x-2">{itemsPerPage} <span className="ml-2"><FaChevronDown /></span></span>
-              </button>
-              {showDropdown && (
-                <ul className="absolute z-10 bg-white border border-gray-200 rounded mt-1 w-full shadow-md">
-                  {[5, 10, 15, 20].map((value) => (
-                    <li
-                      key={value}
-                      onClick={() => {
-                        handleItemsPerPageChange({ target: { value } });
-                        setShowDropdown(false);
-                      }}
-                      className="px-3 py-2 hover:bg-amber-100 cursor-pointer text-sm"
-                    >
-                      {value}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </div>
+       
 
         {/* Scrollable Table Container */}
         <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
