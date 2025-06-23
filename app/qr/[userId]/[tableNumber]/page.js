@@ -105,9 +105,6 @@ export default function QRMenu(paramsPromise) {
     }
   };
 
-
-
-
   useEffect(() => {
     const fetchInitialData = async () => {
       await Promise.all([
@@ -172,25 +169,49 @@ export default function QRMenu(paramsPromise) {
     };
   }, [tableNumber]);
 
-  const addToCart = (item, quantity = 1) => {
+  const addToCart = (item, quantity = 1, isUpdate = false) => {
     if (!apiStatus) {
       toast.error('API is not available. Please try again later.');
       return;
     }
     if (orderPlaced) return;
     if (quantity <= 0) return;
-    const existing = cart.find((i) => i.menuItemId === item._id);
-    if (existing) {
-      setCart(cart.map((i) => i.menuItemId === item._id ? { ...i, quantity: i.quantity + quantity } : i));
-    } else {
-      setCart([...cart, {
-        menuItemId: item._id,
-        name: item.name,
-        price: item.price,
-        quantity,
-        notes: ''
-      }]);
-    }
+    
+    // If item is a string, it's a menuItemId from the cart
+    const isItemObject = typeof item === 'object';
+    const itemId = isItemObject ? String(item._id || '') : String(item);
+    
+    setCart(prevCart => {
+      const existingIndex = prevCart.findIndex(i => String(i.menuItemId) === itemId);
+      
+      if (existingIndex >= 0) {
+        // Item exists, update quantity
+        return prevCart.map((cartItem, idx) => {
+          if (idx === existingIndex) {
+            // If isUpdate is true, set the quantity directly, otherwise add to it
+            const newQuantity = isUpdate 
+              ? quantity 
+              : cartItem.quantity + quantity;
+              
+            return { 
+              ...cartItem, 
+              quantity: Math.max(1, newQuantity) // Ensure quantity is at least 1
+            };
+          }
+          return cartItem;
+        });
+      } else if (isItemObject) {
+        // Only add new item if we have the full item object
+        return [...prevCart, {
+          menuItemId: itemId,
+          name: item.name,
+          price: item.price,
+          quantity: Math.max(1, quantity), // Ensure quantity is at least 1
+          notes: ''
+        }];
+      }
+      return prevCart; // Return unchanged if item not found and not adding new
+    });
   };
 
   const decreaseQuantity = (itemId) => {
@@ -247,6 +268,7 @@ export default function QRMenu(paramsPromise) {
 
     setErrorMessage('');
     setPlacingOrder(true);
+    setOrderMessage('');
 
     try {
       const res = await fetch('/api/order', {
@@ -312,6 +334,7 @@ export default function QRMenu(paramsPromise) {
 
       // Show alert without clearing cart
 
+      
       setPrepTime(15 + Math.floor(Math.random() * 15));
     } catch (err) {
       setErrorMessage('Failed to place order. Please try again.');
@@ -496,7 +519,7 @@ export default function QRMenu(paramsPromise) {
                           </button>
                           <span aria-live="polite" aria-atomic="true" className="w-6 text-center">{item.quantity}</span>
                           <button
-                            onClick={() => addToCart(item)}
+                            onClick={() => addToCart(item.menuItemId, item.quantity + 1, true)}
                             disabled={orderPlaced}
                             aria-label={`Increase quantity of ${item.name}`}
                             className="bg-gray-200 hover:bg-gray-300 rounded px-2 py-1 select-none disabled:opacity-50"

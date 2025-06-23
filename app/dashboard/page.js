@@ -1,12 +1,32 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import ably from "@/lib/ably";
+import { FaUtensils, FaCheckCircle, FaClock, FaTimesCircle, FaBell, FaListAlt, FaClipboardList, FaHistory, FaTable, FaSync } from "react-icons/fa";
+import LoadingSpinner from "@/app/components/LoadingSpinner";
+import AlertPing from "../components/AlertPing";
+import Header from "@/app/components/Header";
 import NavButton from "../components/NavButton";
 import LogoutButton from "../components/Logout";
 import toast from "react-hot-toast";
+import { useSession } from "next-auth/react";
+
+function groupOrdersByTable(orders) {
+  return orders.reduce((acc, order) => {
+    if (!acc[order.tableNumber]) acc[order.tableNumber] = [];
+    acc[order.tableNumber].push(order);
+    return acc;
+  }, {});
+}
 
 export default function Dashboard() {
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [newOrderTables, setNewOrderTables] = useState([]);
+  const [hasNewOrder, setHasNewOrder] = useState(false);
+  const { data: session } = useSession();
+  const status = session.status;
 
   useEffect(() => {
     const channel = ably.channels.get("orders");
@@ -17,8 +37,10 @@ export default function Dashboard() {
       if (incomingOrder.cart && !incomingOrder.items) {
         incomingOrder.items = incomingOrder.cart; // Use 'items' for consistency
       }
-      setOrders((prev) => [...prev, incomingOrder]);
       
+      setOrders(prev => [...prev, incomingOrder]);
+      setNewOrderTables(prev => [...new Set([...prev, incomingOrder.tableNumber])]);
+      setHasNewOrder(true);
       
       toast.success(`New order from Table #${incomingOrder.tableNumber}`);
     });
@@ -26,7 +48,7 @@ export default function Dashboard() {
     // Subscribe to order updates (completion or cancellation)
     channel.subscribe("order-updated", async (msg) => {
       const updatedOrder = msg.data;
-      
+
       // Validate the order data
       if (!updatedOrder || !updatedOrder._id) {
         console.error("Invalid updated order data:", updatedOrder);
@@ -34,8 +56,8 @@ export default function Dashboard() {
       }
 
       // Update local state with the new order status
-      setOrders((prev) => 
-        prev.map(order => 
+      setOrders((prev) =>
+        prev.map(order =>
           order._id === updatedOrder._id ? { ...order, ...updatedOrder } : order
         )
       );
@@ -65,9 +87,11 @@ export default function Dashboard() {
       // Filter out any completed orders that might have been fetched
       const activeOrders = data.filter(order => order.status !== 'completed' && order.status !== 'cancelled');
       setOrders(activeOrders);
+      setLoading(false);
     } catch (error) {
       console.error("Error fetching orders:", error);
-      toast.error("Failed to fetch orders.");
+      setError(error);
+      setLoading(false);
     }
   };
 
@@ -84,7 +108,7 @@ export default function Dashboard() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: "completed",paymentStatus: "paid" })
+        body: JSON.stringify({ status: "completed", paymentStatus: "paid" })
       });
 
       if (!response.ok) {
@@ -93,7 +117,7 @@ export default function Dashboard() {
       }
 
       const updatedOrder = await response.json();
-      
+
       // Publish order update to Ably
       const channel = ably.channels.get("orders");
       await channel.publish("order-updated", {
@@ -101,7 +125,7 @@ export default function Dashboard() {
         timestamp: Date.now()
       });
 
-      toast.success(`Order #${updatedOrder._id} completed successfully`);
+      
     } catch (error) {
       console.error("Error completing order:", error);
       toast.error(error.message);
@@ -130,7 +154,7 @@ export default function Dashboard() {
       }
 
       const updatedOrder = await response.json();
-      
+
       // Publish order update to Ably
       const channel = ably.channels.get("orders");
       await channel.publish("order-updated", {
@@ -138,78 +162,179 @@ export default function Dashboard() {
         timestamp: Date.now()
       });
 
-      toast.success(`Order #${updatedOrder._id} cancelled successfully`);
+      
     } catch (error) {
       console.error("Error cancelling order:", error);
       toast.error(error.message);
     }
   };
 
-  return (
-    <div className="p-6">
-      <div className="flex items-center gap-2 mb-4">
-        <NavButton href="/table" label="Manage table" />
-        <NavButton href="/menu" label="Manage Menu" />
-        <NavButton href="/order-history" label="Order History" />
-        <LogoutButton />
-      </div>
-
-      <h1 className="text-xl font-bold mb-4">Live Orders</h1>
-
-      {orders.length === 0 ? (
-        <p>No orders yet...</p>
-      ) : (
-        <div className="grid gap-4">
-          {orders.map((order) => {
-            const orderItems = order.items || order.cart || [];
-            const message = order.message || order.msg; // Check both fields
-            return (
-              <div key={order._id} className="border p-4 rounded-lg shadow">
-                <h2 className="font-semibold">Table: {order.tableNumber}</h2>
-                
-                {message && (
-                  <div className="bg-gray-50 p-3 rounded-lg mb-4">
-                    <div className="flex items-center mb-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-                      </svg>
-                      <span className="text-sm font-medium">Special Instructions</span>
-                    </div>
-                    <p className="text-sm text-gray-700">{message}</p>
-                  </div>
-                )}
-
-                <ul className="text-sm mt-2">
-                  {orderItems.length > 0 ? (
-                    orderItems.map((item) => (
-                      <li key={item.name}> {/* Assuming name is unique */}
-                        {item.name} x {item.quantity} - ₹{item.price}
-                      </li>
-                    ))
-                  ) : (
-                    <li>No items in this order.</li>
-                  )}
-                </ul>
-                <p className="mt-2 font-bold">Total: ₹{order.totalAmount || order.items.reduce((total, item) => total + (item.price * item.quantity), 0)}</p>
-                <div className="flex space-x-2 mt-4">
-                  <button
-                    className="bg-green-600 text-white px-3 py-1 rounded"
-                    onClick={() => completeOrder(order._id)}
-                  >
-                    ✔ Complete
-                  </button>
-                  <button
-                    className="bg-red-600 text-white px-3 py-1 rounded"
-                    onClick={() => cancelOrder(order._id)}
-                  >
-                    ❌ Cancel
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+  if (session.status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <LoadingSpinner size="large" className="mx-auto mb-4" />
+          <p className="text-lg text-gray-700">Loading dashboard...</p>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center p-6 bg-white rounded-lg shadow-md">
+          <FaTimesCircle className="mx-auto text-red-500 text-4xl mb-4" />
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Error Loading Dashboard</h2>
+          <p className="text-gray-600 mb-4">{error.message || 'Failed to load dashboard data'}</p>
+          <button
+            onClick={fetchOrders}
+            className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+          >
+            <FaSync className="inline mr-2" />
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <div className="container mx-auto px-4 py-30">
+        <div className="flex flex-wrap gap-3  items-center justify-between mb-12">
+          <h1 className="text-4xl font-bold text-amber-800 flex items-center">
+            <FaUtensils className="mr-2" />
+            Dashboard
+          </h1>
+          <div className="flex flex-wrap gap-3 items-center">
+            <NavButton href="/table" label="Manage Table" icon={<FaListAlt />} />
+            <NavButton href="/menu" label="Manage Menu" icon={<FaClipboardList />} />
+            <NavButton href="/order-history" label="Order History" icon={<FaHistory />} />
+            <LogoutButton />
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+          <h1 className="flex items-center gap-2 text-3xl sm:text-3xl font-bold text-amber-700">
+            Live Orders
+            <div className="ml-2">
+              <AlertPing 
+                isActive={hasNewOrder} 
+                tableNumbers={newOrderTables}
+                onClick={() => {
+                  setHasNewOrder(false);
+                  setNewOrderTables([]);
+                }}
+              />
+            </div>
+          </h1>
+          <div className="flex gap-3">
+            <span className="text-base bg-pink-100 text-pink-800 px-3 py-1 rounded-full whitespace-nowrap flex items-center">
+              <FaClipboardList className="mr-1" />
+              {orders.length} {orders.length === 1 ? 'order' : 'orders'}
+            </span>
+            <span className="text-base bg-blue-100 text-blue-800 px-3 py-1 rounded-full whitespace-nowrap flex items-center">
+              <FaTable className="mr-1" />
+              {Object.keys(groupOrdersByTable(orders)).length} {Object.keys(groupOrdersByTable(orders)).length === 1 ? 'table' : 'tables'}
+            </span>
+          </div>
+        </div>
+
+        <div className="space-y-8 max-h-[70vh] overflow-y-auto pr-2">
+          {orders.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
+              <FaClipboardList className="mx-auto text-4xl text-gray-300 mb-4" />
+              <h3 className="text-lg font-medium text-gray-700">No Orders Yet</h3>
+              <p className="text-gray-500 mt-1">New orders will appear here when placed</p>
+            </div>
+          ) : (
+            Object.entries(groupOrdersByTable(orders)).map(([tableNumber, tableOrders]) => (
+              <section key={tableNumber} className="bg-white bg-opacity-90 border border-amber-300 rounded-xl shadow-md p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-semibold text-amber-800 flex items-center">
+                    <FaTable className="mr-2 text-amber-600" />
+                    Table: {tableNumber}
+                    <span className="ml-2 text-sm bg-amber-100 text-amber-700 px-2 py-1 rounded-full">
+                      {tableOrders.length} {tableOrders.length === 1 ? 'order' : 'orders'}
+                    </span>
+                  </h2>
+                  <div className="flex gap-2">
+                    <button
+                      className="bg-gradient-to-r from-amber-600 to-amber-500 text-white px-3 py-1 rounded-lg hover:from-amber-700 hover:to-amber-600 text-sm flex items-center"
+                      onClick={() => tableOrders.forEach(order => completeOrder(order._id))}
+                    >
+                      <FaCheckCircle className="mr-1" />
+                      <span className="hidden md:inline">Complete All</span>
+                    </button>
+                    <button
+                      className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 text-sm flex items-center"
+                      onClick={() => tableOrders.forEach(order => cancelOrder(order._id))}
+                    >
+                      <FaTimesCircle className="mr-1" />
+                      <span className="hidden md:inline">Cancel All</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex overflow-x-auto gap-4 pb-2">
+                  {tableOrders.map((order) => {
+                    const orderItems = order.items || order.cart || [];
+                    const message = order.message || order.msg;
+
+                    return (
+                      <div key={order._id} className="bg-white border border-amber-200 shadow-lg rounded-xl p-4 min-w-[280px] flex-shrink-0">
+                        {message && (
+                          <div className="bg-yellow-100 p-3 rounded-lg mb-4 text-sm text-gray-800">
+                            <strong className="block mb-1 text-amber-800">Special Instructions:</strong>
+                            {message}
+                          </div>
+                        )}
+                        <ul className="text-sm text-gray-800 mb-2">
+                          {orderItems.length > 0 ? (
+                            orderItems.map((item) => (
+                              <li key={item.name}>
+                                {item.name} × {item.quantity} - ₹{item.price}
+                              </li>
+                            ))
+                          ) : (
+                            <li className="text-gray-500 italic">No items in this order.</li>
+                          )}
+                        </ul>
+                        <p className="font-semibold mt-2">Total: ₹
+                          {order.totalAmount ||
+                            orderItems.reduce((total, item) => total + item.price * item.quantity, 0)}
+                        </p>
+                        <div className="mt-2 text-xs text-gray-500">
+                          {new Date(order.createdAt || order.timestamp || Date.now()).toLocaleString()}
+                        </div>
+                        <div className="flex gap-2 mt-4">
+                          <button
+                            className="bg-gradient-to-r from-green-600 to-green-500 text-white px-3 py-1 rounded-lg hover:from-green-700 hover:to-green-600 text-sm flex items-center"
+                            onClick={() => completeOrder(order._id)}
+                          >
+                            <FaCheckCircle className="mr-1" />
+                            Complete
+                          </button>
+                          <button
+                            className="bg-gradient-to-r from-red-600 to-red-500 text-white px-3 py-1 rounded-lg hover:from-red-700 hover:to-red-600 text-sm flex items-center"
+                            onClick={() => cancelOrder(order._id)}
+                          >
+                            <FaTimesCircle className="mr-1" />
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
+
 }

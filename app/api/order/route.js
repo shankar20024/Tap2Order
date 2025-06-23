@@ -19,12 +19,30 @@ export async function POST(req) {
       }, { status: 400 });
     }
 
+    // Process cart items and calculate total
+    const processedCart = cart.map(item => ({
+      ...item,
+      // Ensure menuItemId is a string and price is a number
+      menuItemId: String(item.menuItemId || ''),
+      price: Number(item.price) || 0,
+      quantity: Number(item.quantity) || 1,
+      name: String(item.name || 'Unnamed Item'),
+      notes: String(item.notes || '')
+    }));
+
+    // Validate processed cart
+    const invalidItems = processedCart.filter(item => !item.menuItemId || isNaN(item.price) || item.price <= 0);
+    if (invalidItems.length > 0) {
+      return NextResponse.json({
+        error: "Invalid cart items",
+        details: "Some items are missing required fields or have invalid prices",
+        code: "INVALID_CART_ITEMS"
+      }, { status: 400 });
+    }
+
     // Calculate total amount
-    const totalAmount = cart.reduce((sum, item) => {
-      if (!item.menuItemId || !item.price) {
-        throw new Error("Each cart item must have menuItemId and price");
-      }
-      return sum + (item.price * (item.quantity || 1));
+    const totalAmount = processedCart.reduce((sum, item) => {
+      return sum + (item.price * item.quantity);
     }, 0);
 
     // Check if table exists
@@ -49,12 +67,13 @@ export async function POST(req) {
     }
 
     const order = new Order({
-      tableNumber,
-      items: cart,
-      userId,
-      message: orderMessage,
+      tableNumber: Number(tableNumber) || 0,
+      items: processedCart,
+      userId: String(userId || ''),
+      message: String(orderMessage || ''),
       status: "pending",
-      totalAmount
+      totalAmount,
+      paymentStatus: "unpaid"
     });
 
     const savedOrder = await order.save();
