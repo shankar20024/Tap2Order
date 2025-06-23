@@ -51,8 +51,10 @@ export async function GET(request) {
 
     // Process daily orders
     dailyOrders.forEach(order => {
+      // Count all statuses
       statusCounts[order.status] = (statusCounts[order.status] || 0) + 1;
       
+      // Calculate revenue only for completed orders
       if (order.status === "completed") {
         order.items.forEach(item => {
           const itemTotal = item.quantity * item.price;
@@ -124,7 +126,9 @@ export async function GET(request) {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'no-store' // Prevent caching of the response
+        'Cache-Control': 'no-store',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     });
 
