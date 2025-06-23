@@ -219,11 +219,7 @@ export default function OrderHistory() {
         </div>
       )}
 
-      {loading ? (
-        <div className="text-center py-8">
-          <LoadingSpinner size="40" />
-        </div>
-      ) : (
+      
         <div className="space-y-6 ">
           {/* Status Summary */}
           <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-6 w-full  mx-auto sm:scale-100 scale-[0.95] md:transform-none transform origin-top">
@@ -335,7 +331,7 @@ export default function OrderHistory() {
           </div>
 
         </div>
-      )}
+      
     </div>
   );
 }
