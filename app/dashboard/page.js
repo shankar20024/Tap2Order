@@ -25,8 +25,8 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
   const [newOrderTables, setNewOrderTables] = useState([]);
   const [hasNewOrder, setHasNewOrder] = useState(false);
-  const { data: session } = useSession();
-  const status = session.status;
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
   useEffect(() => {
     const channel = ably.channels.get("orders");
@@ -169,7 +169,15 @@ export default function Dashboard() {
     }
   };
 
-  if (session.status === 'loading') {
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
+  // Show loading state while checking auth or loading data
+  if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -183,7 +191,7 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center p-6 bg-white rounded-lg shadow-md">
+        <div className="text-center p-6 bg-white rounded-lg shadow-md border border-gray-200">
           <FaTimesCircle className="mx-auto text-red-500 text-4xl mb-4" />
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Error Loading Dashboard</h2>
           <p className="text-gray-600 mb-4">{error.message || 'Failed to load dashboard data'}</p>
@@ -202,13 +210,13 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      <div className="container mx-auto px-4 py-30">
-        <div className="flex flex-wrap gap-3  items-center justify-between mb-12">
-          <h1 className="text-4xl font-bold text-amber-800 flex items-center">
+      <div className="container mx-auto px-4 md:py-24 py-28">
+        <div className="flex flex-wrap gap-3  items-center md:justify-between justify-center  mb-10">
+          <h1 className="text-4xl font-bold text-amber-800 flex items-center mb-6 md:mb-0 ">
             <FaUtensils className="mr-2" />
             Dashboard
           </h1>
-          <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex flex-wrap gap-3 items-center justify-center md:justify-end">
             <NavButton href="/table" label="Manage Table" icon={<FaListAlt />} />
             <NavButton href="/menu" label="Manage Menu" icon={<FaClipboardList />} />
             <NavButton href="/order-history" label="Order History" icon={<FaHistory />} />
