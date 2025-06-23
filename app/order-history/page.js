@@ -149,7 +149,7 @@ export default function OrderHistory() {
 
   return (
     <div className="container mx-auto p-6 mt-20">
-      <Header className="px-20" />
+      <Header className="" />
 
       <h1 className="text-4xl font-bold text-amber-700 mb-6 flex items-center justify-center gap-2 md:hidden">
         <HiOutlineClipboardList className="text-amber-700" />

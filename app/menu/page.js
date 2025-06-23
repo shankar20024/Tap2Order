@@ -205,7 +205,7 @@ export default function MenuPage() {
     <>
       <ToastContainer />
       {/* Header */}
-     <Header className="px-6"/> 
+     <Header className=""/> 
 
       <div className="min-h-screen relative w-full mt-11 md:mt-21">
         <div className="flex flex-col md:flex-row md:h-screen overflow-hidden">

@@ -1,13 +1,21 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import Logo from "./Logo";
 
-export default function Header({ className = "" , className2 = ""}) {
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { FaBars, FaClipboardList, FaHistory, FaListAlt } from "react-icons/fa";
+import Logo from "./Logo";
+import NavButton from "./NavButton";
+import Logout from "./Logout";
+
+export default function Header({ className = "", className2 = "" }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [username, setUsername] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
   const { data: session, status } = useSession();
+
+  const isDashboard = pathname === "/dashboard";
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -16,18 +24,75 @@ export default function Header({ className = "" , className2 = ""}) {
   }, [status, session]);
 
   return (
-    <div className="sticky top-0 z-50 w-full ">
-      <header className={`fixed w-full left-1/2 transform -translate-x-1/2 top-0 px-4 sm:px-6 py-3 sm:py-4 bg-white shadow-md rounded-b-lg ${className2}`}>
-        <div className={`flex flex-col sm:flex-row items-center sm:justify-between gap-2 sm:gap-4 ${className}`}>
-          <div className="w-full sm:w-auto flex justify-center sm:justify-start">
-            <Logo
-              className="text-3xl sm:text-4xl cursor-pointer"
-              onClick={() => router.push("/dashboard")}
-            />
+    <div className="sticky top-0 z-50 w-full">
+      <header
+        className={`fixed w-full left-1/2 transform -translate-x-1/2 top-0 px-4 sm:px-6 py-3 sm:py-4 bg-white shadow-md rounded-b-lg ${className2}`}
+      >
+        <div className={`flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0 ${className}`}>
+
+          {/* Desktop: Logo | Nav | Username */}
+          <div className="hidden sm:flex w-full items-center justify-between">
+            {/* Left: Logo */}
+            <div className="flex justify-start">
+              <Logo
+                className="text-3xl sm:text-4xl cursor-pointer"
+                onClick={() => router.push("/dashboard")}
+              />
+            </div>
+
+            {/* Center: Nav Buttons */}
+            {!isDashboard && (
+              <div className="flex gap-3 justify-center">
+                <NavButton href="/table" label="Manage Table" icon={<FaListAlt />} />
+                <NavButton href="/menu" label="Manage Menu" icon={<FaClipboardList />} />
+                <NavButton href="/order-history" label="Order History" icon={<FaHistory />} />
+                <Logout />
+              </div>
+            )}
+
+            {/* Right: Username */}
+            <div className="flex justify-end">
+              <p className="text-gray-700 text-sm font-medium tracking-wide text-right">
+                Logged in as{" "}
+                <span className="font-semibold text-amber-700">{username}</span>
+              </p>
+            </div>
           </div>
-          <p className="text-gray-700 text-xs sm:text-sm font-medium tracking-wide text-center sm:text-left">
-            Logged in as <span className="font-semibold text-amber-700">{username}</span>
+
+          {/* Mobile: Logo + Hamburger */}
+          <div className="w-full flex sm:hidden items-center justify-between">
+            <div className="flex-1 flex justify-center">
+              <Logo
+                className="text-3xl sm:text-4xl cursor-pointer"
+                onClick={() => router.push("/dashboard")}
+              />
+            </div>
+
+            {!isDashboard && (
+              <button
+                className="text-2xl text-gray-700"
+                onClick={() => setMenuOpen(!menuOpen)}
+              >
+                <FaBars />
+              </button>
+            )}
+          </div>
+
+          {/* Mobile: Username */}
+          <p className="sm:hidden text-gray-700 text-xs font-medium tracking-wide text-center">
+            Logged in as{" "}
+            <span className="font-semibold text-amber-700">{username}</span>
           </p>
+
+          {/* Mobile: Dropdown Menu */}
+          {!isDashboard && menuOpen && (
+            <div className="flex sm:hidden flex-col gap-2 mt-2 items-center">
+              <NavButton href="/table" label="Manage Table" icon={<FaListAlt />} />
+              <NavButton href="/menu" label="Manage Menu" icon={<FaClipboardList />} />
+              <NavButton href="/order-history" label="Order History" icon={<FaHistory />} />
+              <Logout />
+            </div>
+          )}
         </div>
       </header>
     </div>

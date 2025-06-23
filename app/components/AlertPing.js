@@ -110,6 +110,25 @@ export default function AlertPing({ isActive = false, onClick, tableNumbers = []
     const testAudio = new Audio(audioFile);
     testAudio.volume = 0.05; // Low volume for test
     testAudio.play().catch(console.error);
+    
+    // Store in localStorage that user has enabled sound
+    localStorage.setItem('soundEnabled', 'true');
+    
+    // Hide the enable sound prompt
+    setShowEnableSound(false);
+    
+   
+    // Play the test sound
+    testAudio.play().catch(console.error);
+    
+    // Stop the test sound after 3 seconds (3000ms)
+    const TEST_SOUND_DURATION = 500; // 1 second
+    
+    setTimeout(() => {
+      testAudio.pause();
+      testAudio.currentTime = 0;
+    }, TEST_SOUND_DURATION);
+    
     toast.success('Sound enabled!');
   };
   
