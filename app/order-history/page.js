@@ -228,7 +228,7 @@ export default function OrderHistory() {
       )}
 
       {loading ? (
-        <div className="flex justify-center items-center min-h-[300px]">
+        <div className="flex justify-center items-center min-h-[600px]">
           <LoadingSpinner />
         </div>
       ) : (
