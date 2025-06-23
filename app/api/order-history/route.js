@@ -9,6 +9,7 @@ export async function GET(request) {
     if (!date) {
       return new Response(JSON.stringify({ error: "Date parameter is required" }), {
         status: 400,
+        headers: { 'Content-Type': 'application/json' }
       });
     }
 
@@ -61,7 +62,7 @@ export async function GET(request) {
           itemSales[key] = itemSales[key] || { 
             quantity: 0, 
             revenue: 0,
-            price: item.price // Store individual price for reference
+            price: item.price
           };
           itemSales[key].quantity += item.quantity;
           itemSales[key].revenue += itemTotal;
@@ -102,27 +103,38 @@ export async function GET(request) {
 
     // Prepare response
     const response = {
-      orders: dailyOrders.map(order => ({
+      dailyOrders: dailyOrders.map(order => ({
         ...order.toObject(),
         // Calculate total for each order
         total: order.items.reduce((sum, item) => sum + (item.quantity * item.price), 0)
-      })),
-      itemSales,
-      dailyRevenue,
-      monthlyRevenue,
-      yearlyRevenue,
-      statusCounts,
+      })) || [],
+      itemSales: itemSales || {},
+      dailyRevenue: dailyRevenue || 0,
+      monthlyRevenue: monthlyRevenue || 0,
+      yearlyRevenue: yearlyRevenue || 0,
+      statusCounts: statusCounts || {
+        pending: 0,
+        completed: 0,
+        cancelled: 0
+      },
       date
     };
 
     return new Response(JSON.stringify(response), {
       status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store' // Prevent caching of the response
+      }
     });
 
   } catch (error) {
-    console.error("Error fetching order history:", error);
-    return new Response(JSON.stringify({ error: "Failed to fetch order history" }), {
+    console.error('Error in order history API:', error);
+    return new Response(JSON.stringify({
+      error: 'Internal server error'
+    }), {
       status: 500,
+      headers: { 'Content-Type': 'application/json' }
     });
   }
 }
