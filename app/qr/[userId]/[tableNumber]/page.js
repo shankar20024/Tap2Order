@@ -654,7 +654,7 @@ export default function QRMenu(paramsPromise) {
           </div>
 
           {/* Menu Items Grid */}
-          <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 overflow-y-auto h-[calc(100vh-200px)]">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 overflow-y-auto h-[calc(80vh-200px)]">
             {filteredMenu.length === 0 && (
               <li className="col-span-full text-center text-gray-500 font-medium py-10">
                 No menu items found.
