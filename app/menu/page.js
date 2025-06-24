@@ -193,7 +193,7 @@ export default function MenuPage() {
     setIsFormModalOpen(true);
   };
 
-  if (loading) return (
+  if (status === "loading") return (
     <div className="fixed inset-0 bg-white/90 flex items-center justify-center z-50 overflow-hidden">
       <div className="flex items-center justify-center">
         <LoadingSpinner size="40" />

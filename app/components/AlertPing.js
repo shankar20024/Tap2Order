@@ -108,7 +108,7 @@ export default function AlertPing({ isActive = false, onClick, tableNumbers = []
     
     // Try to play a test sound
     const testAudio = new Audio(audioFile);
-    testAudio.volume = 0.05; // Low volume for test
+    testAudio.volume = 0.3; // Low volume for test
     testAudio.play().catch(console.error);
     
     // Store in localStorage that user has enabled sound
