@@ -18,12 +18,9 @@ const formatCurrency = (amount) => {
 
 // Format time to 12-hour format with AM/PM
 const formatTime12Hour = (dateTimeString) => {
-  // Create date in local timezone
   const date = new Date(dateTimeString);
-  const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-  
-  let hours = localDate.getHours();
-  const minutes = localDate.getMinutes();
+  let hours = date.getHours();
+  const minutes = date.getMinutes();
   const ampm = hours >= 12 ? 'PM' : 'AM';
 
   hours = hours % 12;
@@ -102,20 +99,15 @@ export default function OrderHistory() {
     setLoading(true);
     setError(null);
     
-    // Create date in local timezone
-    const localDate = new Date(year, month, day);
-    const offset = localDate.getTimezoneOffset() * 60000;
-    const adjustedDate = new Date(localDate - offset);
-    const dateStr = adjustedDate.toISOString().split('T')[0];
-    
-    setSelectedDate(localDate);
+    // Create date string in YYYY-MM-DD format
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    setSelectedDate(new Date(dateStr));
     
     try {
       const response = await fetch(`/api/order-history?date=${dateStr}`);
       if (!response.ok) {
         throw new Error('Failed to fetch order history');
       }
-      
       const data = await response.json();
       
       // Set default values if data is undefined
@@ -129,7 +121,6 @@ export default function OrderHistory() {
         completed: 0,
         cancelled: 0
       });
-      
     } catch (err) {
       setError(err.message);
     } finally {
@@ -140,15 +131,8 @@ export default function OrderHistory() {
   // Fetch initial data
   useEffect(() => {
     const today = new Date();
-    const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
-    const dateStr = localDate.toISOString().split('T')[0];
-    
-    // Use the handleDateChange function to fetch data
-    handleDateChange(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    handleDateChange(today.getFullYear(), today.getMonth(), today.getDate());
   }, []);
 
   // Helper function to safely get item price
