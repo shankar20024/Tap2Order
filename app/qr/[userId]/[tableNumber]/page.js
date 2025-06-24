@@ -475,7 +475,7 @@ export default function QRMenu(paramsPromise) {
             aria-label="cart panel"
             onClick={() => setCartOpen(false)} // click outside to close
           >
-            <div className="mt-16">
+            <div className="mt-30 mr-3">
               <div
                 className={`w-80 max-w-full  bg-white border border-gray-300 rounded-lg shadow-xl transform transition-transform duration-300 ease-in-out 
       ${cartOpen ? 'translate-y-0 opacity-100' : '-translate-y-20 opacity-0'}`}
