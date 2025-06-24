@@ -176,25 +176,25 @@ export default function QRMenu(paramsPromise) {
     }
     if (orderPlaced) return;
     if (quantity <= 0) return;
-    
+
     // If item is a string, it's a menuItemId from the cart
     const isItemObject = typeof item === 'object';
     const itemId = isItemObject ? String(item._id || '') : String(item);
-    
+
     setCart(prevCart => {
       const existingIndex = prevCart.findIndex(i => String(i.menuItemId) === itemId);
-      
+
       if (existingIndex >= 0) {
         // Item exists, update quantity
         return prevCart.map((cartItem, idx) => {
           if (idx === existingIndex) {
             // If isUpdate is true, set the quantity directly, otherwise add to it
-            const newQuantity = isUpdate 
-              ? quantity 
+            const newQuantity = isUpdate
+              ? quantity
               : cartItem.quantity + quantity;
-              
-            return { 
-              ...cartItem, 
+
+            return {
+              ...cartItem,
               quantity: Math.max(1, newQuantity) // Ensure quantity is at least 1
             };
           }
@@ -334,7 +334,7 @@ export default function QRMenu(paramsPromise) {
 
       // Show alert without clearing cart
 
-      
+
       setPrepTime(15 + Math.floor(Math.random() * 15));
     } catch (err) {
       setErrorMessage('Failed to place order. Please try again.');
@@ -342,7 +342,7 @@ export default function QRMenu(paramsPromise) {
     } finally {
       setPlacingOrder(false);
     }
-    
+
   };
 
   // Handlers for quantity selector in menu items
@@ -385,7 +385,7 @@ export default function QRMenu(paramsPromise) {
     if (qty <= 0) return;
     addToCart(item, qty);
     setItemQuantities(qtys => ({ ...qtys, [item._id]: 0 }));
-    
+
   };
 
   if (loading) return (
@@ -448,22 +448,22 @@ export default function QRMenu(paramsPromise) {
           {/* Cart Icon fixed top right */}
 
           <button
-  onClick={() => setCartOpen(open => !open)}
-  aria-label={`Toggle cart, ${totalItemsCount} items in cart`}
-  className="fixed top-4 right-4 z-50 bg-amber-500 hover:bg-amber-600 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-xl hover:scale-105 transition-transform duration-200 ease-in-out focus:outline-none focus:ring-4 focus:ring-amber-300"
->
-  <HiOutlineShoppingCart className="w-7 h-7" />
+            onClick={() => setCartOpen(open => !open)}
+            aria-label={`Toggle cart, ${totalItemsCount} items in cart`}
+            className="fixed top-4 right-4 z-50 bg-amber-500 hover:bg-amber-600 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-xl hover:scale-105 transition-transform duration-200 ease-in-out focus:outline-none focus:ring-4 focus:ring-amber-300"
+          >
+            <HiOutlineShoppingCart className="w-7 h-7" />
 
-  {totalItemsCount > 0 && (
-    <span
-      className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-semibold px-1.5 py-0.5 rounded-full shadow-md animate-pulse"
-      aria-live="polite"
-      aria-atomic="true"
-    >
-      {totalItemsCount}
-    </span>
-  )}
-</button>
+            {totalItemsCount > 0 && (
+              <span
+                className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-semibold px-1.5 py-0.5 rounded-full shadow-md animate-pulse"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                {totalItemsCount}
+              </span>
+            )}
+          </button>
 
 
           {/* Cart Panel */}
@@ -476,135 +476,135 @@ export default function QRMenu(paramsPromise) {
             onClick={() => setCartOpen(false)} // click outside to close
           >
             <div className="mt-16">
-            <div
-              className={`w-80 max-w-full  bg-white border border-gray-300 rounded-lg shadow-xl transform transition-transform duration-300 ease-in-out 
+              <div
+                className={`w-80 max-w-full  bg-white border border-gray-300 rounded-lg shadow-xl transform transition-transform duration-300 ease-in-out 
       ${cartOpen ? 'translate-y-0 opacity-100' : '-translate-y-20 opacity-0'}`}
-              onClick={(e) => e.stopPropagation()} // prevent backdrop click when clicking inside cart
-            >
-              <div className="flex justify-between  items-center border-b px-4 py-3">
-                <h2 className="text-lg font-bold text-amber-600">Your Cart</h2>
-                <button
-                  onClick={() => setCartOpen(false)}
-                  aria-label="Close cart"
-                  className="text-gray-700 hover:text-gray-900 focus:outline-none"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
+                onClick={(e) => e.stopPropagation()} // prevent backdrop click when clicking inside cart
+              >
+                <div className="flex justify-between  items-center border-b px-4 py-3">
+                  <h2 className="text-lg font-bold text-amber-600">Your Cart</h2>
+                  <button
+                    onClick={() => setCartOpen(false)}
+                    aria-label="Close cart"
+                    className="text-gray-700 hover:text-gray-900 focus:outline-none"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
 
-              {cart.length === 0 ? (
-                <p className="p-4 text-center text-gray-500">Your cart is empty.</p>
-              ) : (
-                <>
-                  <ul className="max-h-64 overflow-y-auto divide-y">
-                    {cart.map(item => (
-                      <li key={item.menuItemId} className="flex justify-between items-center p-3">
-                        <div className="flex flex-col">
-                          <span className="font-semibold">{item.name}</span>
-                          <span className="text-sm text-gray-600">₹{(item.price ?? 0).toFixed(2)} each</span>
-                          <span className="text-sm text-green-700 font-medium">
-                            Subtotal: ₹{getItemSubtotal(item)}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => decreaseQuantity(item.menuItemId)}
-                            disabled={orderPlaced}
-                            aria-label={`Decrease quantity of ${item.name}`}
-                            className="bg-gray-200 hover:bg-gray-300 rounded px-2 py-1 select-none disabled:opacity-50"
-                          >
-                            −
-                          </button>
-                          <span aria-live="polite" aria-atomic="true" className="w-6 text-center">{item.quantity}</span>
-                          <button
-                            onClick={() => addToCart(item.menuItemId, item.quantity + 1, true)}
-                            disabled={orderPlaced}
-                            aria-label={`Increase quantity of ${item.name}`}
-                            className="bg-gray-200 hover:bg-gray-300 rounded px-2 py-1 select-none disabled:opacity-50"
-                          >
-                            +
-                          </button>
-                          {!orderPlaced && (
+                {cart.length === 0 ? (
+                  <p className="p-4 text-center text-gray-500">Your cart is empty.</p>
+                ) : (
+                  <>
+                    <ul className="max-h-64 overflow-y-auto divide-y">
+                      {cart.map(item => (
+                        <li key={item.menuItemId} className="flex justify-between items-center p-3">
+                          <div className="flex flex-col">
+                            <span className="font-semibold">{item.name}</span>
+                            <span className="text-sm text-gray-600">₹{(item.price ?? 0).toFixed(2)} each</span>
+                            <span className="text-sm text-green-700 font-medium">
+                              Subtotal: ₹{getItemSubtotal(item)}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
                             <button
-                              onClick={() => removeFromCart(item.menuItemId)}
-                              aria-label={`Remove ${item.name} from cart`}
-                              className="text-red-600 hover:underline focus:outline-none"
+                              onClick={() => decreaseQuantity(item.menuItemId)}
+                              disabled={orderPlaced}
+                              aria-label={`Decrease quantity of ${item.name}`}
+                              className="bg-gray-200 hover:bg-gray-300 rounded px-2 py-1 select-none disabled:opacity-50"
                             >
-                              Remove
+                              −
                             </button>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                            <span aria-live="polite" aria-atomic="true" className="w-6 text-center">{item.quantity}</span>
+                            <button
+                              onClick={() => addToCart(item.menuItemId, item.quantity + 1, true)}
+                              disabled={orderPlaced}
+                              aria-label={`Increase quantity of ${item.name}`}
+                              className="bg-gray-200 hover:bg-gray-300 rounded px-2 py-1 select-none disabled:opacity-50"
+                            >
+                              +
+                            </button>
+                            {!orderPlaced && (
+                              <button
+                                onClick={() => removeFromCart(item.menuItemId)}
+                                aria-label={`Remove ${item.name} from cart`}
+                                className="text-red-600 hover:underline focus:outline-none"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
 
-                  <div className="px-4 py-3 border-t font-semibold text-lg flex justify-between">
-                    <span>Total:</span>
-                    <span>₹{getTotalPrice().toFixed(2)}</span>
-                  </div>
+                    <div className="px-4 py-3 border-t font-semibold text-lg flex justify-between">
+                      <span>Total:</span>
+                      <span>₹{getTotalPrice().toFixed(2)}</span>
+                    </div>
 
-                  <div className="px-4 py-3 flex flex-col gap-3 justify-end border-t">
-                    {/* Special Instructions */}
-                    <div className="mb-6">
-                      <div className="bg-gray-50 rounded-xl p-4 shadow-sm">
-                        <div className="flex items-center gap-2 mb-3">
-                          <MdMessage className="text-gray-500 text-xl" />
-                          <span className="text-sm font-semibold text-gray-700">Special Instructions</span>
-                        </div>
-                        <div className="relative">
-                          <textarea
-                            value={orderMessage}
-                            onChange={(e) => setOrderMessage(e.target.value)}
-                            placeholder="Add any special instructions"
-                            className="w-64 p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-primary focus:border-primary text-sm text-gray-700 placeholder:text-gray-400"
-                            rows="4"
-                            maxLength="200"
-                            style={{
-                              resize: 'none',
-                              fontFamily: 'inherit',
-                              lineHeight: '1',
-                            }}
-                          />
-                          <div className="absolute bottom-2 right-3 text-xs text-gray-500">
-                            {orderMessage.length}/200
+                    <div className="px-4 py-3 flex flex-col gap-3 justify-end border-t">
+                      {/* Special Instructions */}
+                      <div className="mb-6">
+                        <div className="bg-gray-50 rounded-xl p-4 shadow-sm">
+                          <div className="flex items-center gap-2 mb-3">
+                            <MdMessage className="text-gray-500 text-xl" />
+                            <span className="text-sm font-semibold text-gray-700">Special Instructions</span>
+                          </div>
+                          <div className="relative">
+                            <textarea
+                              value={orderMessage}
+                              onChange={(e) => setOrderMessage(e.target.value)}
+                              placeholder="Add any special instructions"
+                              className="w-64 p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-primary focus:border-primary text-sm text-gray-700 placeholder:text-gray-400"
+                              rows="4"
+                              maxLength="200"
+                              style={{
+                                resize: 'none',
+                                fontFamily: 'inherit',
+                                lineHeight: '1',
+                              }}
+                            />
+                            <div className="absolute bottom-2 right-3 text-xs text-gray-500">
+                              {orderMessage.length}/200
+                            </div>
                           </div>
                         </div>
                       </div>
+
+                      {!orderPlaced && (
+                        <div className="flex flex-row justify-center items-center gap-4">
+                          <button
+                            onClick={placeOrder}
+                            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gray-100 text-gray-700 font-medium shadow-md hover:bg-gray-200 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+                            disabled={cart.length === 0}
+                          >
+                            <MdOutlineRestaurantMenu className="text-2xl" />
+                            <span>Place Order</span>
+                          </button>
+
+                          <button
+                            onClick={clearCart}
+                            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gray-100 text-gray-700 font-medium shadow-md hover:bg-gray-200 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+                            disabled={cart.length === 0}
+                          >
+                            <FaTrash className="text-2xl" />
+                            <span>Clear Cart</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
 
-                    {!orderPlaced && (
-                      <div className="flex flex-row justify-center items-center gap-4">
-                        <button
-                          onClick={placeOrder}
-                          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gray-100 text-gray-700 font-medium shadow-md hover:bg-gray-200 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
-                          disabled={cart.length === 0}
-                        >
-                          <MdOutlineRestaurantMenu className="text-2xl" />
-                          <span>Place Order</span>
-                        </button>
-
-                        <button
-                          onClick={clearCart}
-                          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gray-100 text-gray-700 font-medium shadow-md hover:bg-gray-200 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
-                          disabled={cart.length === 0}
-                        >
-                          <FaTrash className="text-2xl" />
-                          <span>Clear Cart</span>
-                        </button>
-                      </div>
+                    {errorMessage && (
+                      <p className="px-4 pb-4 text-red-600 font-semibold" role="alert">
+                        {errorMessage}
+                      </p>
                     )}
-                  </div>
-
-                  {errorMessage && (
-                    <p className="px-4 pb-4 text-red-600 font-semibold" role="alert">
-                      {errorMessage}
-                    </p>
-                  )}
-                </>
-              )}
-            </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -654,7 +654,7 @@ export default function QRMenu(paramsPromise) {
           </div>
 
           {/* Menu Items Grid */}
-          <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 overflow-y-auto h-[calc(100vh-200px)]">
             {filteredMenu.length === 0 && (
               <li className="col-span-full text-center text-gray-500 font-medium py-10">
                 No menu items found.

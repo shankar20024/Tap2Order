@@ -11,6 +11,8 @@ import LogoutButton from "../components/Logout";
 import toast from "react-hot-toast";
 import { useSession } from "next-auth/react";
 
+
+
 function groupOrdersByTable(orders) {
   return orders.reduce((acc, order) => {
     if (!acc[order.tableNumber]) acc[order.tableNumber] = [];

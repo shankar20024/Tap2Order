@@ -1,5 +1,5 @@
 "use client";
-
+import { FaSignOutAlt } from "react-icons/fa";
 import { signOut } from "next-auth/react";
 
 export default function LogoutButton() {
@@ -10,7 +10,7 @@ export default function LogoutButton() {
                  text-white px-5 py-2 rounded-lg shadow-md transition duration-200 ease-in-out 
                  text-sm md:text-base font-medium"
     >
-      Logout
+     <div className="flex items-center gap-2"> <FaSignOutAlt /> Logout</div>
     </button>
   );
 }

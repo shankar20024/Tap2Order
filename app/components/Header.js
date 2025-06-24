@@ -43,9 +43,9 @@ export default function Header({ className = "", className2 = "" }) {
             {/* Center: Nav Buttons */}
             {!isDashboard && (
               <div className="flex gap-3 justify-center">
-                <NavButton href="/table" label="Manage Table" icon={<FaListAlt />} />
-                <NavButton href="/menu" label="Manage Menu" icon={<FaClipboardList />} />
-                <NavButton href="/order-history" label="Order History" icon={<FaHistory />} />
+                {pathname !== "/table" && <NavButton href="/table" label="Manage Table" icon={<FaListAlt />} />}
+                {pathname !== "/menu" && <NavButton href="/menu" label="Manage Menu" icon={<FaClipboardList />} />}
+                {pathname !== "/order-history" && <NavButton href="/order-history" label="Order History" icon={<FaHistory />} />}
                 <Logout />
               </div>
             )}
@@ -87,9 +87,9 @@ export default function Header({ className = "", className2 = "" }) {
           {/* Mobile: Dropdown Menu */}
           {!isDashboard && menuOpen && (
             <div className="flex sm:hidden flex-col gap-2 mt-2 items-center">
-              <NavButton href="/table" label="Manage Table" icon={<FaListAlt />} />
-              <NavButton href="/menu" label="Manage Menu" icon={<FaClipboardList />} />
-              <NavButton href="/order-history" label="Order History" icon={<FaHistory />} />
+              {pathname !== "/table" && <NavButton href="/table" label="Manage Table" icon={<FaListAlt />} />}
+              {pathname !== "/menu" && <NavButton href="/menu" label="Manage Menu" icon={<FaClipboardList />} />}
+              {pathname !== "/order-history" && <NavButton href="/order-history" label="Order History" icon={<FaHistory />} />}
               <Logout />
             </div>
           )}

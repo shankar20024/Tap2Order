@@ -395,7 +395,7 @@ export default function MenuPage() {
                 </div>
 
                 {/* categories veg and non-veg */}
-                <div className="flex justify-end m-0 gap-2">
+                <div className="flex justify-end mr-4 gap-2">
                   <button onClick={() => handleCategoryChange("all")} className="p-1 rounded-full ...">
                     {/* All Icon */}
                     <div className="rounded-sm border-gray-500 border-2 h-5 w-5 flex items-center justify-center">
@@ -421,8 +421,9 @@ export default function MenuPage() {
                   </button>
 
                 </div>
+                <div className="h-[600px] overflow-y-scroll">
                 {filteredItems.map((item) => (
-                  <div key={item._id} className="bg-white border border-gray-200 rounded-2xl shadow-md p-5 hover:shadow-lg transition-shadow duration-300">
+                  <div key={item._id} className="bg-white border border-gray-200 rounded-2xl shadow-md p-5 hover:shadow-lg transition-shadow duration-300 mb-2">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-2">
                         {item.category === "veg" ? (
@@ -465,6 +466,7 @@ export default function MenuPage() {
                     </div>
                   </div>
                 ))}
+                </div>
               </div>
             </div>
           </div >

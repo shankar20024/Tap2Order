@@ -253,7 +253,7 @@ export default function OrderHistory() {
           </div>
 
           {/* Item-wise Sales Table */}
-          <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-6">
+          <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-6 h-[550px] overflow-y-scroll">
             <h2 className="text-3xl font-semibold text-amber-800 mb-4">Item-wise Sales</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full">
@@ -302,7 +302,7 @@ export default function OrderHistory() {
           </div>
 
           {/* Order Timeline */}
-          <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-6">
+          <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-6 overflow-y-scroll h-[600px]">
             <h2 className="text-3xl font-semibold text-amber-800 mb-4">Order Timeline</h2>
             <div className="space-y-4">
               {orderHistory?.length === 0 ? (
