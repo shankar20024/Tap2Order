@@ -1,6 +1,18 @@
 import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
 
+// Helper function to create date in local timezone
+function createLocalDate(year, month, day) {
+  // Create date in local timezone
+  const date = new Date(Date.UTC(year, month - 1, day));
+  
+  // Get local timezone offset in minutes and convert to milliseconds
+  const timezoneOffset = date.getTimezoneOffset() * 60000;
+  
+  // Adjust the date by the timezone offset
+  return new Date(date.getTime() - timezoneOffset);
+}
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -15,18 +27,17 @@ export async function GET(request) {
 
     await connectDB();
 
-    // Convert date string to start and end of day timestamps
-    const startOfDay = new Date(date);
+    // Create start and end dates in local timezone
+    const selectedDate = new Date(date);
+    const startOfDay = createLocalDate(selectedDate.getFullYear(), selectedDate.getMonth() + 1, selectedDate.getDate());
     startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(date);
+    const endOfDay = createLocalDate(selectedDate.getFullYear(), selectedDate.getMonth() + 1, selectedDate.getDate());
     endOfDay.setHours(23, 59, 59, 999);
 
     // Calculate start and end of month
-    const selectedDate = new Date(date);
-    const startOfMonth = new Date(selectedDate);
-    startOfMonth.setDate(1);
+    const startOfMonth = createLocalDate(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1);
     startOfMonth.setHours(0, 0, 0, 0);
-    const endOfMonth = new Date(selectedDate);
+    const endOfMonth = createLocalDate(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1);
     endOfMonth.setMonth(endOfMonth.getMonth() + 1, 0);
     endOfMonth.setHours(23, 59, 59, 999);
 
@@ -83,11 +94,9 @@ export async function GET(request) {
     });
 
     // Calculate yearly revenue
-    const startOfYear = new Date(selectedDate);
-    startOfYear.setMonth(0, 1);
+    const startOfYear = createLocalDate(selectedDate.getFullYear(), 1, 1);
     startOfYear.setHours(0, 0, 0, 0);
-    const endOfYear = new Date(selectedDate);
-    endOfYear.setMonth(11, 31);
+    const endOfYear = createLocalDate(selectedDate.getFullYear(), 12, 31);
     endOfYear.setHours(23, 59, 59, 999);
 
     const yearlyOrders = await Order.find({
