@@ -450,7 +450,7 @@ export default function QRMenu(paramsPromise) {
           <button
             onClick={() => setCartOpen(open => !open)}
             aria-label={`Toggle cart, ${totalItemsCount} items in cart`}
-            className="fixed top-4 right-4 z-50 bg-amber-500 hover:bg-amber-600 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-xl hover:scale-105 transition-transform duration-200 ease-in-out focus:outline-none focus:ring-4 focus:ring-amber-300"
+            className="fixed top-20 right-7 z-49 bg-amber-500 hover:bg-amber-600 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-xl hover:scale-105 transition-transform duration-200 ease-in-out focus:outline-none focus:ring-4 focus:ring-amber-300"
           >
             <HiOutlineShoppingCart className="w-7 h-7" />
 
@@ -654,7 +654,7 @@ export default function QRMenu(paramsPromise) {
           </div>
 
           {/* Menu Items Grid */}
-          <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 overflow-y-auto h-[calc(80vh-200px)]">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 overflow-y-auto h-[calc(100vh-400px)]">
             {filteredMenu.length === 0 && (
               <li className="col-span-full text-center text-gray-500 font-medium py-10">
                 No menu items found.
