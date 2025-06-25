@@ -14,7 +14,7 @@ export default function AdminPanel() {
     const [users, setUsers] = useState([]);
     const [admins, setAdmins] = useState([]);
     const [editingUserId, seteditingUserId] = useState(null);
-    const [editForm, setEditForm] = useState({ name: "", email: "", role: "", password: "" });
+    const [editForm, setEditForm] = useState({ name: "", email: "", role: "", password: "", tableLimit: 10 });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -99,12 +99,18 @@ export default function AdminPanel() {
 
     const startEdit = (user) => {
         seteditingUserId(user._id);
-        setEditForm({ name: user.name, email: user.email, role: user.role, password: "" });
+        setEditForm({ 
+            name: user.name, 
+            email: user.email, 
+            role: user.role, 
+            password: "",
+            tableLimit: user.tableLimit || 10
+        });
     };
 
     const cancelEdit = () => {
         seteditingUserId(null);
-        setEditForm({ name: "", email: "", role: "", password: "" });
+        setEditForm({ name: "", email: "", role: "", password: "", tableLimit: 10 });
     };
 
     const saveEdit = async () => {
@@ -112,6 +118,7 @@ export default function AdminPanel() {
             name: editForm.name,
             email: editForm.email,
             role: editForm.role,
+            tableLimit: parseInt(editForm.tableLimit) || 10
         };
 
         if (editForm.password && editForm.password.trim().length >= 6) {
@@ -148,7 +155,7 @@ export default function AdminPanel() {
                 theme: "light",
             });
             seteditingUserId(null);
-            setEditForm({ name: "", email: "", role: "", password: "" });
+            setEditForm({ name: "", email: "", role: "", password: "", tableLimit: 10 });
             fetchUsers();
         } else {
             toast.error("❌ Failed to update user", {
@@ -286,6 +293,21 @@ export default function AdminPanel() {
                     <option value="user" className="text-amber-900">User </option>
                     <option value="admin" className="text-amber-900">Admin</option>
                 </select>
+                {form.role === 'user' && (
+                    <div className="mb-4">
+                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="tableLimit">
+                            Table Limit
+                        </label>
+                        <input
+                            type="number"
+                            min="1"
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            id="tableLimit"
+                            value={form.tableLimit}
+                            onChange={(e) => setForm({...form, tableLimit: e.target.value})}
+                        />
+                    </div>
+                )}
                 <button
                     type="submit"
                     className="w-full py-3 bg-gradient-to-r from-amber-600 to-amber-500 text-white rounded-lg font-semibold hover:from-amber-700 hover:to-amber-600 transition"
@@ -342,6 +364,21 @@ export default function AdminPanel() {
                                             className="mb-5"
                                         />
 
+                                        {editForm.role === 'user' && (
+                                            <div className="mb-4">
+                                                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="tableLimit">
+                                                    Table Limit
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                                    id="tableLimit"
+                                                    value={editForm.tableLimit}
+                                                    onChange={(e) => setEditForm({...editForm, tableLimit: e.target.value})}
+                                                />
+                                            </div>
+                                        )}
                                         <div className="flex space-x-5">
                                             <button
                                                 onClick={saveEdit}
@@ -426,6 +463,21 @@ export default function AdminPanel() {
                                             className="mb-5"
                                         />
 
+                                        {editForm.role === 'user' && (
+                                            <div className="mb-4">
+                                                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="tableLimit">
+                                                    Table Limit
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                                    id="tableLimit"
+                                                    value={editForm.tableLimit}
+                                                    onChange={(e) => setEditForm({...editForm, tableLimit: e.target.value})}
+                                                />
+                                            </div>
+                                        )}
                                         <div className="flex space-x-5">
                                             <button
                                                 onClick={saveEdit}
@@ -446,6 +498,11 @@ export default function AdminPanel() {
                                         <p className="mb-2 text-amber-900 font-semibold">Name: <span className="font-normal">{user.name}</span></p>
                                         <p className="mb-2 text-amber-900 font-semibold">Email: <span className="font-normal">{user.email}</span></p>
                                         <p className="mb-2 text-amber-900 font-semibold">Role: <span className="font-normal">{user.role}</span></p>
+                                        {user.role === 'user' && (
+                                            <div className="text-sm text-gray-600">
+                                                <p>Tables: {user.tables?.length || 0}/{user.tableLimit || 10}</p>
+                                            </div>
+                                        )}
                                         <div className="flex space-x-6 mt-5">
                                             <button
                                                 onClick={() => startEdit(user)}

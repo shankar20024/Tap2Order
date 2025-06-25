@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { connectDB } from "@/lib/mongodb";
 import Table from "@/models/Table";
+import { User } from "@/models/User";
 
 export async function POST(req) {
   const session = await getServerSession(authOptions);
@@ -9,6 +10,27 @@ export async function POST(req) {
 
   const { tableNumber } = await req.json();
   await connectDB();
+
+  // Get user to check table limit
+  const user = await User.findById(session.user.id);
+  if (!user) {
+    return new Response(JSON.stringify({ error: "User not found" }), {
+      status: 404,
+    });
+  }
+
+  // Check if user has reached their table limit (only for regular users, not admins)
+  if (user.role === 'user') {
+    const tableCount = await Table.countDocuments({ userId: session.user.id });
+    if (tableCount >= (user.tableLimit || 10)) {
+      return new Response(
+        JSON.stringify({ 
+          error: `You have reached your table limit of ${user.tableLimit || 10} tables. Please contact your admin to increase the limit.` 
+        }), 
+        { status: 400 }
+      );
+    }
+  }
 
   // Check for duplicate table number for the same user
   const existing = await Table.findOne({
@@ -25,7 +47,7 @@ export async function POST(req) {
   const newTable = await Table.create({
     tableNumber,
     userId: session.user.id,
-    status: "free", // optional: default status
+    status: "free",
   });
 
   return Response.json(newTable);

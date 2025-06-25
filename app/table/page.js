@@ -94,19 +94,33 @@ export default function TablePage() {
 
   const createTable = async (e) => {
     e.preventDefault();
-    const res = await fetch("/api/table", {
-      method: "POST",
-      body: JSON.stringify({ tableNumber }),
-    });
+    
+    if (!tableNumber) {
+      toast.error("Please enter a table number");
+      return;
+    }
 
-    if (res.ok) {
+    try {
+      const res = await fetch("/api/table", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ tableNumber }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to add table");
+      }
+
       setTableNumber("");
-      fetchTables();
+      await Promise.all([fetchTables(), fetchAnalysisData()]);
       toast.success("Table added successfully!");
-      fetchAnalysisData();
-    } else {
-      const error = await res.json();
-      toast.error(`${error.error || "Failed to add table"}`);
+    } catch (error) {
+      console.error("Error creating table:", error);
+      toast.error(error.message || "Failed to add table");
     }
   };
 

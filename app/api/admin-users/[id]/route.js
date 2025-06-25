@@ -31,7 +31,7 @@ export async function PUT(req, { params }) {
   const session = await checkAdminSession();
   if (!session) return new Response("Unauthorized", { status: 401 });
 
-  const { name, email, role, password } = await req.json();
+  const { name, email, role, password, tableLimit } = await req.json();
   await connectDB();
 
   try {
@@ -41,6 +41,7 @@ export async function PUT(req, { params }) {
     if (name) user.name = name;
     if (email) user.email = email;
     if (role && ["admin", "user"].includes(role)) user.role = role;
+    if (tableLimit !== undefined) user.tableLimit = parseInt(tableLimit) || 10;
 
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
