@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   password: String,
   role: { type: String, enum: ["admin", "user"], default: "user" },
+  isActive: { type: Boolean, default: true },
   tableLimit: { type: Number, default: 10, min: 1 },
   tables: [Number],
   menu: [

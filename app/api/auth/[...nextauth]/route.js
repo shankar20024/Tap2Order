@@ -12,6 +12,11 @@ export const authOptions = {
         const user = await User.findOne({ email: credentials.email });
         if (!user) throw new Error("No user found");
 
+        // Check if user is active
+        if (user.isActive === false) {
+          throw new Error("Your subscription has expired. Please contact our support team to renew your subscription and regain access.");
+        }
+
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) throw new Error("Invalid password");
 

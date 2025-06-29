@@ -482,7 +482,7 @@ export default function QRMenu(paramsPromise) {
           {/* View My Order Button */}
           <button
             onClick={() => setViewOrderModalOpen(true)}
-            className="fixed bottom-10 right-4 bg-amber-400 text-darkAmber px-4 py-2 rounded-full shadow-lg hover:bg-yellow-300 transition-colors"
+            className="fixed bottom-5 right-4 bg-amber-400 text-darkAmber px-4 py-2 rounded-full shadow-lg hover:bg-yellow-300 transition-colors"
           >
             My Orders
           </button>
@@ -766,7 +766,7 @@ export default function QRMenu(paramsPromise) {
           </div>
 
           {/* Menu Items Grid */}
-          <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 overflow-y-auto h-[calc(100vh-400px)]">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 overflow-y-auto h-[calc(100vh-360px)]">
             {filteredMenu.length === 0 && (
               <li className="col-span-full text-center text-gray-500 font-medium py-10">
                 No menu items found.
@@ -775,12 +775,9 @@ export default function QRMenu(paramsPromise) {
             {filteredMenu.map(item => {
               const quantity = itemQuantities[item._id] || 0;
               return (
-                <li key={item._id} className={` bg-white border border-gray-200 rounded-2xl shadow-md p-2 mb-2 flex flex-col h-full ${!item.available ? 'opacity-50' : 'hover:shadow-lg transition-shadow duration-300'}`} aria-disabled={!item.available}>
-                  {item.image && (
-                    <img src={item.image} alt={item.name} className="w-full h-40 object-cover rounded-t-lg" />
-                  )}
-                  <div className="p-2 flex flex-col flex-grow">
-                    <div className="flex  justify-start items-center gap-2 mb-2">
+                <li key={item._id} className={`  bg-white border border-gray-200 rounded-2xl shadow-md p-4 mb-2 flex flex-col h-[200px] ${!item.available ? 'opacity-50' : 'hover:shadow-lg transition-shadow duration-300'}`} aria-disabled={!item.available}>
+                   <div className="flex flex-col flex-grow">
+                    <div className="flex justify-start items-center gap-2 mb-2">
                       {/* Category Badge */}
                       {item.category === "veg" ? (
                         <div className="veg-badge-container rounded-full border-green-600 border-2 h-5 w-5 flex items-center justify-center">
@@ -793,12 +790,12 @@ export default function QRMenu(paramsPromise) {
                       )}
 
                       {/* Item Name */}
-                      <h3 className="font-semibold text-lg ">{item.name} </h3>
+                      <h3 className="font-semibold text-lg">{item.name}</h3>
                     </div>
                     {/* Item Description */}
-                    <p className="text-gray-600 flex-grow">{item.description}</p>
+                    <p className="text-gray-600 text-sm mb-2 line-clamp-2">{item.description}</p>
                     {/* Item Price */}
-                    <div className="mt-2 font-bold text-amber-600 text-xl">₹{item.price.toFixed(2)}</div>
+                    <div className="font-bold text-amber-600 text-lg">₹{item.price.toFixed(2)}</div>
                     {/* Item Availability */}
                     {!item.available && (
                       <span className="text-red-600 font-semibold mt-1">Unavailable</span>
@@ -858,6 +855,7 @@ export default function QRMenu(paramsPromise) {
                       </button>
 
                     )}
+                   
                   </div>
                 </li>
               );

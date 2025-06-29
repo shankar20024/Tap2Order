@@ -31,27 +31,77 @@ export async function PUT(req, { params }) {
   const session = await checkAdminSession();
   if (!session) return new Response("Unauthorized", { status: 401 });
 
-  const { name, email, role, password, tableLimit } = await req.json();
+  const body = await req.json();
+  console.log('Received update request for user:', id, 'with data:', body);
+  
+  const { name, email, role, password, tableLimit, isActive } = body;
+  
   await connectDB();
 
   try {
     const user = await User.findById(id);
-    if (!user) return new Response("User not found", { status: 404 });
+    if (!user) {
+      console.log('User not found:', id);
+      return new Response(JSON.stringify({ error: "User not found" }), { status: 404 });
+    }
 
-    if (name) user.name = name;
-    if (email) user.email = email;
-    if (role && ["admin", "user"].includes(role)) user.role = role;
-    if (tableLimit !== undefined) user.tableLimit = parseInt(tableLimit) || 10;
+    // Log current user data before update
+    console.log('User before update:', {
+      _id: user._id,
+      isActive: user.isActive,
+      email: user.email
+    });
+
+    // Update only the fields that are provided
+    const updates = {};
+    if (name) updates.name = name;
+    if (email) updates.email = email;
+    if (role && ["admin", "user"].includes(role)) updates.role = role;
+    if (tableLimit !== undefined) updates.tableLimit = parseInt(tableLimit) || 10;
+    if (isActive !== undefined) updates.isActive = isActive;
 
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
-      user.password = hashedPassword;
+      updates.password = hashedPassword;
     }
 
-    await user.save();
-    return new Response("User updated successfully", { status: 200 });
+    console.log('Updating user with:', updates);
+
+    // Use findByIdAndUpdate with { new: true } to return the updated document
+    const updatedUser = await User.findByIdAndUpdate(
+      id, 
+      updates, 
+      { new: true, runValidators: true }
+    );
+    
+    if (!updatedUser) {
+      console.error('Failed to update user:', id);
+      return new Response(JSON.stringify({ error: "Failed to update user" }), { status: 500 });
+    }
+
+    console.log('User after update:', {
+      _id: updatedUser._id,
+      isActive: updatedUser.isActive,
+      email: updatedUser.email
+    });
+
+    // Return the updated user data
+    return new Response(JSON.stringify({
+      message: "User updated successfully",
+      user: updatedUser
+    }), { 
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
   } catch (error) {
-    return new Response("Failed to update user", { status: 500 });
+    console.error("Error updating user:", error);
+    return new Response(JSON.stringify({ 
+      error: "Failed to update user",
+      details: error.message 
+    }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
 
