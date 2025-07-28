@@ -3,6 +3,9 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { Toaster } from 'react-hot-toast';  
 import { Analytics } from '@vercel/analytics/react';
+import LayoutContent from "./LayoutContent";
+
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,7 +40,7 @@ export default function RootLayout({ children }) {
       >
         <Providers>
           <Toaster position="top-right" />
-          {children}
+          <LayoutContent>{children}</LayoutContent>
           <Analytics />
         </Providers>
       </body>

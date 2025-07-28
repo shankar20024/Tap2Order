@@ -181,9 +181,11 @@ export default function OrderHistory() {
             onChange={(e) => handleDateChange(getYear(selectedDate), Number(e.target.value), getDate(selectedDate))}
             className="rounded-lg border border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 p-2"
           >
-            {months.slice(0, currentMonth + 1).map((month, index) => (
-              <option key={index} value={index}>{month}</option>
-            ))}
+            {months
+              .slice(0, getYear(selectedDate) === currentYear ? currentMonth + 1 : 12)
+              .map((month, index) => (
+                <option key={index} value={index}>{month}</option>
+              ))}
           </select>
 
           {/* Date Select */}
@@ -192,6 +194,7 @@ export default function OrderHistory() {
             onChange={(e) => handleDateChange(getYear(selectedDate), getMonth(selectedDate), Number(e.target.value))}
             className="rounded-lg border border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 p-2"
           >
+            
             {Array.from({ length: getDaysInMonth(getYear(selectedDate), getMonth(selectedDate)) }, (_, index) =>
               index + 1
             ).filter(day => {
@@ -200,7 +203,7 @@ export default function OrderHistory() {
               }
               return true;
             }).map(day => (
-              <option key={day} value={day}>{day}</option>
+              <option  key={day} value={day}>{day}</option>
             ))}
           </select>
         </div>

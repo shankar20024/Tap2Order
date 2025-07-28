@@ -7,6 +7,7 @@ import { FaBars, FaClipboardList, FaHistory, FaListAlt } from "react-icons/fa";
 import Logo from "./Logo";
 import NavButton from "./NavButton";
 import Logout from "./Logout";
+import GlobalSearch from "./GlobalSearch";
 
 export default function Header({ className = "", className2 = "" }) {
   const router = useRouter();
@@ -39,16 +40,9 @@ export default function Header({ className = "", className2 = "" }) {
                 onClick={() => router.push("/dashboard")}
               />
             </div>
+            <GlobalSearch />
 
-            {/* Center: Nav Buttons */}
-            {!isDashboard && (
-              <div className="flex gap-3 justify-center">
-                {pathname !== "/table" && <NavButton href="/table" label="Manage Table" icon={<FaListAlt />} />}
-                {pathname !== "/menu" && <NavButton href="/menu" label="Manage Menu" icon={<FaClipboardList />} />}
-                {pathname !== "/order-history" && <NavButton href="/order-history" label="Order History" icon={<FaHistory />} />}
-                <Logout />
-              </div>
-            )}
+            
 
             {/* Right: Username */}
             <div className="flex justify-end">
@@ -59,7 +53,7 @@ export default function Header({ className = "", className2 = "" }) {
             </div>
           </div>
 
-          {/* Mobile: Logo + Hamburger */}
+          {/* Mobile: Logo */}
           <div className="w-full flex sm:hidden items-center justify-between">
             <div className="flex-1 flex justify-center">
               <Logo
@@ -67,15 +61,6 @@ export default function Header({ className = "", className2 = "" }) {
                 onClick={() => router.push("/dashboard")}
               />
             </div>
-
-            {!isDashboard && (
-              <button
-                className="text-2xl text-gray-700"
-                onClick={() => setMenuOpen(!menuOpen)}
-              >
-                <FaBars />
-              </button>
-            )}
           </div>
 
           {/* Mobile: Username */}
@@ -83,16 +68,6 @@ export default function Header({ className = "", className2 = "" }) {
             Logged in as{" "}
             <span className="font-semibold text-amber-700">{username}</span>
           </p>
-
-          {/* Mobile: Dropdown Menu */}
-          {!isDashboard && menuOpen && (
-            <div className="flex sm:hidden flex-col gap-2 mt-2 items-center">
-              {pathname !== "/table" && <NavButton href="/table" label="Manage Table" icon={<FaListAlt />} />}
-              {pathname !== "/menu" && <NavButton href="/menu" label="Manage Menu" icon={<FaClipboardList />} />}
-              {pathname !== "/order-history" && <NavButton href="/order-history" label="Order History" icon={<FaHistory />} />}
-              <Logout />
-            </div>
-          )}
         </div>
       </header>
     </div>

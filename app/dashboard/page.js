@@ -218,12 +218,7 @@ export default function Dashboard() {
             <FaUtensils className="mr-2" />
             Dashboard
           </h1>
-          <div className="flex flex-wrap gap-3 items-center justify-center md:justify-end">
-            <NavButton href="/table" label="Manage Table" icon={<FaListAlt />} />
-            <NavButton href="/menu" label="Manage Menu" icon={<FaClipboardList />} />
-            <NavButton href="/order-history" label="Order History" icon={<FaHistory />} />
-            <LogoutButton />
-          </div>
+          
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
