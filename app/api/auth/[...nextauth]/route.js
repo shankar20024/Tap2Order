@@ -3,11 +3,33 @@ import Credentials from "next-auth/providers/credentials";
 import { connectDB } from "@/lib/mongodb";
 import { User } from "../../../../models/User";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 export const authOptions = {
   providers: [
     Credentials({
       async authorize(credentials) {
+        // Staff token based auth
+        if (credentials?.staffToken) {
+          try {
+            const payload = jwt.verify(credentials.staffToken, process.env.NEXTAUTH_SECRET);
+            // Return as a NextAuth user object
+            return {
+              id: payload.id,
+              email: payload.email,
+              role: payload.role,
+              name: payload.name,
+              isStaff: true,
+              staffId: payload.staffId,
+              hotelOwner: payload.hotelOwner,
+              hotelCode: payload.hotelCode,
+              position: payload.position,
+            };
+          } catch (e) {
+            throw new Error("Invalid or expired staff token");
+          }
+        }
+
         await connectDB();
         const user = await User.findOne({ email: credentials.email });
         if (!user) throw new Error("No user found");
@@ -24,7 +46,8 @@ export const authOptions = {
           id: user._id.toString(),
           email: user.email,
           role: user.role,
-          name: user.name, 
+          name: user.name,
+          businessName: user.businessName || "",
         };
       },
     }),
@@ -36,6 +59,16 @@ export const authOptions = {
         token.id = user.id;
         token.role = user.role;
         token.name = user.name;
+        if (typeof user.businessName !== 'undefined') {
+          token.businessName = user.businessName;
+        }
+        if (user.isStaff) {
+          token.isStaff = true;
+          token.staffId = user.staffId;
+          token.hotelOwner = user.hotelOwner;
+          token.hotelCode = user.hotelCode;
+          token.position = user.position;
+        }
       }
       return token;
     },
@@ -45,6 +78,16 @@ export const authOptions = {
         session.user.id = token.id;
         session.user.role = token.role;
         session.user.name = token.name;
+        if (typeof token.businessName !== 'undefined') {
+          session.user.businessName = token.businessName;
+        }
+        if (token.isStaff) {
+          session.user.isStaff = true;
+          session.user.staffId = token.staffId;
+          session.user.hotelOwner = token.hotelOwner;
+          session.user.hotelCode = token.hotelCode;
+          session.user.position = token.position;
+        }
       }
       return session;
     },

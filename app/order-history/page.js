@@ -6,6 +6,8 @@ import DownloadButton from "../components/DownloadButton";
 import { HiOutlineClipboardList } from "react-icons/hi";
 import Header from "../components/Header";
 import LoadingSpinner from "../components/LoadingSpinner";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 // Simple currency formatter
 const formatCurrency = (amount) => {
@@ -61,6 +63,8 @@ const StatusBadge = ({ status }) => {
 };
 
 export default function OrderHistory() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [orderHistory, setOrderHistory] = useState([]);
   const [itemSales, setItemSales] = useState({});
@@ -74,6 +78,13 @@ export default function OrderHistory() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
 
   // Get current year, month, and date
   const currentYear = getYear(new Date());
@@ -104,8 +115,25 @@ export default function OrderHistory() {
     setSelectedDate(new Date(dateStr));
     
     try {
-      const response = await fetch(`/api/order-history?date=${dateStr}`);
+      // Get authentication token
+      let authHeaders = {};
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        authHeaders['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`/api/order-history?date=${dateStr}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders
+        }
+      });
+      
       if (!response.ok) {
+        if (response.status === 401) {
+          setError('Session expired. Please login again.');
+          return;
+        }
         throw new Error('Failed to fetch order history');
       }
       const data = await response.json();
@@ -131,7 +159,6 @@ export default function OrderHistory() {
   // Fetch initial data
   useEffect(() => {
     const today = new Date();
-    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     handleDateChange(today.getFullYear(), today.getMonth(), today.getDate());
   }, []);
 

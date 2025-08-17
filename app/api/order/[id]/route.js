@@ -2,6 +2,7 @@ import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
 import { NextResponse } from "next/server";
 import { setTableFree } from "@/lib/tableStatus";
+import ably from "@/lib/ably";
 
 // PATCH method to update order status (e.g., for pending orders)
 export async function PATCH(req, { params }) {
@@ -84,7 +85,12 @@ export async function PUT(req, { params }) {
 
     const updatedOrder = await Order.findByIdAndUpdate(
       id,
-      { status: "completed" },
+      {
+        status: "completed",
+        paymentStatus: "paid",
+        paymentMethod: "cash",
+        completedAt: new Date()
+      },
       { new: true }
     );
 
@@ -130,6 +136,14 @@ export async function DELETE(req, { params }) {
 
     await Order.findByIdAndDelete(id);
     await setTableFree(order.userId, order.tableNumber);
+
+    // Publish delete event so all clients remove this order
+    try {
+      const ch = ably.channels.get(`orders:${order.userId}`);
+      await ch.publish('order.deleted', { _id: id, tableNumber: order.tableNumber });
+    } catch (e) {
+      console.error('Ably publish failed on order delete:', e);
+    }
 
     return NextResponse.json({
       message: "Order deleted successfully",

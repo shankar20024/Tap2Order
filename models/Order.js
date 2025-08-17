@@ -57,6 +57,18 @@ const OrderSchema = new mongoose.Schema(
       required: true,
       min: 0, // Ensure total amount is non-negative
     },
+    preparingAt: {
+      type: Date,
+    },
+    servedAt: {
+      type: Date,
+    },
+    completedAt: {
+      type: Date,
+    },
+    cancelledAt: {
+      type: Date,
+    },
     specialRequests: {
       type: String,
       default: "",
@@ -65,13 +77,13 @@ const OrderSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    completedAt: {
-      type: Date, // Timestamp for when the order is completed
-      default: null,
-    },
     cancellationReason: {
       type: String,
       default: "", // Reason for cancellation if applicable
+    },
+    notes: {
+      type: String,
+      default: "",
     },
   },
   { timestamps: true }

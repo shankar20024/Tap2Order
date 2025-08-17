@@ -5,12 +5,14 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FaUtensils,
-  FaCog,
   FaBars,
   FaTimes,
   FaHistory,
   FaListAlt,
   FaClipboardList,
+  FaUsers,
+  FaQuestionCircle,
+  FaSlidersH,
 } from 'react-icons/fa';
 import LogoutButton from './Logout';
 
@@ -19,7 +21,9 @@ const navItems = [
   { name: 'Orders', path: '/order-history', icon: <FaHistory /> },
   { name: 'Menu', path: '/menu', icon: <FaListAlt /> },
   { name: 'Tables', path: '/table', icon: <FaClipboardList /> },
-  { name: 'Settings', path: '/settings', icon: <FaCog /> },
+  { name: 'Staff', path: '/staff-management', icon: <FaUsers /> },
+  { name: 'Order Control', path: '/order-control', icon: <FaSlidersH /> },
+  { name: 'Support', path: '/support', icon: <FaQuestionCircle /> },
 ];
 
 export default function Sidebar() {
@@ -72,7 +76,7 @@ export default function Sidebar() {
             exit="closed"
             variants={sidebarVariants}
             transition={{ type: 'tween', ease: 'easeInOut', duration: 0.3 }}
-            className="fixed px-0 md:pt-16 pt-20  left-0 z-40 h-screen w-64 bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-lg flex flex-col"
+            className="fixed px-0 left-0 z-40 w-64 bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-lg flex flex-col top-20 md:top-16 h-[calc(100vh-5rem)] md:h-[calc(100vh-4rem)]"
           >
             
 

@@ -14,7 +14,7 @@ export default function Logo({ className = "" , onClick }) {
     <h1
       className={`${dancingScript.className}   font-bold text-amber-800 drop-shadow-lg select-none ${className}`}
     >
-      Tap2Order
+      Tap2Orders
     </h1>
     </div>
   );

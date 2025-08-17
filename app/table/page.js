@@ -205,7 +205,7 @@ export default function TablePage() {
   return (
     <div className="min-h-screen bg-gray-100">
       <Header className="w-full" className2="bg-white shadow-md" />
-      <main className="container mx-auto px-4 py-8 mt-16">
+      <main className="container mx-auto px-4 py-8 mt-6">
         <Toaster position="top-right" />
 
         <h1 className="text-4xl font-bold text-amber-700 mb-6 flex items-center justify-center  gap-2 text-center md:hidden">

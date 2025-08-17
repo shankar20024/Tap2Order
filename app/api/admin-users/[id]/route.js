@@ -34,7 +34,7 @@ export async function PUT(req, { params }) {
   const body = await req.json();
   console.log('Received update request for user:', id, 'with data:', body);
   
-  const { name, email, role, password, tableLimit, isActive } = body;
+  const { name, email, role, password, tableLimit, staffLimit, isActive, businessName, businessType, phone, hotelPhone, address } = body;
   
   await connectDB();
 
@@ -58,7 +58,24 @@ export async function PUT(req, { params }) {
     if (email) updates.email = email;
     if (role && ["admin", "user"].includes(role)) updates.role = role;
     if (tableLimit !== undefined) updates.tableLimit = parseInt(tableLimit) || 10;
+    if (staffLimit !== undefined) {
+      const s = parseInt(staffLimit);
+      updates.staffLimit = Math.min(50, Math.max(1, Number.isNaN(s) ? 5 : s));
+    }
     if (isActive !== undefined) updates.isActive = isActive;
+    if (businessName !== undefined) updates.businessName = businessName;
+    if (businessType !== undefined) updates.businessType = businessType;
+    if (phone !== undefined) updates.phone = phone;
+    if (hotelPhone !== undefined) updates.hotelPhone = hotelPhone;
+    if (address && typeof address === 'object') {
+      updates.address = {
+        street: address.street ?? user.address?.street ?? "",
+        city: address.city ?? user.address?.city ?? "",
+        state: address.state ?? user.address?.state ?? "",
+        zipCode: address.zipCode ?? user.address?.zipCode ?? "",
+        country: address.country ?? user.address?.country ?? "India",
+      };
+    }
 
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);

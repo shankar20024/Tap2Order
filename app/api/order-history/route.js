@@ -1,6 +1,8 @@
 import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
 import { DateTime } from "luxon";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../auth/[...nextauth]/route";
 
 export async function GET(request) {
   try {
@@ -13,6 +15,16 @@ export async function GET(request) {
         headers: { 'Content-Type': 'application/json' }
       });
     }
+
+    // Authenticate and determine owner userId for tenant isolation
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    const ownerUserId = session.user.isStaff ? session.user.hotelOwner : session.user.id;
 
     await connectDB();
 
@@ -33,16 +45,19 @@ export async function GET(request) {
 
     // Fetch orders for the selected date
     const dailyOrders = await Order.find({
+      userId: ownerUserId,
       createdAt: { $gte: startOfDay, $lte: endOfDay }
     }).sort({ createdAt: 1 });
 
     // Fetch orders for the entire month
     const monthlyOrders = await Order.find({
+      userId: ownerUserId,
       createdAt: { $gte: startOfMonth, $lte: endOfMonth }
     });
 
     // Fetch orders for the year
     const yearlyOrders = await Order.find({
+      userId: ownerUserId,
       createdAt: { $gte: startOfYear, $lte: endOfYear }
     });
 

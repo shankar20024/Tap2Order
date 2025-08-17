@@ -89,11 +89,24 @@ export async function POST(req) {
 }
 
 // GET method to fetch all orders
-export async function GET() {
+export async function GET(req) {
   try {
     await connectDB();
-    // Only fetch orders that are not completed
-    const orders = await Order.find({ status: { $ne: "completed" } });
+    
+    // Get userId from query parameters
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId');
+    
+    if (!userId) {
+      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    }
+    
+    // Only fetch orders for this specific userId that are not completed
+    const orders = await Order.find({ 
+      userId: userId, 
+      status: { $ne: "completed" } 
+    });
+    
     return NextResponse.json(orders, { status: 200 });
   } catch (error) {
     console.error("Error fetching orders:", error);

@@ -183,7 +183,7 @@ export default function QRMenu(paramsPromise) {
 
 
   useEffect(() => {
-    const channel = ably.channels.get("orders");
+    const channel = ably.channels.get(`orders:${userId}`);
 
     handleOrderUpdate({ data: { tableNumber } });
 
@@ -327,7 +327,7 @@ export default function QRMenu(paramsPromise) {
       }));
 
       // Ably publish with order ID
-      const channel = ably.channels.get("orders");
+      const channel = ably.channels.get(`orders:${userId}`);
       await channel.publish("new-order", {
         _id: orderData._id, // Proper order ID from API
         tableNumber,

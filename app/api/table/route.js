@@ -60,6 +60,7 @@ export async function GET(req) {
 
     // Get all parameters from URL
     const url = new URL(req.url);
+    const userIdParam = url.searchParams.get('userId'); // For staff users to specify hotel owner
     const page = parseInt(url.searchParams.get('page')) || 1;
     const limit = parseInt(url.searchParams.get('limit')) || 10;
     const filter = url.searchParams.get('filter') || 'all';
@@ -67,11 +68,15 @@ export async function GET(req) {
 
     await connectDB();
 
+    // Use userId from query param if provided (for staff users), otherwise use authenticated user's id
+    const targetUserId = userIdParam || session.user.id;
+    console.log('[Table API] Target userId for query:', targetUserId);
+
     // Calculate skip value
     const skip = (page - 1) * limit;
 
     // Build query based on filter and search
-    const query = { userId: session.user.id };
+    const query = { userId: targetUserId };
     if (filter !== 'all') {
       query.status = filter;
     }
@@ -92,7 +97,7 @@ export async function GET(req) {
 
     // Get counts of free and occupied tables for ALL tables of the user (not filtered)
     const counts = await Table.aggregate([
-      { $match: { userId: session.user.id } }, // Only match tables for this user
+      { $match: { userId: targetUserId } }, // Only match tables for this user
       { $group: {
         _id: "$status",
         count: { $sum: 1 }
