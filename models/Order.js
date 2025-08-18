@@ -35,6 +35,10 @@ const OrderSchema = new mongoose.Schema(
           type: String,
           default: "",
         },
+        size: {
+          type: String,
+          default: "",
+        },
       },
     ],
     status: {
@@ -88,5 +92,17 @@ const OrderSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Clear any existing model cache to ensure schema changes are applied
+try {
+  if (mongoose.models.Order) {
+    delete mongoose.models.Order;
+  }
+  if (mongoose.connection.models && mongoose.connection.models.Order) {
+    delete mongoose.connection.models.Order;
+  }
+} catch (error) {
+  console.log('Model cache clear attempt:', error.message);
+}
 
 export default mongoose.models.Order || mongoose.model("Order", OrderSchema);

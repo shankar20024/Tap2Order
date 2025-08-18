@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import mongoose from 'mongoose';
+import { User } from '@/models/User';
 
 export async function GET(req) {
   try {
@@ -15,22 +15,15 @@ export async function GET(req) {
     // Connect to MongoDB
     await connectDB();
 
-    // Define User model if not already defined
-    const User = mongoose.models.User || mongoose.model('User', new mongoose.Schema({
-      name: String,
-      email: String,
-      role: String
-    }));
-
-    // Find user by ID
-    const user = await User.findById(userId).select('name email role');
+    // Find user by ID and get business name
+    const user = await User.findById(userId).select('name email role businessName');
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     return NextResponse.json({
-      name: user.name,
+      name: user.businessName || user.name, // Use businessName, fallback to personal name
       email: user.email,
       role: user.role,
     });

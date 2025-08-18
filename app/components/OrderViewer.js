@@ -21,12 +21,12 @@ export default function OrderViewer({ userId, tableNumber, isOpen, onClose }) {
     const loadCart = async () => {
         try {
             setLoading(true);
-            const res = await fetch(`/api/order/active?userId=${userId}&tableNumber=${tableNumber}`);
+            const res = await fetch(`/api/order/all?userId=${userId}&tableNumber=${tableNumber}`);
             const data = await res.json();
 
             if (res.ok && data.orders) {
                 if (data.orders.length === 0) {
-                    // No active orders
+                    // No orders found
                     setOrders([]);
                     const stored = localStorage.getItem("cart");
                     if (stored) {
@@ -41,26 +41,45 @@ export default function OrderViewer({ userId, tableNumber, isOpen, onClose }) {
                         setCart(formattedCart);
                     }
                 } else {
-                    // Load all active orders
-                    setOrders(
-                        data.orders.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-                      );
-                      
+                    // Debug: Log received orders data
+                    console.log('[OrderViewer] Received orders:', data.orders);
+                    data.orders.forEach((order, index) => {
+                        console.log(`[OrderViewer] Order ${index} items:`, order.items);
+                        order.items.forEach((item, itemIndex) => {
+                            console.log(`[OrderViewer] Order ${index} Item ${itemIndex}:`, {
+                                name: item.name,
+                                size: item.size,
+                                price: item.price,
+                                quantity: item.quantity
+                            });
+                        });
+                    });
 
-                    const currentOrder = data.orders[0]; // assume latest one for cart
-                    const formattedItems = currentOrder.items.map(item => ({
-                        menuItemId: item.menuItemId,
-                        name: item.name,
-                        price: item.price,
-                        quantity: item.quantity,
-                        notes: item.notes || ''
-                    }));
-                    setCart(formattedItems);
-                    setOrderPlaced(true);
+                    // Load all orders for this user and table
+                    setOrders(
+                        data.orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                    );
+                    
+                    // Don't automatically set cart from orders - let user manage their current cart
+                    const stored = localStorage.getItem("cart");
+                    if (stored) {
+                        const storedCart = JSON.parse(stored);
+                        const formattedCart = storedCart.map(item => ({
+                            menuItemId: item.menuItemId,
+                            name: item.name,
+                            price: item.price,
+                            quantity: item.quantity,
+                            notes: item.notes || ''
+                        }));
+                        setCart(formattedCart);
+                    }
                 }
+            } else {
+                console.error("Failed to fetch orders:", data.error);
+                setOrders([]);
             }
         } catch (err) {
-            console.error("Failed to load active order", err);
+            console.error("Failed to load orders", err);
             setOrders([]);
         } finally {
             setLoading(false);
@@ -121,11 +140,14 @@ export default function OrderViewer({ userId, tableNumber, isOpen, onClose }) {
                                             <div key={item.menuItemId || item.name} className="flex justify-between items-center">
                                                 <div className="flex flex-col">
                                                     <span className="font-medium">{item.name}</span>
-                                                    <span className="text-sm text-gray-500">Qty: {item.quantity}</span>
+                                                    <div className="text-sm text-gray-500">
+                                                        <span>Qty: {item.quantity}</span>
+                                                        {item.size && <span> • Size: {item.size}</span>}
+                                                    </div>
                                                 </div>
                                                 <div className="text-right">
                                                     <span className="block">₹{item.price} x {item.quantity}</span>
-                                                    {/* <span className="font-semibold">₹{item.price * item.quantity}</span> */}
+                                                    <span className="font-semibold text-sm">₹{(item.price * item.quantity).toFixed(2)}</span>
                                                 </div>
                                             </div>
                                         ))}

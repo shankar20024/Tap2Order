@@ -67,9 +67,47 @@ export default function QRMenu(paramsPromise) {
 
   // New state: quantity selectors per menu item _id, default 0
   const [itemQuantities, setItemQuantities] = useState({});
+  // State for selected size per item
+  const [selectedSizes, setSelectedSizes] = useState({});
   // const [previousOrder, ] = useState(null); // Store previous order
 
+  // Helper function to get display price from menu item
+  const getDisplayPrice = (item) => {
+    // If item has direct price field, use it
+    if (item.price && typeof item.price === 'number') {
+      return item.price;
+    }
+    
+    // If item has pricing array, get the first price or lowest price
+    if (item.pricing && Array.isArray(item.pricing) && item.pricing.length > 0) {
+      // Return the first price option or find the lowest price
+      return item.pricing[0].price;
+    }
+    
+    // Fallback to 0 if no price found
+    return 0;
+  };
 
+  // Helper function to get price for selected size
+  const getPriceForSize = (item, sizeIndex = 0) => {
+    if (item.pricing && Array.isArray(item.pricing) && item.pricing.length > 0) {
+      return item.pricing[sizeIndex]?.price || item.pricing[0].price;
+    }
+    return item.price || 0;
+  };
+
+  // Helper function to check if item has multiple sizes
+  const hasMultipleSizes = (item) => {
+    return item.pricing && Array.isArray(item.pricing) && item.pricing.length > 1;
+  };
+
+  // Handle size selection
+  const handleSizeSelection = (itemId, sizeIndex) => {
+    setSelectedSizes(prev => ({
+      ...prev,
+      [itemId]: sizeIndex
+    }));
+  };
 
   const fetchMenu = async () => {
     try {
@@ -232,7 +270,8 @@ export default function QRMenu(paramsPromise) {
           name: item.name,
           price: item.price,
           quantity: Math.max(1, quantity), // Ensure quantity is at least 1
-          notes: ''
+          notes: '',
+          size: item.size
         }];
       }
       return prevCart; // Return unchanged if item not found and not adding new
@@ -296,6 +335,17 @@ export default function QRMenu(paramsPromise) {
     setOrderMessage('');
 
     try {
+      // Debug: Log cart data before sending
+      console.log('[QR Menu] Cart data before sending to API:', cart);
+      cart.forEach((item, index) => {
+        console.log(`[QR Menu] Cart item ${index}:`, {
+          name: item.name,
+          size: item.size,
+          price: item.price,
+          quantity: item.quantity
+        });
+      });
+
       const res = await fetch('/api/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -306,7 +356,8 @@ export default function QRMenu(paramsPromise) {
             name: item.name,
             price: item.price,
             quantity: item.quantity,
-            notes: item.notes || ''
+            notes: item.notes || '',
+            size: item.size || ''
           })),
           userId,
           orderMessage
@@ -326,13 +377,21 @@ export default function QRMenu(paramsPromise) {
         total: getTotalPrice()
       }));
 
-      // Ably publish with order ID
+      // Ably publish with order ID and complete order data
       const channel = ably.channels.get(`orders:${userId}`);
       await channel.publish("new-order", {
         _id: orderData._id, // Proper order ID from API
         tableNumber,
-        items: detailedCart,
+        items: cart.map(item => ({
+          menuItemId: item.menuItemId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          size: item.size || ''
+        })),
+        totalAmount: getTotalPrice(),
         message: orderMessage,
+        createdAt: new Date().toISOString(),
         timestamp: Date.now(),
         userId: userId,
         status: "pending"
@@ -408,7 +467,25 @@ export default function QRMenu(paramsPromise) {
     }
     const qty = itemQuantities[item._id] || 0;
     if (qty <= 0) return;
-    addToCart(item, qty);
+    
+    // Get the current price based on selected size
+    const selectedSizeIndex = selectedSizes[item._id] || 0;
+    const currentPrice = getPriceForSize(item, selectedSizeIndex);
+    
+    // Get size information
+    let sizeInfo = "";
+    if (hasMultipleSizes(item) && item.pricing && item.pricing[selectedSizeIndex]) {
+      sizeInfo = item.pricing[selectedSizeIndex].size;
+    }
+    
+    // Create item object with correct price and size
+    const itemWithPrice = {
+      ...item,
+      price: currentPrice,
+      size: sizeInfo
+    };
+    
+    addToCart(itemWithPrice, qty);
     setItemQuantities(qtys => ({ ...qtys, [item._id]: 0 }));
     
     // Show arrow animation
@@ -585,7 +662,7 @@ export default function QRMenu(paramsPromise) {
                   <button
                     onClick={() => setCartOpen(false)}
                     aria-label="Close cart"
-                    className="p-2 -mr-2 text-gray-700 hover:text-amber-600 focus:outline-none"
+                    className="p-2 -mr-2 text-gray-700 hover:text-amber-600 focus:outline-none focus:ring-4 focus:ring-amber-300"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -610,6 +687,11 @@ export default function QRMenu(paramsPromise) {
                                 <p className="text-sm text-green-600 font-medium mt-1">
                                   Subtotal: ₹{getItemSubtotal(item)}
                                 </p>
+                                {item.size && (
+                                  <p className="text-sm text-gray-500 mt-1">
+                                    Size: {item.size}
+                                  </p>
+                                )}
                               </div>
                               <div className="flex items-center space-x-2">
                                 <button
@@ -774,6 +856,9 @@ export default function QRMenu(paramsPromise) {
             )}
             {filteredMenu.map(item => {
               const quantity = itemQuantities[item._id] || 0;
+              const selectedSizeIndex = selectedSizes[item._id] || 0;
+              const currentPrice = getPriceForSize(item, selectedSizeIndex);
+              
               return (
                 <li key={item._id} className={`  bg-white border border-gray-200 rounded-2xl shadow-md p-4 mb-2 flex flex-col h-[200px] ${!item.available ? 'opacity-50' : 'hover:shadow-lg transition-shadow duration-300'}`} aria-disabled={!item.available}>
                    <div className="flex flex-col flex-grow">
@@ -794,8 +879,33 @@ export default function QRMenu(paramsPromise) {
                     </div>
                     {/* Item Description */}
                     <p className="text-gray-600 text-sm mb-2 line-clamp-2">{item.description}</p>
-                    {/* Item Price */}
-                    <div className="font-bold text-amber-600 text-lg">₹{item.price.toFixed(2)}</div>
+                    
+                    {/* Price and Size Selection */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-bold text-amber-600 text-lg">₹{currentPrice.toFixed(0)}</div>
+                      
+                      {/* Size Selection Boxes */}
+                      {hasMultipleSizes(item) && item.available && (
+                        <div className="flex gap-1">
+                          {item.pricing.map((pricing, index) => (
+                            <button
+                              key={index}
+                              onClick={() => handleSizeSelection(item._id, index)}
+                              className={`px-2 py-1 text-xs font-semibold rounded-md border transition-all duration-200 ${
+                                selectedSizeIndex === index
+                                  ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                                  : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-amber-100 hover:border-amber-300'
+                              }`}
+                              disabled={orderPlaced}
+                              title={`${pricing.size} - ₹${pricing.price}`}
+                            >
+                              {pricing.size}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
                     {/* Item Availability */}
                     {!item.available && (
                       <span className="text-red-600 font-semibold mt-1">Unavailable</span>

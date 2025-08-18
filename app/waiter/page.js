@@ -24,7 +24,7 @@ export default function WaiterDashboard() {
   // Tenant userId resolution
   const tenantUserId = useMemo(() => {
     const base = session?.user?.id;
-    const isStaff = session?.user?.role === 'staff';
+    const isStaff = session?.user?.role === 'staff' || session?.user?.role === 'waiter' || session?.user?.role === 'kitchen' || session?.user?.role === 'manager';
     const normalize = (val) => {
       if (!val) return undefined;
       if (typeof val === 'string') return val;
@@ -32,31 +32,27 @@ export default function WaiterDashboard() {
       try { return String(val); } catch { return undefined; }
     };
     
-    console.log('[Waiter] Debug tenant resolution:', {
-      isStaff,
-      sessionUserId: base,
-      sessionHotelOwner: session?.user?.hotelOwner,
-      storageUserId: typeof window !== 'undefined' ? localStorage.getItem('selectedHotelUserId') : null
-    });
+   
     
     // Debug: Full session object
     console.log('[Waiter] Full session object:', session);
     
-    // TEMPORARY FIX: Force hotel owner ID for staff user
-    if (base === '68a06ff31151e8e48efd5ff2') {
-      console.log('[Waiter] Detected staff user, forcing hotel owner ID');
-      return '683b0186bd26b46458517048';
-    }
-    
     if (isStaff) {
+      // For staff users, get hotelOwner from session (set during staff login)
       const fromSession = normalize(session?.user?.hotelOwner);
-      if (fromSession) return fromSession; // prefer session-provided owner id
+      if (fromSession) {
+        console.log('[Waiter] Staff tenant resolved from session:', fromSession);
+        return fromSession;
+      }
+      
+      // Fallback to localStorage for staff
       if (typeof window === 'undefined') return undefined;
       const fromStorage = normalize(localStorage.getItem('selectedHotelUserId'));
-      console.log('[Waiter] Staff tenant resolved to:', fromStorage);
+      console.log('[Waiter] Staff tenant resolved from storage:', fromStorage);
       return fromStorage || undefined;
     }
-    // owners/admins
+    
+    // For owners/admins, use their own ID
     console.log('[Waiter] Owner tenant resolved to:', normalize(base));
     return normalize(base);
   }, [session?.user?.id, session?.user?.role, session?.user?.hotelOwner]);
@@ -153,11 +149,44 @@ export default function WaiterDashboard() {
       // Subscribe to order updates (use tenantUserId)
       const orderCh = ably.channels.get(`orders:${tenantUserId}`);
       orderCh.subscribe(['order.created', 'order.updated', 'order.deleted'], (message) => {
-        handleOrderUpdate(message);
+        console.log('[Waiter] Legacy order event received:', message);
+        const { name: eventType, data: orderData } = message;
+        
+        if (eventType === 'order.created') {
+          setOrders(prevOrders => {
+            const exists = prevOrders.some(order => order._id === orderData._id);
+            if (!exists) {
+              return [orderData, ...prevOrders];
+            }
+            return prevOrders;
+          });
+        } else if (eventType === 'order.updated') {
+          setOrders(prevOrders => 
+            prevOrders.map(order => 
+              order._id === orderData._id ? { ...order, ...orderData } : order
+            )
+          );
+        } else if (eventType === 'order.deleted') {
+          setOrders(prevOrders => 
+            prevOrders.filter(order => order._id !== orderData._id)
+          );
+        }
       });
-      // Legacy compatibility (QR may publish these)
-      orderCh.subscribe('new-order', (msg) => handleOrderUpdate({ name: 'order.created', data: msg.data }));
-      orderCh.subscribe('order-updated', (msg) => handleOrderUpdate({ name: 'order.updated', data: msg.data }));
+      
+      // Subscribe to new-order events from QR menu
+      orderCh.subscribe('new-order', (message) => {
+        console.log('[Waiter] New order from QR received:', message.data);
+        const newOrder = message.data;
+        
+        setOrders(prevOrders => {
+          const exists = prevOrders.some(order => order._id === newOrder._id);
+          if (!exists) {
+            return [newOrder, ...prevOrders];
+          }
+          return prevOrders;
+        });
+      });
+      
       console.log('[Waiter] Subscribed orders channel:', `orders:${tenantUserId}`);
       setOrderChannel(orderCh);
 
@@ -175,68 +204,18 @@ export default function WaiterDashboard() {
     }
   };
 
-  const handleOrderUpdate = (message) => {
-    const { name: eventType, data: orderData } = message;
-    
-    switch (eventType) {
-      case 'order.created':
-        setOrders(prev => {
-          const existing = prev.find(order => order._id === orderData._id);
-          if (existing) return prev;
-          return [...prev, orderData];
-        });
-        toast.success(`New order received for Table ${orderData.tableNumber}`);
-        break;
-        
-      case 'order.updated':
-        setOrders(prev => prev.map(order => 
-          order._id === orderData._id ? orderData : order
-        ));
-        toast.info(`Order updated for Table ${orderData.tableNumber}`);
-        break;
-        
-      case 'order.deleted':
-        setOrders(prev => prev.filter(order => order._id !== orderData._id));
-        toast.info(`Order cancelled for Table ${orderData.tableNumber}`);
-        break;
-    }
-  };
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    // Remove duplicate subscription - use only the main one with tenantUserId
+    console.log('[Waiter] Session-based subscription removed - using tenantUserId subscription instead');
+  }, [session?.user?.id]);
 
   const handleTableUpdate = (message) => {
     const { name: eventType, data: tableData } = message;
-    
-    switch (eventType) {
-      case 'table.created':
-        setTables(prev => {
-          const existing = prev.find(table => table._id === tableData._id);
-          if (existing) return prev;
-          return [...prev, tableData];
-        });
-        break;
-        
-      case 'table.updated':
-        setTables(prev => prev.map(table => 
-          table._id === tableData._id ? tableData : table
-        ));
-        break;
-        
-      case 'table.deleted':
-        setTables(prev => prev.filter(table => table._id !== tableData._id));
-        break;
-    }
+    console.log('[Waiter] Table update received:', { eventType, tableData });
+    fetchTables();
   };
-
-  // Cleanup Ably connection
-  useEffect(() => {
-    return () => {
-      if (orderChannel) {
-        orderChannel.unsubscribe();
-      }
-      if (tableChannel) {
-        tableChannel.unsubscribe();
-      }
-    };
-  }, [orderChannel, tableChannel]);
 
   const fetchData = async () => {
     if (!tenantUserId) return;
@@ -259,8 +238,6 @@ export default function WaiterDashboard() {
           }
         })
       ]);
-
-      console.log('[Waiter] Orders fetch status:', ordersRes.status, 'Tables fetch status:', tablesRes.status);
 
       if (ordersRes.ok) {
         const ordersData = await ordersRes.json();
@@ -405,7 +382,7 @@ export default function WaiterDashboard() {
          {/* Compact Header */}
          <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50">
            <div className="flex items-center justify-between">
-             <div className="flex items-center gap-3">
+             <div className="flex items-center gap-4">
                <div className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-md">
                  #{order._id?.slice(-4) || 'N/A'}
                </div>
@@ -429,7 +406,16 @@ export default function WaiterDashboard() {
                    <span className="bg-gray-100 text-gray-700 text-xs px-1.5 py-0.5 rounded font-medium">
                      {item.quantity}x
                    </span>
-                   <span className="text-gray-900 truncate font-medium">{item.name}</span>
+                   <div className="flex flex-col flex-1 min-w-0">
+                     <div className="flex items-center gap-2">
+                       <span className="text-gray-900 truncate font-medium">{item.name}</span>
+                       {item.size && item.size.trim() !== '' && (
+                         <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded font-medium">
+                           {item.size}
+                         </span>
+                       )}
+                     </div>
+                   </div>
                  </div>
                  <span className="text-gray-600 text-xs ml-2">₹{item.price}</span>
                </div>
@@ -446,12 +432,39 @@ export default function WaiterDashboard() {
          <div className="px-4 py-3 bg-gray-50/30 border-t border-gray-100">
            <div className="flex items-center justify-between">
              <div className="text-sm">
-               <div className="font-bold text-gray-900">₹{order.totalAmount}</div>
+               <div className="font-bold text-gray-900">
+                 ₹{order.totalAmount || (order.items || []).reduce((sum, item) => sum + (item.price * item.quantity), 0)}
+               </div>
                <div className="text-xs text-gray-500">
-                 {new Date(order.createdAt).toLocaleTimeString('en-IN', { 
-                   hour: '2-digit', 
-                   minute: '2-digit' 
-                 })}
+                 {(() => {
+                   console.log('[Waiter] Order time debug:', {
+                     orderId: order._id,
+                     createdAt: order.createdAt,
+                     timestamp: order.timestamp,
+                     type: typeof order.createdAt
+                   });
+                   
+                   // Try createdAt first, then timestamp as fallback
+                   const timeToShow = order.createdAt || order.timestamp;
+                   
+                   if (!timeToShow) {
+                     return 'No time available';
+                   }
+                   
+                   try {
+                     const date = new Date(timeToShow);
+                     if (isNaN(date.getTime())) {
+                       return 'Invalid time format';
+                     }
+                     return date.toLocaleTimeString('en-IN', { 
+                       hour: '2-digit', 
+                       minute: '2-digit' 
+                     });
+                   } catch (e) {
+                     console.error('[Waiter] Time parsing error:', e);
+                     return 'Time error';
+                   }
+                 })()}
                </div>
              </div>
              {order.status !== 'served' && order.status !== 'completed' && (
@@ -540,7 +553,7 @@ export default function WaiterDashboard() {
                 <div className="flex items-center gap-4">
                   <div className="bg-white/20 backdrop-blur-sm rounded-lg lg:rounded-xl p-2 lg:p-3">
                     <svg className="w-6 h-6 lg:w-8 lg:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110 4m0-4v2m0 4a2 2 0 100-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0 4a2 2 0 100-4" />
                     </svg>
                   </div>
                   <div>

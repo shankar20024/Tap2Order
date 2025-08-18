@@ -571,6 +571,9 @@ const TableDetailsModal = ({ tableNumber, orders, onClose, onPrint }) => {
                         <div className="flex-1">
                           <span className="text-sm text-gray-800">{item.name}</span>
                           <span className="text-xs text-gray-500 ml-2">×{item.quantity}</span>
+                          {item.size && (
+                            <span className="text-xs text-blue-600 ml-2">• {item.size}</span>
+                          )}
                         </div>
                         <span className="text-sm font-medium text-gray-700">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
                       </div>
@@ -756,10 +759,9 @@ export default function Dashboard() {
         throw new Error('Failed to fetch orders');
       }
       const data = await response.json();
-      const active = data.filter(o => o.status !== 'completed' && o.status !== 'cancelled' && o.status !== 'served');
-      const bills = data.filter(o => o.status === 'served' && o.paymentStatus !== 'paid');
-      setOrders(active);
-      setBillOrders(bills);
+      // Filter out cancelled orders at fetch level - don't fetch them at all
+      const filteredData = data.filter(o => o.status !== 'cancelled');
+      setOrders(filteredData);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -945,12 +947,8 @@ export default function Dashboard() {
   const groupedOrders = groupOrdersByTable(orders);
 
   const isOrderPaid = (o) => {
-    const norm = (v) => (v == null ? '' : String(v).toLowerCase().trim());
-    const paidBool = o?.billPaid === true || o?.isPaid === true || o?.paid === true;
-    const paidStr = ['paid', 'settled', 'billed', 'closed', 'completed'];
-    const fields = [o?.paymentStatus, o?.payment_status, o?.billStatus, o?.status];
-    const anyPaidKeyword = fields.some(f => paidStr.includes(norm(f)));
-    return paidBool || anyPaidKeyword;
+    // Only hide orders when both status is 'completed' AND paymentStatus is 'paid'
+    return o?.status === 'completed' && o?.paymentStatus === 'paid';
   };
 
   const getOrderTableKey = (o) => {
@@ -1022,7 +1020,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 overflow-x-hidden">
       <Header />
       
       {/* Main Content Container */}
@@ -1073,7 +1071,7 @@ export default function Dashboard() {
         </div>
 
         {/* Enhanced Stats Cards Grid - Fully Responsive */}
-        <div className="grid grid-cols-2 w-300 ml-18 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mb-6 sm:mb-12">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 lg:mb-12">
           <StatsCard
             title="Total Orders"
             value={stats.totalOrders}
@@ -1110,22 +1108,54 @@ export default function Dashboard() {
             icon={FaTable}
             color="green"
           />
+          <StatsCard
+            title="Revenue"
+            value={`₹${stats.totalRevenue.toLocaleString('en-IN')}`}
+            icon={FaRupeeSign}
+            color="purple"
+            trend="up"
+            trendValue="15"
+          />
         </div>
 
         {/* Table Management Grid */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-800 flex items-center"><FaTable className="mr-2 text-blue-600"/>Tables</h2>
             <div className="text-xs text-gray-500">{Object.keys(groupedOrders).length} active</div>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 xl:grid-cols-10 gap-1">
-            {Object.keys(groupedOrders).map((tn) => {
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6 min-h-[300px] h-auto overflow-hidden">
+            {Object.keys(groupedOrders).length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full min-h-[250px] text-center">
+                <div className="bg-gradient-to-br from-blue-100 to-indigo-100 p-6 rounded-full mb-4">
+                  <FaTable className="text-4xl text-blue-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">No Active Tables</h3>
+                <p className="text-gray-600 mb-4 max-w-md">
+                  Tables with active orders will appear here. Start taking orders to see table activity.
+                </p>
+                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                  <FaUtensils className="text-amber-500" />
+                  <span>Ready to serve your customers</span>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 xl:grid-cols-10 gap-3 sm:gap-4 auto-rows-max">
+                {Object.keys(groupedOrders).map((tn) => {
               const ordersForTable = groupedOrders[tn];
-              const activeOrders = ordersForTable.filter(o => o.status !== 'completed' && o.status !== 'cancelled');
+              // Debug: Log orders for this table
+              
+              
+              // Show all orders except those that are completed AND paid
+              const activeOrders = ordersForTable.filter(o => !isOrderPaid(o));
+              
               const total = activeOrders.reduce((sum, o)=> sum + (o.totalAmount || (o.items||o.cart||[]).reduce((s,i)=>s+i.price*i.quantity,0)), 0);
               const hasOrders = activeOrders.length > 0;
-              const nonCancelled = ordersForTable.filter(o => o.status !== 'cancelled');
-              const hasPaid = nonCancelled.length > 0 && nonCancelled.every(o => isOrderPaid(o));
+              const hasPaid = false; // Since we're showing all non-completed orders
+              
+              // Only render table if it has active orders
+              if (!hasOrders) return null;
+              
               return (
                 <TableBox
                   key={tn}
@@ -1139,7 +1169,9 @@ export default function Dashboard() {
                   onMarkPaid={() => markTablePaid(tn, activeOrders, ordersForTable)}
                 />
               );
-            })}
+                })}
+              </div>
+            )}
           </div>
         </div>
 

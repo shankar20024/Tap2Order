@@ -27,7 +27,8 @@ export async function POST(req) {
       price: Number(item.price) || 0,
       quantity: Number(item.quantity) || 1,
       name: String(item.name || 'Unnamed Item'),
-      notes: String(item.notes || '')
+      notes: String(item.notes || ''),
+      size: String(item.size || '')
     }));
 
     // Validate processed cart
@@ -107,7 +108,7 @@ export async function GET(req) {
       status: { $ne: "completed" } 
     });
     
-    return NextResponse.json(orders, { status: 200 });
+    return NextResponse.json(orders);
   } catch (error) {
     console.error("Error fetching orders:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
