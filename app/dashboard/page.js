@@ -1165,16 +1165,14 @@ export default function Dashboard() {
             value={stats.totalOrders}
             icon={FaClipboardList}
             color="blue"
-            trend="up"
-            trendValue="12"
+            
           />
           <StatsCard
             title="Pending"
             value={stats.pendingOrders}
             icon={FaClock}
             color="amber"
-            trend="down"
-            trendValue="5"
+            
           />
           <StatsCard
             title="Preparing"
@@ -1187,8 +1185,8 @@ export default function Dashboard() {
             value={stats.readyOrders}
             icon={FaCheckCircle}
             color="green"
-            trend="up"
-            trendValue="8"
+            
+            
           />
           <StatsCard
             title="Active Tables"
@@ -1201,8 +1199,7 @@ export default function Dashboard() {
             value={`₹${stats.totalRevenue.toLocaleString('en-IN')}`}
             icon={FaRupeeSign}
             color="purple"
-            trend="up"
-            trendValue="15"
+            
           />
         </div>
 
