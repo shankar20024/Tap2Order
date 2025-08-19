@@ -53,17 +53,6 @@ export default function useOrder(userId, tableNumber, cart, getTotalPrice, reset
     setPlacingOrder(true);
 
     try {
-      // Debug logging
-      console.log('[QR Menu] Cart data before sending to API:', cart);
-      cart.forEach((item, index) => {
-        console.log(`[QR Menu] Cart item ${index}:`, {
-          name: item.name,
-          size: item.size,
-          price: item.price,
-          quantity: item.quantity
-        });
-      });
-
       const res = await fetch('/api/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -106,23 +95,14 @@ export default function useOrder(userId, tableNumber, cart, getTotalPrice, reset
         status: "pending"
       });
 
-      toast.success(`Order placed successfully`);
-      setOrderPlaced(true);
+      toast.success(`Order #${orderData._id.slice(-4)} placed successfully!`);
       
-      // Clear cart immediately after successful order placement
+      // Reset cart and order message after successful order
       resetCart();
-
-      // Subscribe to order updates for this specific order
-      channel.subscribe("order-updated", async (msg) => {
-        const updatedOrder = msg.data;
-        if (updatedOrder._id === orderData._id) {
-          if (updatedOrder.status === "completed" || updatedOrder.status === "cancelled") {
-            setOrderPlaced(false);
-            setOrderMessage('');
-            toast.success(`Order #${updatedOrder._id} has been ${updatedOrder.status === "completed" ? "completed" : "cancelled"}. You can place a new order.`);
-          }
-        }
-      });
+      setOrderMessage('');
+      
+      // Reset order placed state to allow new orders
+      setOrderPlaced(false);
 
       setPrepTime(15 + Math.floor(Math.random() * 15));
     } catch (err) {
