@@ -34,6 +34,8 @@ import AlertPing from "../components/AlertPing";
 import Header from "../components/Header";
 import NavButton from "../components/NavButton";
 import LogoutButton from "../components/Logout";
+import PrinterSettingsModal from '../components/PrinterSettingsModal';
+import thermalPrinter from "@/lib/thermalPrinter";
 import toast from "react-hot-toast";
 import { useSession } from "next-auth/react";
 
@@ -614,6 +616,9 @@ export default function Dashboard() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [tableModal, setTableModal] = useState(null);
+  const [showPrinterSettings, setShowPrinterSettings] = useState(false);
+  const [availablePrinters, setAvailablePrinters] = useState([]);
+  const [selectedPrinter, setSelectedPrinter] = useState('');
   const { data: session, status } = useSession();
   const router = useRouter();
   const refreshTimerRef = useRef(null);
@@ -847,45 +852,119 @@ export default function Dashboard() {
     }
   };
 
-  const printBill = (tableNumber, items, total) => {
-    const win = window.open('', '_blank');
-    const now = new Date().toLocaleString('en-IN');
-    
-    win.document.write(`<!DOCTYPE html><html><head><title>Bill - Table ${tableNumber}</title>`);
-    win.document.write(`<style>
-      body { font-family: Arial, sans-serif; padding: 20px; }
-      table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-      th { background-color: #f2f2f2; }
-      .header { text-align: center; margin-bottom: 20px; }
-      .total { font-weight: bold; font-size: 1.2em; }
-    </style>`);
-    win.document.write(`</head><body>`);
-    win.document.write(`<div class="header"><h1>Tap2Order Bill</h1></div>`);
-    win.document.write(`<div><strong>Date:</strong> ${now}</div>`);
-    win.document.write(`<div><strong>Table:</strong> ${tableNumber}</div>`);
-    win.document.write(`<table><thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead><tbody>`);
-    items.forEach(i => {
-      const lineTotal = (i.price || 0) * (i.quantity || 0);
-      win.document.write(`<tr><td>${i.name}</td><td>${i.quantity}</td><td>₹${i.price}</td><td>₹${lineTotal}</td></tr>`);
-    });
-    win.document.write(`</tbody><tfoot><tr class="total"><td colspan="3">Grand Total</td><td>₹${total}</td></tr></tfoot></table>`);
-    win.document.write(`</body></html>`);
-    win.document.close();
-    win.focus();
-    win.print();
-    win.close();
+  const thermalPrintBill = async (tableNumber, items, total, orderIds) => {
+    try {
+      if (!selectedPrinter) {
+        throw new Error('Please select a printer first');
+      }
+      
+      await thermalPrinter.printReceipt({
+        tableNumber,
+        items,
+        total,
+        orderIds,
+        printer: selectedPrinter // Explicitly pass selected printer
+      });
+      
+      toast.success(`Receipt printed for Table ${tableNumber}`);
+    } catch (error) {
+      console.error('Thermal printing failed:', error);
+      
+      // Show user-friendly error with fallback option
+      const errorMessage = error.message || 'Thermal printing failed';
+      
+      if (errorMessage.includes('printer')) {
+        // Printer related error - offer printer setup
+        toast.error(
+          <div>
+            <p className="font-medium">Printer Error</p>
+            <p className="text-sm mt-1">{errorMessage}</p>
+            <button 
+              onClick={() => setShowPrinterSettings(true)}
+              className="mt-2 text-blue-600 underline text-sm"
+            >
+              Configure Printer Settings
+            </button>
+          </div>,
+          { duration: 8000 }
+        );
+      } else {
+        // Other errors - offer browser print fallback
+        toast.error(
+          <div>
+            <p className="font-medium">Printing Failed</p>
+            <p className="text-sm mt-1">{errorMessage}</p>
+            <button 
+              onClick={() => fallbackBrowserPrint(tableNumber, items, total, orderIds)}
+              className="mt-2 text-blue-600 underline text-sm"
+            >
+              Use Browser Print Instead
+            </button>
+          </div>,
+          { duration: 8000 }
+        );
+      }
+    }
   };
 
-  const completeBill = async (orders) => {
-    try {
-      for (const order of orders) {
-        await completeOrder(order._id);
-      }
-      toast.success("All orders completed and bill settled!");
-    } catch (error) {
-      toast.error("Error completing bill");
-    }
+  const fallbackBrowserPrint = (tableNumber, items, total, orderIds) => {
+    const printContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto;">
+        <h2 style="text-align: center; margin-bottom: 20px;">Table ${tableNumber} Bill</h2>
+        <p><strong>Order IDs:</strong> ${orderIds.join(', ')}</p>
+        <hr style="margin: 15px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 1px solid #ddd;">
+              <th style="text-align: left; padding: 8px;">Item</th>
+              <th style="text-align: center; padding: 8px;">Qty</th>
+              <th style="text-align: right; padding: 8px;">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(item => `
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px;">${item.name}</td>
+                <td style="text-align: center; padding: 8px;">${item.quantity}</td>
+                <td style="text-align: right; padding: 8px;">₹${(item.price * item.quantity).toFixed(2)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <hr style="margin: 15px 0;">
+        <div style="text-align: right;">
+          <p style="margin: 5px 0;"><strong>Total: ₹${total.toFixed(2)}</strong></p>
+        </div>
+        <p style="text-align: center; margin-top: 20px; font-size: 12px;">Thank you for your visit!</p>
+      </div>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Table ${tableNumber} Bill</title>
+          <style>
+            @media print {
+              body { margin: 0; }
+              @page { margin: 10mm; }
+            }
+          </style>
+        </head>
+        <body>
+          ${printContent}
+          <script>
+            window.onload = function() {
+              window.print();
+              window.onafterprint = function() {
+                window.close();
+              };
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const markOrderPaid = async (orderId) => {
@@ -903,52 +982,35 @@ export default function Dashboard() {
     return res.json();
   };
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
+  const cancelTableOrders = async (tableNumber, tableOrders) => {
+    try {
+      const active = tableOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled');
+      if (active.length === 0) return;
+      await Promise.all(active.map(o => cancelOrder(o._id)));
+      toast.success(`Cancelled ${active.length} order(s) for Table ${tableNumber}`);
+      await fetchOrders();
+    } catch (e) {
+      console.error('Bulk cancel failed', e);
+      toast.error('Failed to cancel orders');
     }
-  }, [status, router]);
+  };
 
-  if (status === 'loading' || loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-200">
-            <LoadingSpinner size="large" className="mx-auto mb-6" />
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Loading Dashboard</h2>
-            <p className="text-gray-600">Setting up your restaurant management...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-red-50 to-pink-100 flex items-center justify-center p-4">
-        <div className="text-center p-6 sm:p-8 bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-md w-full">
-          <FaTimesCircle className="mx-auto text-red-500 text-4xl sm:text-5xl mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Dashboard Error</h2>
-          <p className="text-gray-600 mb-6">{error.message || 'Failed to load dashboard data'}</p>
-          <button
-            onClick={fetchOrders}
-            className="w-full px-6 py-3 bg-gradient-to-r from-amber-600 to-amber-500 text-white rounded-2xl 
-                     hover:from-amber-700 hover:to-amber-600 transition-all duration-300 
-                     font-semibold flex items-center justify-center"
-          >
-            <FaSync className="mr-2" />
-            Retry Loading
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const groupedOrders = groupOrdersByTable(orders);
-
-  const isOrderPaid = (o) => {
-    // Only hide orders when both status is 'completed' AND paymentStatus is 'paid'
-    return o?.status === 'completed' && o?.paymentStatus === 'paid';
+  const markTablePaid = async (tableNumber, tableOrders, allOrdersForTable) => {
+    try {
+      // consider all non-cancelled & not already paid orders
+      const candidates = (allOrdersForTable || tableOrders).filter(o => o.status !== 'cancelled' && !isOrderPaid(o));
+      
+      if (candidates.length === 0) {
+        toast.info(`All orders already paid for Table ${tableNumber}`);
+        return;
+      }
+      await Promise.all(candidates.map(o => markOrderPaid(o._id)));
+      toast.success(`Marked ${candidates.length} order(s) paid for Table ${tableNumber}`);
+      await fetchOrders();
+    } catch (e) {
+      console.error('Bulk paid failed', e);
+      toast.error('Failed to mark orders paid');
+    }
   };
 
   const getOrderTableKey = (o) => {
@@ -966,57 +1028,24 @@ export default function Dashboard() {
     return candidate != null ? String(candidate) : '';
   };
 
-  const handlePrintTable = (tableNumber, tableOrders) => {
-    const win = window.open('', '_blank');
-    const now = new Date().toLocaleString('en-IN');
-    win.document.write(`<!DOCTYPE html><html><head><title>Table ${tableNumber} Bill</title>`);
-    win.document.write(`<style>body{font-family:Arial, sans-serif;padding:20px;} table{width:100%;border-collapse:collapse;margin:20px 0;} th,td{border:1px solid #ddd;padding:8px;text-align:left;} th{background:#f2f2f2;} .total{font-weight:bold;font-size:1.1em}</style>`);
-    win.document.write(`</head><body>`);
-    win.document.write(`<h2>Table ${tableNumber} - Orders</h2>`);
-    win.document.write(`<div><strong>Date:</strong> ${now}</div>`);
-    win.document.write(`<table><thead><tr><th>Order ID</th><th>Status</th><th>Total</th></tr></thead><tbody>`);
-    tableOrders.forEach(order => {
-      const orderTotal = order.totalAmount || (order.items||order.cart||[]).reduce((s,i)=>s+i.price*i.quantity,0);
-      win.document.write(`<tr><td>${order._id || ''}</td><td>${order.status || ''}</td><td>₹${orderTotal}</td></tr>`);
-    });
-    const grand = tableOrders.reduce((sum, o) => sum + (o.totalAmount || (o.items||o.cart||[]).reduce((s,i)=>s+i.price*i.quantity,0)), 0);
-    win.document.write(`</tbody><tfoot><tr class="total"><td colspan="2">Grand Total</td><td>₹${grand}</td></tr></tfoot></table>`);
-    win.document.write(`</body></html>`);
-    win.document.close();
-    win.focus();
-    setTimeout(()=>win.print(), 100);
+  const isOrderPaid = (o) => {
+    // Only hide orders when both status is 'completed' AND paymentStatus is 'paid'
+    return o?.status === 'completed' && o?.paymentStatus === 'paid';
   };
 
-  // Bulk cancel all active orders for a table
-  const cancelTableOrders = async (tableNumber, tableOrders) => {
+  const refreshPrinters = async () => {
     try {
-      const active = tableOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled');
-      if (active.length === 0) return;
-      await Promise.all(active.map(o => cancelOrder(o._id)));
-      toast.success(`Cancelled ${active.length} order(s) for Table ${tableNumber}`);
-      await fetchOrders();
-    } catch (e) {
-      console.error('Bulk cancel failed', e);
-      toast.error('Failed to cancel orders');
+      const printers = await thermalPrinter.getAvailablePrinters();
+      setAvailablePrinters(printers);
+    } catch (error) {
+      console.error('Failed to refresh printers:', error);
     }
   };
 
-  // API helper: mark a single order as paid
-  const markTablePaid = async (tableNumber, tableOrders, allOrdersForTable) => {
-    try {
-      // consider all non-cancelled & not already paid orders
-      const candidates = (allOrdersForTable || tableOrders).filter(o => o.status !== 'cancelled' && !isOrderPaid(o));
-      if (candidates.length === 0) {
-        toast.info(`All orders already paid for Table ${tableNumber}`);
-        return;
-      }
-      await Promise.all(candidates.map(o => markOrderPaid(o._id)));
-      toast.success(`Marked ${candidates.length} order(s) paid for Table ${tableNumber}`);
-      await fetchOrders();
-    } catch (e) {
-      console.error('Bulk paid failed', e);
-      toast.error('Failed to mark orders paid');
-    }
+  const handlePrinterChange = (printerName) => {
+    setSelectedPrinter(printerName);
+    thermalPrinter.setPrinter(printerName);
+    toast.success(`Printer selected: ${printerName}`);
   };
 
   return (
@@ -1044,6 +1073,65 @@ export default function Dashboard() {
                 <span>Real-time updates enabled</span>
               </div>
             </div>
+          </div>
+          
+          {/* Printer Selection Section */}
+          <div className="hidden md:block bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <FaPrint className="text-blue-600 mr-3 text-xl" />
+                <h3 className="text-lg font-semibold text-gray-800">Thermal Printer</h3>
+              </div>
+              <button
+                onClick={refreshPrinters}
+                className="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition-colors"
+                title="Refresh Printers"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            </div>
+            
+            {availablePrinters.length > 0 ? (
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Select Printer:
+                </label>
+                <select
+                  value={selectedPrinter || ''}
+                  onChange={(e) => handlePrinterChange(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                >
+                  <option value="">Choose a printer...</option>
+                  {availablePrinters.map((printer, index) => (
+                    <option key={index} value={printer.name}>
+                      {printer.name} {printer.name === selectedPrinter ? '(Selected)' : ''}
+                    </option>
+                  ))}
+                </select>
+                
+                {selectedPrinter && (
+                  <div className="flex items-center text-green-600 text-sm">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Ready to print to: {selectedPrinter}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <FaPrint className="mx-auto text-gray-400 text-3xl mb-2" />
+                <p className="text-gray-500 text-sm">No printers found</p>
+                <button
+                  onClick={() => setShowPrinterSettings(true)}
+                  className="mt-2 text-blue-600 hover:text-blue-800 text-sm underline"
+                >
+                  Configure Printer Settings
+                </button>
+              </div>
+            )}
           </div>
           
           {/* New Order Alert */}
@@ -1122,10 +1210,10 @@ export default function Dashboard() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-800 flex items-center"><FaTable className="mr-2 text-blue-600"/>Tables</h2>
-            <div className="text-xs text-gray-500">{Object.keys(groupedOrders).length} active</div>
+            <div className="text-xs text-gray-500">{Object.keys(groupOrdersByTable(orders)).length} active</div>
           </div>
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6 min-h-[300px] h-auto overflow-hidden">
-            {Object.keys(groupedOrders).length === 0 ? (
+            {Object.keys(groupOrdersByTable(orders)).length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full min-h-[250px] text-center">
                 <div className="bg-gradient-to-br from-blue-100 to-indigo-100 p-6 rounded-full mb-4">
                   <FaTable className="text-4xl text-blue-600" />
@@ -1141,8 +1229,8 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 xl:grid-cols-10 gap-3 sm:gap-4 auto-rows-max">
-                {Object.keys(groupedOrders).map((tn) => {
-              const ordersForTable = groupedOrders[tn];
+                {Object.keys(groupOrdersByTable(orders)).map((tn) => {
+              const ordersForTable = groupOrdersByTable(orders)[tn];
               // Debug: Log orders for this table
               
               
@@ -1164,7 +1252,7 @@ export default function Dashboard() {
                   hasOrders={hasOrders}
                   hasPaid={hasPaid}
                   onView={() => setTableModal({ tableNumber: tn, orders: activeOrders })}
-                  onPrint={() => handlePrintTable(tn, activeOrders)}
+                  onPrint={() => thermalPrintBill(tn, activeOrders.flatMap(order => order.items || order.cart || []), total)}
                   onCancel={() => cancelTableOrders(tn, activeOrders)}
                   onMarkPaid={() => markTablePaid(tn, activeOrders, ordersForTable)}
                 />
@@ -1184,7 +1272,17 @@ export default function Dashboard() {
             tableNumber={tableModal.tableNumber}
             orders={tableModal.orders}
             onClose={() => setTableModal(null)}
-            onPrint={() => handlePrintTable(tableModal.tableNumber, tableModal.orders)}
+            onPrint={() => thermalPrintBill(tableModal.tableNumber, tableModal.orders.flatMap(order => order.items || order.cart || []), tableModal.orders.reduce((sum, o) => sum + (o.totalAmount || (o.items||o.cart||[]).reduce((s,i)=>s+i.price*i.quantity,0)), 0))}
+          />
+        )}
+        {showPrinterSettings && (
+          <PrinterSettingsModal
+            isOpen={showPrinterSettings}
+            onClose={() => setShowPrinterSettings(false)}
+            onSave={(settings) => {
+              // Reinitialize printer with new settings
+              initializePrinter();
+            }}
           />
         )}
       </div>

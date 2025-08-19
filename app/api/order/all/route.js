@@ -23,20 +23,6 @@ export async function GET(req) {
       status: { $nin: ["paid", "completed", "cancelled"] }
     }).sort({ createdAt: -1 }); // Latest orders first
 
-    // Debug: Log fetched orders data
-    console.log('[Order All API] Fetched orders count:', orders.length);
-    orders.forEach((order, index) => {
-      console.log(`[Order All API] Order ${index} items:`, order.items);
-      order.items.forEach((item, itemIndex) => {
-        console.log(`[Order All API] Order ${index} Item ${itemIndex}:`, {
-          name: item.name,
-          size: item.size,
-          price: item.price,
-          quantity: item.quantity
-        });
-      });
-    });
-
     return new Response(
       JSON.stringify({
         orders: orders.map(order => ({

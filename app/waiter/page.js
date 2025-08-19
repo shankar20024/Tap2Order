@@ -337,6 +337,12 @@ export default function WaiterDashboard() {
 
    // Professional Compact Order Card Component
    const OrderCard = ({ order }) => {
+     const [isExpanded, setIsExpanded] = useState(false);
+     const items = order.items || [];
+     const maxVisibleItems = 3; // Show 3 items when collapsed
+     const hasMoreItems = items.length > maxVisibleItems;
+     const visibleItems = isExpanded ? items : items.slice(0, maxVisibleItems);
+
      const getStatusColor = (status) => {
        switch (status) {
          case 'pending': return 'bg-yellow-50 border-yellow-200 text-yellow-800';
@@ -399,8 +405,8 @@ export default function WaiterDashboard() {
 
          {/* Compact Items List */}
          <div className="px-4 py-3">
-           <div className="space-y-2 max-h-32 overflow-y-auto">
-             {order.items?.slice(0, 3).map((item, index) => (
+           <div className="space-y-2">
+             {visibleItems.map((item, index) => (
                <div key={index} className="flex items-center justify-between text-sm">
                  <div className="flex items-center gap-2 flex-1 min-w-0">
                    <span className="bg-gray-100 text-gray-700 text-xs px-1.5 py-0.5 rounded font-medium">
@@ -415,15 +421,25 @@ export default function WaiterDashboard() {
                          </span>
                        )}
                      </div>
+                     {item.notes && (
+                       <p className="text-xs text-gray-500 truncate">{item.notes}</p>
+                     )}
                    </div>
                  </div>
-                 <span className="text-gray-600 text-xs ml-2">₹{item.price}</span>
+                 <span className="text-gray-600 text-xs ml-2 whitespace-nowrap">₹{item.price}</span>
                </div>
              ))}
-             {order.items?.length > 3 && (
-               <div className="text-xs text-gray-500 text-center py-1">
-                 +{order.items.length - 3} more items
-               </div>
+             {hasMoreItems && (
+               <button 
+                 onClick={() => setIsExpanded(!isExpanded)}
+                 className="w-full text-center text-xs text-blue-600 hover:text-blue-800 font-medium py-1 transition-colors"
+               >
+                 {isExpanded ? (
+                   'Show less'
+                 ) : (
+                   `+${items.length - maxVisibleItems} more items`
+                 )}
+               </button>
              )}
            </div>
          </div>

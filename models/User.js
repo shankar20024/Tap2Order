@@ -161,7 +161,7 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ createdBy: 1 });
 userSchema.index({ businessName: 1 });
 userSchema.index({ subscriptionStatus: 1 });
-userSchema.index({ hotelCode: 1 });
+// Remove duplicate hotelCode index - it's already defined in schema with index: true
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {
