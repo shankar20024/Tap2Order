@@ -29,11 +29,20 @@ export default function CartButton({
     }
   }, [onArrowPositionUpdate]);
 
+  // Don't render anything if cart is empty
+  if (totalItemsCount === 0) {
+    return null;
+  }
+
   return (
     <div className="fixed top-4 right-4 z-40">
       <div ref={buttonRef} className="relative">
         {/* Main Cart Button */}
         <motion.button
+          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.8, y: 20 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           onClick={onClick}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -46,20 +55,16 @@ export default function CartButton({
           
           {/* Item Count Badge */}
           <AnimatePresence>
-            {totalItemsCount > 0 && (
-              <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white 
-                         text-xs font-bold rounded-full flex items-center justify-center 
-                         shadow-md"
-                aria-live="polite"
-                aria-atomic="true"
-              >
-                {totalItemsCount > 99 ? '99+' : totalItemsCount}
-              </motion.div>
-            )}
+            <motion.div
+              key="item-count"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0 }}
+              className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold 
+                         rounded-full w-5 h-5 flex items-center justify-center"
+            >
+              {totalItemsCount}
+            </motion.div>
           </AnimatePresence>
         </motion.button>
 
