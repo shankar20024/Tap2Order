@@ -22,6 +22,7 @@ export default function QRMenu(paramsPromise) {
   
   // State
   const [username, setUsername] = useState('');
+  const [hotelName, setHotelName] = useState('');
   const [apiStatus, setApiStatus] = useState(true);
   const [tableExists, setTableExists] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -82,6 +83,22 @@ export default function QRMenu(paramsPromise) {
         if (res.ok) {
           const userData = await res.json();
           setUsername(userData.name);
+          
+          // If the user has a hotel code, use it to get the hotel name
+          if (userData.hotelCode) {
+            try {
+              const hotelRes = await fetch(`/api/hotels`);
+              if (hotelRes.ok) {
+                const { hotels } = await hotelRes.json();
+                const currentHotel = hotels.find(h => h.hotelCode === userData.hotelCode);
+                if (currentHotel) {
+                  setHotelName(currentHotel.businessName || currentHotel.name);
+                }
+              }
+            } catch (error) {
+              console.error('Error fetching hotel data:', error);
+            }
+          }
           setApiStatus(true);
         } else {
           const errorData = await res.json();
@@ -192,6 +209,7 @@ export default function QRMenu(paramsPromise) {
       {/* Header */}
       <QRHeader 
         username={username}
+        hotelName={hotelName}
         tableNumber={tableNumber}
         apiStatus={apiStatus}
       />
