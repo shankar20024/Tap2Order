@@ -8,7 +8,7 @@ import { setTableOccupied, setTableFree } from "@/lib/tableStatus";
 export async function POST(req) {
   try {
     await connectDB();
-    const { tableNumber, cart, userId, orderMessage } = await req.json();
+    const { tableNumber, cart, userId, orderMessage, status, customerName, customerPhone } = await req.json();
 
     // Validate cart items
     if (!Array.isArray(cart) || cart.length === 0) {
@@ -71,10 +71,12 @@ export async function POST(req) {
       tableNumber: Number(tableNumber) || 0,
       items: processedCart,
       userId: String(userId || ''),
-      message: String(orderMessage || ''),
-      status: "pending",
+      specialRequests: String(orderMessage || ''),
+      status: status || "pending",
       totalAmount,
-      paymentStatus: "unpaid"
+      paymentStatus: "unpaid",
+      customerName: String(customerName || ''),
+      customerPhone: String(customerPhone || ''),
     });
 
     const savedOrder = await order.save();

@@ -93,6 +93,82 @@ const userSchema = new mongoose.Schema({
     trim: true,
   },
   
+  // GST and Tax Information
+  gstDetails: {
+    gstNumber: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      match: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
+    },
+    panNumber: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      match: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
+    },
+    tradeName: {
+      type: String,
+      trim: true,
+    },
+    gstRegistrationDate: {
+      type: Date,
+    },
+    taxRate: {
+      type: Number,
+      default: 5,
+      min: 0,
+      max: 28,
+    },
+  },
+  
+  // FSSAI and Food Safety Information
+  fssaiDetails: {
+    fssaiNumber: {
+      type: String,
+      trim: true,
+      match: /^[0-9]{14}$/,
+    },
+    fssaiExpiryDate: {
+      type: Date,
+    },
+    foodCategory: {
+      type: String,
+      enum: ["restaurant", "cafe", "bakery", "sweet_shop", "catering", "other"],
+    },
+    licenseType: {
+      type: String,
+      enum: ["basic", "state", "central"],
+    },
+  },
+  
+  // Additional Business Information
+  businessDetails: {
+    website: {
+      type: String,
+      trim: true,
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+    },
+    establishedYear: {
+      type: Number,
+      min: 1900,
+      max: new Date().getFullYear(),
+    },
+    cuisineType: [{
+      type: String,
+      enum: ["indian", "chinese", "continental", "italian", "mexican", "thai", "japanese", "fast_food", "beverages", "desserts", "other"],
+    }],
+    socialMedia: {
+      facebook: String,
+      instagram: String,
+      twitter: String,
+    },
+  },
+  
   // Staff Management
   staffLimit: { 
     type: Number, 

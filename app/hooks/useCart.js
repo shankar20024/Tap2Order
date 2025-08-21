@@ -123,6 +123,14 @@ export default function useCart(apiStatus, orderPlaced) {
     localStorage.removeItem("cart");
   }, []);
 
+  // Load cart from external data (for session restoration)
+  const loadCartFromData = useCallback((cartData) => {
+    if (Array.isArray(cartData) && cartData.length > 0) {
+      setCart(cartData);
+      localStorage.setItem("cart", JSON.stringify(cartData));
+    }
+  }, []);
+
   return {
     cart,
     setCart,
@@ -133,6 +141,7 @@ export default function useCart(apiStatus, orderPlaced) {
     getTotalPrice,
     getTotalItemsCount,
     getItemSubtotal,
-    resetCart
+    resetCart,
+    loadCartFromData
   };
 }

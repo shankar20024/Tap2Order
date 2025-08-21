@@ -319,15 +319,6 @@ export default function MenuPage() {
                   <p className="text-amber-100 text-lg mt-1">Manage your restaurant's delicious offerings</p>
                 </div>
               </div>
-              <div className="hidden md:block">
-                <button
-                  onClick={handleAddItem}
-                  className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-                >
-                  <FaPlus className="text-lg" />
-                  Add New Item
-                </button>
-              </div>
             </div>
             
             {/* Stats Cards */}
@@ -397,45 +388,57 @@ export default function MenuPage() {
                 </div>
 
                 {/* Category Filters */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-gray-600 font-medium">Filter by:</span>
-                    <div className="flex space-x-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+                    <span className="text-gray-600 font-medium whitespace-nowrap">Filter by:</span>
+                    <div className="flex flex-wrap gap-2">
                       <button 
                         onClick={() => handleCategoryChange("all")} 
-                        className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${selectedCategory === "all" ? "bg-amber-500 text-white shadow-lg" : "bg-white/80 text-gray-600 hover:bg-amber-100"}`}
+                        className={`px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-300 whitespace-nowrap ${
+                          selectedCategory === "all" 
+                            ? "bg-amber-500 text-white shadow-lg" 
+                            : "bg-white/80 text-gray-600 hover:bg-amber-100"
+                        }`}
                       >
                         All Items
                       </button>
                       <button 
                         onClick={() => handleCategoryChange("veg")} 
-                        className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 ${selectedCategory === "veg" ? "bg-green-500 text-white shadow-lg" : "bg-white/80 text-gray-600 hover:bg-green-100"}`}
+                        className={`px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${
+                          selectedCategory === "veg" 
+                            ? "bg-green-500 text-white shadow-lg" 
+                            : "bg-white/80 text-gray-600 hover:bg-green-100"
+                        }`}
                       >
-                        <div className="w-4 h-4 rounded-full border-2 border-green-200 flex items-center justify-center">
-                          <div className="w-2 h-2 bg-green-200 rounded-full"></div>
+                        <div className="w-4 h-4 rounded-full border-2 border-green-200 flex-shrink-0">
+                          <div className="w-2 h-2 bg-green-200 rounded-full mx-auto mt-0.5"></div>
                         </div>
-                        Veg
+                        <span>Veg</span>
                       </button>
                       <button 
                         onClick={() => handleCategoryChange("non-veg")} 
-                        className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 ${selectedCategory === "non-veg" ? "bg-red-500 text-white shadow-lg" : "bg-white/80 text-gray-600 hover:bg-red-100"}`}
+                        className={`px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${
+                          selectedCategory === "non-veg" 
+                            ? "bg-red-500 text-white shadow-lg" 
+                            : "bg-white/80 text-gray-600 hover:bg-red-100"
+                        }`}
                       >
-                        <div className="w-4 h-4 border-2 border-red-200 flex items-center justify-center">
-                          <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-b-[6px] border-l-transparent border-r-transparent border-b-red-200"></div>
+                        <div className="w-4 h-4 border-2 border-red-200 flex-shrink-0 flex items-center justify-center">
+                          <div className="w-0 h-0 border-l-[3px] border-r-[3px] border-b-[5px] border-l-transparent border-r-transparent border-b-red-200"></div>
                         </div>
-                        Non-Veg
+                        <span>Non-Veg</span>
                       </button>
                     </div>
                   </div>
                   
                   {/* Add Item Button */}
-                  <div>
+                  <div className="w-full sm:w-auto flex justify-end">
                     <button
                       onClick={handleAddItem}
-                      className="md:hidden bg-white/20 backdrop-blur-sm hover:bg-white/30 text-amber-700 px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                      className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                     >
                       <FaPlus className="text-lg" />
-                      Add New Item
+                      <span>Add New Item</span>
                     </button>
                   </div>
                 </div>

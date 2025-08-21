@@ -13,7 +13,9 @@ import {
   FaUsers,
   FaQuestionCircle,
   FaSlidersH,
+  FaUserCog,
 } from 'react-icons/fa';
+import { HiUserCircle } from 'react-icons/hi';
 import LogoutButton from './Logout';
 
 const navItems = [
@@ -58,7 +60,7 @@ export default function Sidebar() {
       {/* Mobile Hamburger */}
       <motion.button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="fixed top-4 left-4 z-70 p-3 rounded-md bg-gradient-to-r from-amber-600 to-amber-500 text-white md:hidden "
+        className="fixed top-4 left-4 z-60 p-3 rounded-md bg-gradient-to-r from-amber-600 to-amber-500 text-white md:hidden "
         initial={false}
         animate={{ rotate: isOpen ? 90 : 0 }}
         transition={{ duration: 0.3 }}
@@ -105,9 +107,16 @@ export default function Sidebar() {
               })}
             </nav>
 
-            {/* Logout */}
-            <div className="px-4 py-4 border-t  border-gray-700">
-              <LogoutButton />
+            {/* Sticky Logout Button */}
+            <div className="sticky bottom-0 bg-gradient-to-b from-gray-800 to-gray-900 border-t border-gray-700 px-4 py-4 mt-auto">
+              <div className="flex items-center justify-between space-x-2">
+                <div className="flex-grow">
+                  <LogoutButton />
+                </div>
+                <Link href="/profile" title="Profile Settings" className="p-1 rounded-full text-gray-400 hover:text-amber-500 hover:bg-gray-700/50 transition-all duration-200 flex-shrink-0">
+                  <HiUserCircle className="h-8 w-8" />
+                </Link>
+              </div>
             </div>
           </motion.div>
         )}

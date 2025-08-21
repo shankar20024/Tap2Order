@@ -1,15 +1,23 @@
-import Image from "next/image";
-import NavButton from "./components/NavButton";
+'use client';
 
-export const metadata = {
-  title: 'Tap2Order - Welcome',
-  description: 'Welcome to Tap2Order - Your digital menu and ordering solution',
-};
+import Navbar from './components/landing/Navbar';
+import Hero from './components/landing/Hero';
+import Features from './components/landing/Features';
+import HowItWorks from './components/landing/HowItWorks';
+import Testimonials from './components/landing/Testimonials';
+import Pricing from './components/landing/Pricing';
+import Footer from './components/landing/Footer';
 
-export default function Home() {
+export default function LandingPage() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <NavButton href="/login" label="Login"/>
+    <div className="min-h-screen">
+      <Navbar />
+      <Hero />
+      <Features />
+      <HowItWorks />
+      <Testimonials />
+      <Pricing />
+      <Footer />
     </div>
   );
 }

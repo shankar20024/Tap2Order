@@ -81,6 +81,14 @@ const OrderSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    customerName: {
+      type: String,
+      default: '',
+    },
+    customerPhone: {
+      type: String,
+      default: '',
+    },
     cancellationReason: {
       type: String,
       default: "", // Reason for cancellation if applicable

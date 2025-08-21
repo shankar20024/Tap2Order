@@ -448,7 +448,7 @@ function groupOrdersByTable(orders) {
 
 // TableBox - compact 100px table card
 const TableBox = ({ tableNumber, totalAmount, hasOrders, hasPaid, onView, onPrint, onCancel, onMarkPaid }) => (
-  <div className="flex flex-col items-center">
+  <div className="flex flex-col  items-center ml-8 md:ml-0 sm:ml-0 lg:ml-0">
     <div
       className={`relative w-28 h-28 rounded-md border border-b-0 flex flex-col items-center justify-center p-2 transition-all duration-200 hover:shadow-md bg-gradient-to-b from-white to-slate-50 ${
         hasPaid

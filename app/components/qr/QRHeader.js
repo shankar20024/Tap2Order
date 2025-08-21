@@ -3,11 +3,11 @@
 import { useEffect } from "react";
 import Logo from "@/app/components/Logo";
 
-export default function QRHeader({ username, tableNumber, apiStatus, hotelName }) {
+export default function QRHeader({ username, tableNumber, apiStatus, hotelName, customerInfo }) {
   // Debug: Log props when they change
   useEffect(() => {
-    console.log('QRHeader props:', { username, tableNumber, apiStatus, hotelName });
-  }, [username, tableNumber, apiStatus, hotelName]);
+    console.log('QRHeader props:', { username, tableNumber, apiStatus, hotelName, customerInfo });
+  }, [username, tableNumber, apiStatus, hotelName, customerInfo]);
 
   return (
     <header className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-200 shadow-lg backdrop-blur-sm">
@@ -41,6 +41,17 @@ export default function QRHeader({ username, tableNumber, apiStatus, hotelName }
             </span>
           </div>
         </div>
+
+        {/* Welcome Message */}
+        {customerInfo && (
+          <div className="mt-3 mb-2">
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl px-4 py-2 shadow-sm">
+              <p className="text-sm text-amber-800 font-medium">
+                <span className="text-amber-600">👋</span> Welcome, <span className="font-semibold">{customerInfo.name}</span>!
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Bottom Row - Table Status (Mobile) and Status Indicator */}
         <div className="flex items-center justify-between mt-2 sm:hidden">
