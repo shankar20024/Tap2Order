@@ -37,30 +37,19 @@ export default function LoginForm() {
   const fetchHotels = async () => {
     setLoadingHotels(true);
     try {
-      console.log('🔍 Fetching hotels from /api/hotels...');
-      
       const response = await fetch("/api/hotels");
       const result = await response.json();
-      
-      console.log('📊 Hotels API response:', { 
-        status: response.status, 
-        ok: response.ok, 
-        result 
-      });
-      
+
       if (response.ok && result.success) {
-        console.log('✅ Hotels loaded successfully:', result.hotels);
         setHotels(result.hotels);
-        
+
         if (result.hotels.length === 0) {
           toast.info("No hotels found. Please contact admin to add hotels.");
         }
       } else {
-        console.error("❌ Failed to fetch hotels:", result.error);
         toast.error(`Failed to load hotels: ${result.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error("💥 Error fetching hotels:", error);
       toast.error("Failed to load hotels. Please check your connection.");
     } finally {
       setLoadingHotels(false);
@@ -71,7 +60,7 @@ export default function LoginForm() {
     const value = e.target.value;
     setHotelSearch(value);
     setShowHotelDropdown(true);
-    
+
     if (value.trim() === "") {
       setFilteredHotels(hotels);
     } else {
@@ -115,33 +104,22 @@ export default function LoginForm() {
     setLoading(true);
 
     try {
-      console.log('🔐 Starting admin/owner login...');
-      
       const res = await signIn("credentials", {
         email,
         password,
         redirect: false,
       });
 
-      console.log('🔍 SignIn result:', res);
-
       if (res.ok) {
-        console.log('✅ SignIn successful, fetching user data...');
-        
         const userRes = await fetch("/api/me");
         const user = await userRes.json();
-        
-        console.log('👤 User data:', user);
 
         if (user.role === "admin") {
-          console.log('🔧 Redirecting to admin panel...');
           router.push("/admin");
         } else {
-          console.log('🏨 Redirecting to hotel dashboard...');
           router.push("/dashboard");
         }
       } else {
-        console.error('❌ SignIn failed:', res.error);
         setLoading(false);
         toast.error(res.error || "Login failed. Please check your credentials.", {
           position: "top-right",
@@ -150,9 +128,8 @@ export default function LoginForm() {
         });
       }
     } catch (error) {
-      console.error('💥 Login error:', error);
       setLoading(false);
-      toast.error("Login failed. Please try again.", {
+      toast.error("An error occurred during login. Please try again.", {
         position: "top-right",
         autoClose: 4000,
         theme: "colored",
@@ -165,8 +142,6 @@ export default function LoginForm() {
     setLoading(true);
 
     try {
-      console.log('🔐 Starting staff login with passcode...');
-      
       const response = await fetch("/api/staff-login", {
         method: "POST",
         headers: {
@@ -179,11 +154,8 @@ export default function LoginForm() {
       });
 
       const result = await response.json();
-      console.log('🔍 Staff login result:', result);
 
       if (response.ok && result.success) {
-        console.log('✅ Staff login successful');
-        
         // Create session for staff user using staffToken (JWT)
         const signInRes = await signIn("credentials", {
           staffToken: result.staffToken,
@@ -191,22 +163,22 @@ export default function LoginForm() {
         });
 
         if (signInRes.ok) {
-          // Redirect based on staff role
-          if (result.staff.role === "waiter") {
-            console.log('🍽️ Redirecting to waiter dashboard...');
+          // Redirect based on staff department
+          if (result.staff.department === "service") {
             router.push("/waiter");
-          } else if (result.staff.role === "kitchen") {
-            console.log('👨‍🍳 Redirecting to kitchen dashboard...');
+          } else if (result.staff.department === "kitchen") {
             router.push("/kitchen");
-          } else {
-            console.log('📊 Redirecting to default dashboard...');
+          } else if (result.staff.department === "management") {
             router.push("/dashboard");
+          } else {
+            toast.info(`Welcome ${result.staff.name}! No specific dashboard available for your department.`);
+            setLoading(false);
+            return;
           }
         } else {
           throw new Error("Failed to create staff session");
         }
       } else {
-        console.error('❌ Staff login failed:', result.error);
         setLoading(false);
         toast.error(result.error || "Invalid passcode. Please try again.", {
           position: "top-right",
@@ -215,7 +187,6 @@ export default function LoginForm() {
         });
       }
     } catch (error) {
-      console.error('💥 Staff login error:', error);
       setLoading(false);
       toast.error("Staff login failed. Please try again.", {
         position: "top-right",

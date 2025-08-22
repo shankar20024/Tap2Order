@@ -27,7 +27,7 @@ export default function LayoutContent({ children }) {
   return (
     <div className="flex h-screen bg-gray-100">
       {showSidebar && <Sidebar />}
-      <main className={`flex-1 overflow-y-auto ${showSidebar ? 'md:ml-64' : ''} p-4 md:p-6`}>
+      <main className={`flex-1 overflow-y-auto ${showSidebar ? 'md:ml-64' : ''}`}>
         {children}
       </main>
     </div>

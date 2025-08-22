@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
+
 const logAudioState = (message, data = '') => {
-  console.log(`[Audio] ${message}`, data);
+  // console.log(`[Audio] ${message}`, data);
 };
 
 // Check if running on mobile
@@ -109,7 +110,7 @@ export default function AlertPing({ isActive = false, onClick, tableNumbers = []
     // Try to play a test sound
     const testAudio = new Audio(audioFile);
     testAudio.volume = 0.3; // Low volume for test
-    testAudio.play().catch(console.error);
+    testAudio.play().catch(() => {});
     
     // Store in localStorage that user has enabled sound
     localStorage.setItem('soundEnabled', 'true');
@@ -119,7 +120,7 @@ export default function AlertPing({ isActive = false, onClick, tableNumbers = []
     
    
     // Play the test sound
-    testAudio.play().catch(console.error);
+    testAudio.play().catch(() => {});
     
     // Stop the test sound after 3 seconds (3000ms)
     const TEST_SOUND_DURATION = 500; // 1 second

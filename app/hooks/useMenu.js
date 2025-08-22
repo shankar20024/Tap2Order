@@ -14,15 +14,20 @@ export default function useMenu(userId) {
   const fetchMenu = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/menu?userId=${userId}`);
-      if (res.ok) {
-        const data = await res.json();
+      const response = await fetch(`/api/menu?userId=${userId}`);
+      if (response.ok) {
+        const data = await response.json();
         setMenu(data);
 
         const uniqueCategories = Array.from(
           new Set(data.map(item => item.category || "Uncategorized"))
         );
-        setCategories(uniqueCategories);
+        
+        // Add Jain to categories only if there are Jain items in the menu
+        const hasJainItems = data.some(item => item.category === 'jain');
+        const finalCategories = hasJainItems ? [...uniqueCategories] : uniqueCategories.filter(cat => cat !== 'jain');
+        
+        setCategories(finalCategories);
         setActiveCategory('All');
         setFilteredMenu(data);
       } else {

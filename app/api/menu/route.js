@@ -17,6 +17,11 @@ export async function GET(req) {
 
   const items = await MenuItem.find({ userId, available: true });
 
-  return NextResponse.json(items);
-}
+  // Ensure subcategory field is properly set for all items
+  const processedItems = items.map(item => ({
+    ...item.toObject(),
+    subcategory: item.subcategory || '' // Ensure subcategory is never undefined
+  }));
 
+  return NextResponse.json(processedItems);
+}

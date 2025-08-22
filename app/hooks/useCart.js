@@ -58,7 +58,8 @@ export default function useCart(apiStatus, orderPlaced) {
           price: item.price,
           quantity: Math.max(1, quantity),
           notes: '',
-          size: item.size
+          size: item.size,
+          subcategory: item.subcategory || ''
         }];
       }
       return prevCart;

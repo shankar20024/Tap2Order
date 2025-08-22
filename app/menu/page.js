@@ -300,7 +300,7 @@ export default function MenuPage() {
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       <Header className=""/> 
 
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 relative w-full mt-11 md:mt-14">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 relative w-full mt-21 sm:mt-18 md:mt-18">
         {/* Professional Header Banner */}
         <div className="bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-600 text-white py-8 px-6 shadow-2xl relative overflow-hidden">
           {/* Background Pattern */}
@@ -662,30 +662,69 @@ export default function MenuPage() {
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">Category</h3>
                     <div className="flex items-center justify-center space-x-6 bg-gray-50 rounded-xl p-4">
-                      <div className="flex items-center space-x-3">
+                      {/* Vegetarian */}
+                      <label className="flex items-center space-x-3 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="category"
+                          value="veg"
+                          checked={form.category === "veg"}
+                          onChange={(e) => setForm({ ...form, category: e.target.value })}
+                          className="sr-only"
+                        />
                         <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${form.category === "veg" ? "border-green-600 bg-green-100" : "border-gray-300"}`}>
                           <div className={`w-3 h-3 rounded-full ${form.category === "veg" ? "bg-green-600" : "bg-gray-300"}`}></div>
                         </div>
-                        <span className={`font-medium ${form.category === "veg" ? "text-green-600" : "text-gray-400"}`}>Vegetarian</span>
-                      </div>
-                      
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="sr-only peer"
-                          checked={form.category === "non-veg"}
-                          onChange={() => setForm({ ...form, category: form.category === "veg" ? "non-veg" : "veg" })}
-                        />
-                        <div className="w-14 h-7 bg-green-500 peer-checked:bg-red-500 rounded-full transition-all duration-300 shadow-inner peer-focus:ring-4 peer-focus:ring-amber-300/30"></div>
-                        <div className={`absolute top-[2px] left-[2px] w-6 h-6 rounded-full bg-white shadow-md transition-all transform ${form.category === "non-veg" ? "translate-x-7" : ""}`}></div>
+                        <span className={`font-medium ${form.category === "veg" ? "text-green-600" : "text-gray-600"}`}>Vegetarian</span>
                       </label>
-
-                      <div className="flex items-center space-x-3">
+                      
+                      {/* Non-Vegetarian */}
+                      <label className="flex items-center space-x-3 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="category"
+                          value="non-veg"
+                          checked={form.category === "non-veg"}
+                          onChange={(e) => setForm({ ...form, category: e.target.value })}
+                          className="sr-only"
+                        />
                         <div className={`w-6 h-6 border-2 flex items-center justify-center ${form.category === "non-veg" ? "border-red-600 bg-red-100" : "border-gray-300"}`}>
                           <div className={`w-0 h-0 border-l-[4px] border-r-[4px] border-b-[6px] border-l-transparent border-r-transparent ${form.category === "non-veg" ? "border-b-red-600" : "border-b-gray-300"}`}></div>
                         </div>
-                        <span className={`font-medium ${form.category === "non-veg" ? "text-red-600" : "text-gray-400"}`}>Non-Vegetarian</span>
-                      </div>
+                        <span className={`font-medium ${form.category === "non-veg" ? "text-red-600" : "text-gray-600"}`}>Non-Vegetarian</span>
+                      </label>
+
+                      {/* Jain */}
+                      <label className="flex items-center space-x-3 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="category"
+                          value="jain"
+                          checked={form.category === "jain"}
+                          onChange={(e) => setForm({ ...form, category: e.target.value })}
+                          className="sr-only"
+                        />
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${form.category === "jain" ? "border-orange-600 bg-orange-100" : "border-gray-300"}`}>
+                          <div className={`w-3 h-3 rounded-full ${form.category === "jain" ? "bg-orange-600" : "bg-gray-300"}`}></div>
+                        </div>
+                        <span className={`font-medium ${form.category === "jain" ? "text-orange-600" : "text-gray-600"}`}>Jain</span>
+                      </label>
+
+                      {/* None */}
+                      <label className="flex items-center space-x-3 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="category"
+                          value="none"
+                          checked={form.category === "none"}
+                          onChange={(e) => setForm({ ...form, category: e.target.value })}
+                          className="sr-only"
+                        />
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${form.category === "none" ? "border-gray-600 bg-gray-100" : "border-gray-300"}`}>
+                          <div className={`w-3 h-3 rounded-full ${form.category === "none" ? "bg-gray-600" : "bg-gray-300"}`}></div>
+                        </div>
+                        <span className={`font-medium ${form.category === "none" ? "text-gray-600" : "text-gray-600"}`}>None</span>
+                      </label>
                     </div>
                   </div>
 
@@ -800,15 +839,27 @@ export default function MenuPage() {
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">Additional Details</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Subcategory</label>
-                        <input
-                          type="text"
-                          value={form.subcategory}
-                          onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-amber-300/30 focus:border-amber-400 transition-all"
-                          placeholder="e.g., beverages"
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Subcategory</label>
+                          <select
+                            value={form.subcategory}
+                            onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-amber-300/30 focus:border-amber-400 transition-all"
+                          >
+                            <option value="">Select Subcategory</option>
+                            <option value="beverages">Beverages</option>
+                            <option value="appetizers">Appetizers</option>
+                            <option value="main-course">Main Course</option>
+                            <option value="desserts">Desserts</option>
+                            <option value="snacks">Snacks</option>
+                            <option value="salads">Salads</option>
+                            <option value="soups">Soups</option>
+                            <option value="breads">Breads</option>
+                            <option value="rice">Rice Items</option>
+                            <option value="specials">Chef's Specials</option>
+                          </select>
+                        </div>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Spicy Level</label>

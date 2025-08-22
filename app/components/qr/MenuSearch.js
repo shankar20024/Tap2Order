@@ -84,7 +84,9 @@ export default function MenuSearch({
                   'indian': '🍛',
                   'italian': '🍝',
                   'veg': '🥗',
-                  'non-veg': '🍗'
+                  'non-veg': '🍗',
+                  'jain': '🟠',
+                  'none': '⚪'
                 };
                 
                 // Shorten category names for mobile
@@ -112,8 +114,10 @@ export default function MenuSearch({
             </div>
           </div>
           
-          {/* Gradient fade effect on the right side */}
-          <div className="absolute top-0 right-0 bottom-0 w-10 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
+          {/* Gradient fade effect on the right side - only show when categories are few */}
+          {categories.length <= 2 && (
+            <div className="absolute top-0 right-0 bottom-0 w-10 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
+          )}
         </div>
 
         {/* Active Filter Indicator */}

@@ -33,8 +33,6 @@ export async function POST(req) {
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
-
-    console.log('🔐 Staff login attempt:', { passcode, hotelId });
     
     await connectDB();
 
@@ -47,7 +45,6 @@ export async function POST(req) {
     }).populate('hotelOwner', 'name email hotelCode businessName');
 
     if (!staff) {
-      console.log('❌ No active staff found with passcode for selected hotel');
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -56,12 +53,6 @@ export async function POST(req) {
         { status: 401, headers: { 'Content-Type': 'application/json' } }
       );
     }
-
-    console.log('✅ Staff found:', {
-      name: staff.name,
-      position: staff.position,
-      hotel: staff.hotelOwner?.businessName || staff.hotelOwner?.name
-    });
 
     // Create email if staff doesn't have one (local alias)
     const staffEmail = staff.email || `staff_${staff.employeeId}@${staff.hotelOwner.hotelCode?.toLowerCase() || 'hotel'}.local`;
@@ -90,6 +81,7 @@ export async function POST(req) {
       hotelOwner: staff.hotelOwner._id.toString(),
       hotelCode: staff.hotelOwner.hotelCode,
       position: staff.position,
+      department: staff.department,
       isStaff: true,
       iat: Math.floor(Date.now() / 1000)
     };
@@ -114,16 +106,12 @@ export async function POST(req) {
       staffToken
     };
 
-    console.log('🎉 Staff login successful for:', staff.name, 'at', staff.hotelOwner.businessName);
-
     return new Response(
       JSON.stringify(response), 
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('💥 Staff login error:', error);
-    
     return new Response(
       JSON.stringify({ 
         success: false,

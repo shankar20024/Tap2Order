@@ -34,6 +34,16 @@ export default function MenuCard({
                            flex items-center justify-center">
                 <div className="w-3 h-3 rounded-full bg-green-600" />
               </div>
+            ) : item.category === "jain" ? (
+              <div className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-orange-600 
+                           flex items-center justify-center">
+                <div className="w-3 h-3 rounded-full bg-orange-600" />
+              </div>
+            ) : item.category === "none" ? (
+              <div className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-gray-500 
+                           flex items-center justify-center">
+                <div className="w-3 h-3 rounded-full bg-gray-500" />
+              </div>
             ) : (
               <div className="flex-shrink-0 w-5 h-5 rounded-sm border-2 border-red-500 
                            flex items-center justify-center">
@@ -61,6 +71,23 @@ export default function MenuCard({
           <p className="text-sm text-gray-600 line-clamp-2 mb-3 leading-relaxed">
             {item.description}
           </p>
+        )}
+
+        {/* Subcategory Badge */}
+        {item.subcategory && (
+          <div className="mb-3">
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+              item.subcategory === 'beverages' 
+                ? 'bg-blue-100 text-blue-800'
+                : item.subcategory === 'desserts'
+                ? 'bg-purple-100 text-purple-800'
+                : item.subcategory === 'main-course'
+                ? 'bg-orange-100 text-orange-800'
+                : 'bg-gray-100 text-gray-800'
+            }`}>
+              {item.subcategory.charAt(0).toUpperCase() + item.subcategory.slice(1).replace('-', ' ')}
+            </span>
+          </div>
         )}
 
         {/* Size Selection */}

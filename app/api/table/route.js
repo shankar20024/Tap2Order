@@ -70,7 +70,6 @@ export async function GET(req) {
 
     // Use userId from query param if provided (for staff users), otherwise use authenticated user's id
     const targetUserId = userIdParam || session.user.id;
-    console.log('[Table API] Target userId for query:', targetUserId);
 
     // Calculate skip value
     const skip = (page - 1) * limit;

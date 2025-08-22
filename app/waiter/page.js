@@ -44,28 +44,20 @@ export default function WaiterDashboard() {
       try { return String(val); } catch { return undefined; }
     };
     
-   
-    
-    // Debug: Full session object
-    console.log('[Waiter] Full session object:', session);
-    
     if (isStaff) {
       // For staff users, get hotelOwner from session (set during staff login)
       const fromSession = normalize(session?.user?.hotelOwner);
       if (fromSession) {
-        console.log('[Waiter] Staff tenant resolved from session:', fromSession);
         return fromSession;
       }
       
       // Fallback to localStorage for staff
       if (typeof window === 'undefined') return undefined;
       const fromStorage = normalize(localStorage.getItem('selectedHotelUserId'));
-      console.log('[Waiter] Staff tenant resolved from storage:', fromStorage);
       return fromStorage || undefined;
     }
     
     // For owners/admins, use their own ID
-    console.log('[Waiter] Owner tenant resolved to:', normalize(base));
     return normalize(base);
   }, [session?.user?.id, session?.user?.role, session?.user?.hotelOwner]);
 
@@ -111,9 +103,7 @@ export default function WaiterDashboard() {
         const userData = await response.json();
         const name = userData.hotelName || userData.name || userData.email || 'Unknown Hotel';
         setHotelName(name);
-        console.log('[Waiter] Hotel owner name:', name);
       } else {
-        console.error('[Waiter] Failed to fetch hotel owner name:', response.status);
         // Fallback to localStorage if API fails
         if (typeof window !== 'undefined') {
           const storedName = localStorage.getItem('selectedHotelName');
@@ -121,7 +111,6 @@ export default function WaiterDashboard() {
         }
       }
     } catch (error) {
-      console.error('[Waiter] Error fetching hotel owner name:', error);
       // Fallback to localStorage if API fails
       if (typeof window !== 'undefined') {
         const storedName = localStorage.getItem('selectedHotelName');
@@ -151,11 +140,7 @@ export default function WaiterDashboard() {
   // Initialize Ably and fetch initial data on tenant change
   useEffect(() => {
     if (!tenantUserId) return;
-    console.log('[Waiter] tenantUserId:', tenantUserId);
-
-    // Fetch hotel owner's name from database
     fetchHotelOwnerName(tenantUserId);
-
     initializeAbly();
     fetchData();
     return () => {
@@ -164,7 +149,6 @@ export default function WaiterDashboard() {
         tableChannel?.unsubscribe?.();
       } catch {}
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantUserId]);
 
   const initializeAbly = async () => {
@@ -187,9 +171,9 @@ export default function WaiterDashboard() {
 
       // Subscribe to order updates (use tenantUserId)
       const orderCh = ably.channels.get(`orders:${tenantUserId}`);
-      orderCh.subscribe(['order.created', 'order.updated', 'order.deleted'], (message) => {
-        console.log('[Waiter] Legacy order event received:', message);
-        const { name: eventType, data: orderData } = message;
+      orderCh.subscribe(['order.created', 'order.updated', 'order-updated', 'order.deleted'], (message) => {
+        const eventType = message.name;
+        const orderData = message.data;
         
         if (eventType === 'order.created') {
           setOrders(prevOrders => {
@@ -214,7 +198,6 @@ export default function WaiterDashboard() {
       
       // Subscribe to new-order events from QR menu
       orderCh.subscribe('new-order', (message) => {
-        console.log('[Waiter] New order from QR received:', message.data);
         const newOrder = message.data;
         
         setOrders(prevOrders => {
@@ -226,7 +209,6 @@ export default function WaiterDashboard() {
         });
       });
       
-      console.log('[Waiter] Subscribed orders channel:', `orders:${tenantUserId}`);
       setOrderChannel(orderCh);
 
       // Subscribe to table updates (use tenantUserId)
@@ -234,11 +216,9 @@ export default function WaiterDashboard() {
       tableCh.subscribe(['table.created', 'table.updated', 'table.deleted'], (message) => {
         handleTableUpdate(message);
       });
-      console.log('[Waiter] Subscribed tables channel:', `tables:${tenantUserId}`);
       setTableChannel(tableCh);
 
     } catch (error) {
-      console.error('Error initializing Ably:', error);
       toast.error('Failed to initialize real-time connection');
     }
   };
@@ -247,12 +227,10 @@ export default function WaiterDashboard() {
     if (!session?.user?.id) return;
 
     // Remove duplicate subscription - use only the main one with tenantUserId
-    console.log('[Waiter] Session-based subscription removed - using tenantUserId subscription instead');
   }, [session?.user?.id]);
 
   const handleTableUpdate = (message) => {
     const { name: eventType, data: tableData } = message;
-    console.log('[Waiter] Table update received:', { eventType, tableData });
     fetchTables();
   };
 
@@ -312,7 +290,6 @@ export default function WaiterDashboard() {
         setMenuItems([]);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
       toast.error('Failed to fetch data');
       setOrders([]);
       setTables([]);
@@ -332,7 +309,8 @@ export default function WaiterDashboard() {
       price: size ? item.pricing.find(p => p.size === size)?.price || item.price : (item.pricing && item.pricing.length > 0 ? item.pricing[0].price : item.price),
       quantity: 1,
       category: item.category,
-      unit: item.unit
+      unit: item.unit,
+      subcategory: item.subcategory || '' // Add subcategory field
     };
 
     setManualCart(prev => {
@@ -429,7 +407,6 @@ export default function WaiterDashboard() {
         throw new Error('Failed to create order');
       }
     } catch (error) {
-      console.error('Error creating manual order:', error);
       toast.error('Failed to create manual order');
     } finally {
       setCreatingOrder(false);
@@ -464,7 +441,6 @@ export default function WaiterDashboard() {
         throw new Error('Failed to update order');
       }
     } catch (error) {
-      console.error('Error updating order:', error);
       toast.error('Failed to update order status');
     }
   };
@@ -501,183 +477,205 @@ export default function WaiterDashboard() {
     return paidBool || anyPaidKeyword;
   };
 
-   // Professional Compact Order Card Component
-   const OrderCard = ({ order }) => {
-     const [isExpanded, setIsExpanded] = useState(false);
-     const items = order.items || [];
-     const maxVisibleItems = 3; // Show 3 items when collapsed
-     const hasMoreItems = items.length > maxVisibleItems;
-     const visibleItems = isExpanded ? items : items.slice(0, maxVisibleItems);
+  // Helper function to check if order contains only beverages
+  const isOnlyBeverages = (order) => {
+    if (!order.items || order.items.length === 0) return false;
+    return order.items.every(item => item.subcategory === 'beverages');
+  };
 
-     const getStatusColor = (status) => {
-       switch (status) {
-         case 'pending': return 'bg-yellow-50 border-yellow-200 text-yellow-800';
-         case 'preparing': return 'bg-blue-50 border-blue-200 text-blue-800';
-         case 'ready': return 'bg-green-50 border-green-200 text-green-800';
-         case 'served': return 'bg-purple-50 border-purple-200 text-purple-800';
-         default: return 'bg-gray-50 border-gray-200 text-gray-800';
-       }
-     };
+  // Professional Compact Order Card Component
+  const OrderCard = ({ order }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const items = order.items || [];
+    const maxVisibleItems = 3; // Show 3 items when collapsed
+    const hasMoreItems = items.length > maxVisibleItems;
+    const visibleItems = isExpanded ? items : items.slice(0, maxVisibleItems);
+    const onlyBeverages = isOnlyBeverages(order);
 
-     const getStatusIcon = (status) => {
-       switch (status) {
-         case 'pending': return <FiClock className="w-4 h-4" />;
-         case 'preparing': return <FiRefreshCw className="w-4 h-4" />;
-         case 'ready': return <FiCheckCircle className="w-4 h-4" />;
-         case 'served': return <FiCheck className="w-4 h-4" />;
-         default: return <FiAlertCircle className="w-4 h-4" />;
-       }
-     };
+    const getStatusColor = (status) => {
+      switch (status) {
+        case 'pending': return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+        case 'preparing': return 'bg-blue-50 border-blue-200 text-blue-800';
+        case 'ready': return 'bg-green-50 border-green-200 text-green-800';
+        case 'served': return 'bg-purple-50 border-purple-200 text-purple-800';
+        default: return 'bg-gray-50 border-gray-200 text-gray-800';
+      }
+    };
 
-     const getNextStatus = (currentStatus) => {
-       const statusFlow = {
-         'pending': 'preparing',
-         'preparing': 'ready',
-         'ready': 'served',
-         'served': 'completed'
-       };
-       return statusFlow[currentStatus];
-     };
+    const getStatusIcon = (status) => {
+      switch (status) {
+        case 'pending': return <FiClock className="w-4 h-4" />;
+        case 'preparing': return <FiRefreshCw className="w-4 h-4" />;
+        case 'ready': return <FiCheckCircle className="w-4 h-4" />;
+        case 'served': return <FiCheck className="w-4 h-4" />;
+        default: return <FiAlertCircle className="w-4 h-4" />;
+      }
+    };
 
-     const getActionText = (currentStatus) => {
-       const actionText = {
-         'pending': 'Start Preparing',
-         'preparing': 'Mark Ready',
-         'ready': 'Mark Served',
-         'served': 'Complete'
-       };
-       return actionText[currentStatus];
-     };
+    const getNextStatus = (order) => {
+      // For beverages orders, skip kitchen workflow
+      if (onlyBeverages && order.status === 'pending') {
+        return 'served';
+      }
+      if (onlyBeverages && order.status === 'served') {
+        return 'completed';
+      }
+      
+      const statusFlow = {
+        'pending': 'preparing',
+        'preparing': 'ready',
+        'ready': 'served',
+        'served': 'completed'
+      };
+      return statusFlow[order.status];
+    };
 
-     return (
-       <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
-         {/* Compact Header */}
-         <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50">
-           <div className="flex items-center justify-between">
-             <div className="flex items-center gap-4">
-               <div className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-md">
-                 #{order._id?.slice(-4) || 'N/A'}
-               </div>
-               <div className="text-sm font-medium text-gray-900">
-                 Table {order.tableNumber || 'N/A'}
-               </div>
-             </div>
-             <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(order.status)}`}>
-               {getStatusIcon(order.status)}
-               <span className="capitalize">{order.status}</span>
-             </div>
-           </div>
-         </div>
+    const getActionText = (order) => {
+      // For beverages orders, show direct serving option
+      if (onlyBeverages && order.status === 'pending') {
+        return 'Mark Served';
+      }
+      if (onlyBeverages && order.status === 'served') {
+        return 'Complete Order';
+      }
+      
+      const actionText = {
+        'pending': 'Start Preparing',
+        'preparing': 'Mark Ready',
+        'ready': 'Mark Served',
+        'served': 'Complete'
+      };
+      return actionText[order.status] || 'Update';
+    };
 
-         {/* Compact Items List */}
-         <div className="px-4 py-3">
-           <div className="space-y-2">
-             {visibleItems.map((item, index) => (
-               <div key={index} className="flex items-center justify-between text-sm">
-                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                   <span className="bg-gray-100 text-gray-700 text-xs px-1.5 py-0.5 rounded font-medium">
-                     {item.quantity}x
-                   </span>
-                   <div className="flex flex-col flex-1 min-w-0">
-                     <div className="flex items-center gap-2">
-                       <span className="text-gray-900 truncate font-medium">{item.name}</span>
-                       {item.size && item.size.trim() !== '' && (
-                         <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded font-medium">
-                           {item.size}
-                         </span>
-                       )}
-                     </div>
-                     {item.notes && (
-                       <p className="text-xs text-gray-500 truncate">{item.notes}</p>
-                     )}
-                   </div>
-                 </div>
-                 <span className="text-gray-600 text-xs ml-2 whitespace-nowrap">₹{item.price}</span>
-               </div>
-             ))}
-             {hasMoreItems && (
-               <button 
-                 onClick={() => setIsExpanded(!isExpanded)}
-                 className="w-full text-center text-xs text-blue-600 hover:text-blue-800 font-medium py-1 transition-colors"
-               >
-                 {isExpanded ? (
-                   'Show less'
-                 ) : (
-                   `+${items.length - maxVisibleItems} more items`
-                 )}
-               </button>
-             )}
-           </div>
-         </div>
+    return (
+      <div className={`bg-white rounded-xl border-2 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden ${
+        onlyBeverages ? 'border-blue-200 bg-blue-50/30' : 'border-gray-200'
+      }`}>
+        {/* Compact Header */}
+        <div className="px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-gray-900 text-sm">#{order._id?.slice(-6) || 'N/A'}</span>
+              {onlyBeverages && (
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
+                  Beverages Only
+                </span>
+              )}
+            </div>
+            <div className={`flex items-center gap-2 px-2 py-1 rounded-full border text-xs font-medium ${getStatusColor(order.status)}`}>
+              {getStatusIcon(order.status)}
+              <span className="capitalize">{order.status}</span>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between text-xs text-gray-600">
+            <div className="flex items-center gap-1">
+              <FiUser className="w-3 h-3" />
+              <span>Table {order.tableNumber}</span>
+            </div>
+            {order.customerName && (
+              <div className="flex items-center gap-1">
+                <span>{order.customerName}</span>
+              </div>
+            )}
+          </div>
+        </div>
 
-         {/* Compact Footer with Actions */}
-         <div className="px-4 py-3 bg-gray-50/30 border-t border-gray-100">
-           <div className="flex items-center justify-between">
-             <div className="text-sm">
-               <div className="font-bold text-gray-900">
-                 ₹{order.totalAmount || (order.items || []).reduce((sum, item) => sum + (item.price * item.quantity), 0)}
-               </div>
-               <div className="text-xs text-gray-500">
-                 {(() => {
-                   console.log('[Waiter] Order time debug:', {
-                     orderId: order._id,
-                     createdAt: order.createdAt,
-                     timestamp: order.timestamp,
-                     type: typeof order.createdAt
-                   });
-                   
-                   // Try createdAt first, then timestamp as fallback
-                   const timeToShow = order.createdAt || order.timestamp;
-                   
-                   if (!timeToShow) {
-                     return 'No time available';
-                   }
-                   
-                   try {
-                     const date = new Date(timeToShow);
-                     if (isNaN(date.getTime())) {
-                       return 'Invalid time format';
-                     }
-                     return date.toLocaleTimeString('en-IN', { 
-                       hour: '2-digit', 
-                       minute: '2-digit' 
-                     });
-                   } catch (e) {
-                     console.error('[Waiter] Time parsing error:', e);
-                     return 'Time error';
-                   }
-                 })()}
-               </div>
-             </div>
-             {order.status !== 'served' && order.status !== 'completed' && (
-               <div className="flex gap-2">
-                 <button
-                   onClick={() => updateOrderStatus(order._id, getNextStatus(order.status))}
-                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-                     order.status === 'pending' 
-                       ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                       : order.status === 'preparing'
-                       ? 'bg-green-600 hover:bg-green-700 text-white'
-                       : 'bg-purple-600 hover:bg-purple-700 text-white'
-                   }`}
-                 >
-                   {getActionText(order.status)}
-                 </button>
-                 {order.status === 'pending' && (
-                   <button
-                     onClick={() => updateOrderStatus(order._id, 'cancelled')}
-                     className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 bg-red-600 hover:bg-red-700 text-white"
-                   >
-                     Cancel
-                   </button>
-                 )}
-               </div>
-             )}
-           </div>
-         </div>
-       </div>
-     );
-   };
+        {/* Compact Items List */}
+        <div className="px-4 py-3">
+          <div className="space-y-1.5">
+            {visibleItems.map((item, index) => (
+              <div key={index} className="flex justify-between items-center text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-xs font-medium text-gray-600">
+                    {item.quantity}
+                  </span>
+                  <span className="text-gray-900 font-medium">{item.name}</span>
+                  {item.subcategory === 'beverages' && (
+                    <span className="px-1.5 py-0.5 bg-blue-100 text-blue-600 text-xs rounded">🥤</span>
+                  )}
+                </div>
+                <span className="text-gray-600 font-medium">₹{(item.price * item.quantity).toFixed(0)}</span>
+              </div>
+            ))}
+            
+            {hasMoreItems && !isExpanded && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-full text-center text-xs text-blue-600 hover:text-blue-800 font-medium py-1 transition-colors"
+              >
+                {isExpanded ? (
+                  'Show less'
+                ) : (
+                  `+${items.length - maxVisibleItems} more items`
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Compact Footer with Actions */}
+        <div className="px-4 py-3 bg-gray-50/30 border-t border-gray-100">
+          <div className="flex items-center justify-between">
+            <div className="text-sm">
+              <div className="font-bold text-gray-900">
+                ₹{order.totalAmount || (order.items || []).reduce((sum, item) => sum + (item.price * item.quantity), 0)}
+              </div>
+              <div className="text-xs text-gray-500">
+                {(() => {
+                  const timeToShow = order.createdAt || order.timestamp;
+                  
+                  if (!timeToShow) {
+                    return 'No time available';
+                  }
+                  
+                  try {
+                    const date = new Date(timeToShow);
+                    if (isNaN(date.getTime())) {
+                      return 'Invalid time format';
+                    }
+                    return date.toLocaleTimeString('en-IN', { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    });
+                  } catch (e) {
+                    return 'Time error';
+                  }
+                })()}
+              </div>
+            </div>
+            {order.status !== 'served' && order.status !== 'completed' && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => updateOrderStatus(order._id, getNextStatus(order))}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                    onlyBeverages && order.status === 'pending'
+                      ? 'bg-green-600 hover:bg-green-700 text-white'
+                      : order.status === 'pending' 
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      : order.status === 'preparing'
+                      ? 'bg-green-600 hover:bg-green-700 text-white'
+                      : 'bg-purple-600 hover:bg-purple-700 text-white'
+                  }`}
+                >
+                  {getActionText(order)}
+                </button>
+                {order.status === 'pending' && (
+                  <button
+                    onClick={() => updateOrderStatus(order._id, 'cancelled')}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Professional Compact Table Card Component  
   const TableCard = ({ table }) => {
@@ -718,9 +716,15 @@ export default function WaiterDashboard() {
     return null;
   }
 
-  const activeOrders = orders.filter(order => !['cancelled'].includes(order.status) && !isOrderPaid(order));
-  const pendingOrders = activeOrders.filter(order => order.status === 'pending');
-  const preparingOrders = activeOrders.filter(order => order.status === 'preparing');
+  // Filter orders by status
+  const activeOrders = orders.filter(order => 
+    ['pending', 'preparing', 'ready'].includes(order.status)
+  );
+  const servedOrders = orders.filter(order => 
+    ['served', 'completed'].includes(order.status)
+  );
+  const pendingOrders = orders.filter(order => order.status === 'pending');
+  const preparingOrders = orders.filter(order => order.status === 'preparing');
 
   
 
@@ -777,42 +781,42 @@ export default function WaiterDashboard() {
             </div>
           </div>
 
-          {/* Enhanced Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8">
-            <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl p-6 text-white shadow-lg">
-              <div className="flex items-center justify-between mb-2 sm:mb-4">
-                <h3 className="text-sm sm:text-base lg:text-lg font-semibold">Pending</h3>
-                <FiClock className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 opacity-80" />
+          {/* Compact Stats Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg p-3 text-white shadow-md">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-xs font-medium">Pending</h3>
+                <FiClock className="w-4 h-4 opacity-70" />
               </div>
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold">{pendingOrders.length}</div>
-              <div className="text-yellow-100 text-xs sm:text-sm mt-1">Awaiting prep</div>
+              <div className="text-lg font-bold">{pendingOrders.length}</div>
+              <div className="text-yellow-100 text-xs">Awaiting prep</div>
             </div>
 
-            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-6 text-white shadow-lg">
-              <div className="flex items-center justify-between mb-2 sm:mb-4">
-                <h3 className="text-sm sm:text-base lg:text-lg font-semibold">Preparing</h3>
-                <FiRefreshCw className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 opacity-80" />
+            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg p-3 text-white shadow-md">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-xs font-medium">Preparing</h3>
+                <FiRefreshCw className="w-4 h-4 opacity-70" />
               </div>
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold">{preparingOrders.length}</div>
-              <div className="text-blue-100 text-xs sm:text-sm mt-1">In kitchen</div>
+              <div className="text-lg font-bold">{preparingOrders.length}</div>
+              <div className="text-blue-100 text-xs">In kitchen</div>
             </div>
 
-            <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-6 text-white shadow-lg">
-              <div className="flex items-center justify-between mb-2 sm:mb-4">
-                <h3 className="text-sm sm:text-base lg:text-lg font-semibold">Total</h3>
-                <FiCheckCircle className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 opacity-80" />
+            <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg p-3 text-white shadow-md">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-xs font-medium">Total</h3>
+                <FiCheckCircle className="w-4 h-4 opacity-70" />
               </div>
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold">{activeOrders.length}</div>
-              <div className="text-green-100 text-xs sm:text-sm mt-1">Active orders</div>
+              <div className="text-lg font-bold">{activeOrders.length}</div>
+              <div className="text-green-100 text-xs">Active orders</div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-6 text-white shadow-lg">
-              <div className="flex items-center justify-between mb-2 sm:mb-4">
-                <h3 className="text-sm sm:text-base lg:text-lg font-semibold">Tables</h3>
-                <FiUser className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 opacity-80" />
+            <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg p-3 text-white shadow-md">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-xs font-medium">Tables</h3>
+                <FiUser className="w-4 h-4 opacity-70" />
               </div>
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold">{Array.isArray(tables) ? tables.length : 0}</div>
-              <div className="text-purple-100 text-xs sm:text-sm mt-1">Total tables</div>
+              <div className="text-lg font-bold">{Array.isArray(tables) ? tables.length : 0}</div>
+              <div className="text-purple-100 text-xs">Total tables</div>
             </div>
           </div>
 
@@ -830,6 +834,17 @@ export default function WaiterDashboard() {
                 >
                   <span className="sm:hidden">Orders ({activeOrders.length})</span>
                   <span className="hidden sm:inline">Orders ({activeOrders.length})</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('served-orders')}
+                  className={`py-3 px-4 sm:px-6 text-sm font-medium rounded-t-lg transition-all duration-200 whitespace-nowrap ${
+                    activeTab === 'served-orders'
+                      ? 'bg-green-50 text-green-700 border-b-2 border-green-700'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="sm:hidden">Served Orders ({servedOrders.length})</span>
+                  <span className="hidden sm:inline">Served Orders ({servedOrders.length})</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('manual-order')}
@@ -888,7 +903,27 @@ export default function WaiterDashboard() {
                 )}
               </div>
             )}
-
+            {activeTab === 'served-orders' && (
+              <div className="p-4 sm:p-6">
+                {servedOrders.length === 0 ? (
+                  <div className="text-center py-8 sm:py-12">
+                    <div className="bg-purple-100 rounded-full p-4 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                      <FiUsers className="w-10 h-10 text-purple-600" />
+                    </div>
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No Served Orders</h3>
+                    <p className="text-sm sm:text-base text-gray-500">No orders have been served yet.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4">
+                    {servedOrders
+                      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+                      .map((order) => (
+                        <OrderCard key={order._id} order={order} />
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
             {activeTab === 'manual-order' && (
               <div className="p-4 sm:p-6">
                 <div className="max-w-4xl mx-auto">

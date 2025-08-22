@@ -134,7 +134,6 @@ export default function AdminPanel() {
 
             setUsers(usersWithTables);
         } catch (error) {
-            console.error('Error in fetchAllUsers:', error);
             toast.error(error.message || 'Failed to load users');
 
             if (data) {
@@ -204,20 +203,17 @@ export default function AdminPanel() {
             const adminsData = await adminsRes.json();
             const usersData = await usersRes.json();
 
-            console.log('Fetched users:', usersData); // Add this line
-
             // Ensure we have valid arrays
             setAdmins(Array.isArray(adminsData) ? adminsData : []);
             setUsers(Array.isArray(usersData) ? usersData : []);
 
         } catch (error) {
-            console.error("Error fetching users:", error);
-            setError(error.message || "Failed to load users data. Please try again.");
+            toast.error('Failed to load users');
             setAdmins([]);
             setUsers([]);
 
             // Show error toast
-            toast.error(error.message || "Failed to load users data. Please try again.", {
+            toast.error('Failed to load users', {
                 position: "top-right",
                 autoClose: 5000,
                 hideProgressBar: false,
@@ -234,20 +230,16 @@ export default function AdminPanel() {
     const fetchAnalytics = async () => {
         try {
             setIsRefreshing(true);
-            console.log('Fetching analytics data...');
             const res = await fetch('/api/analytics');
             const data = await res.json();
 
             if (!res.ok) {
-                console.error('Error in analytics response:', data);
                 throw new Error(data.error || 'Failed to load analytics data');
             }
 
-            console.log('Analytics data received:', data);
             setAnalytics(data);
         } catch (error) {
-            console.error('Error in fetchAnalytics:', error);
-            toast.error(error.message || 'Failed to load analytics data');
+            toast.error('Failed to load analytics data');
         } finally {
             setIsRefreshing(false);
         }
@@ -411,7 +403,6 @@ export default function AdminPanel() {
                 throw new Error(errorData.error || 'Failed to update user');
             }
         } catch (error) {
-            console.error("Error updating user:", error);
             toast.error(error.message || "Failed to update user", {
                 position: "top-right",
                 autoClose: 5000,
@@ -502,7 +493,6 @@ export default function AdminPanel() {
                 throw new Error(errorData.error || 'Failed to update admin');
             }
         } catch (error) {
-            console.error("Error updating admin:", error);
             toast.error(error.message || "Failed to update admin", {
                 position: "top-right",
                 autoClose: 5000,
@@ -517,7 +507,6 @@ export default function AdminPanel() {
 
     const toggleUserStatus = async (userId, currentStatus) => {
         try {
-            console.log('Toggling status for user:', userId, 'Current status:', currentStatus);
             const newStatus = !currentStatus;
             
             // Update local state optimistically
@@ -541,7 +530,6 @@ export default function AdminPanel() {
             });
 
             const data = await res.json();
-            console.log('API Response:', data);
 
             if (!res.ok) {
                 throw new Error(data.error || 'Failed to update user status');
@@ -561,7 +549,6 @@ export default function AdminPanel() {
             fetchUsers();
 
         } catch (error) {
-            console.error("Error toggling user status:", error);
             // Revert on error
             setUsers(prevUsers => 
                 prevUsers.map(user => 
@@ -631,7 +618,7 @@ export default function AdminPanel() {
             {/* Text Logo */}
             <header className="max-w-lg mx-auto text-center mb-10 select-none">
                 <Logo className="mb-6 text-6xl" />
-                <p className="mt-1 text-xl font-semibold text-amber-700 tracking-wider">Admin Panel</p>
+                <p className="mt-1 text-xl font-semibold text-gray-700 tracking-wider">Admin Panel</p>
             </header>
 
             {/* Add User Button */}

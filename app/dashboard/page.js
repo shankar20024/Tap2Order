@@ -740,7 +740,6 @@ export default function Dashboard() {
   const fetchOrders = async () => {
     try {
       if (!session?.user?.id) {
-        console.log("No session or user ID available");
         return;
       }
 

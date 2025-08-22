@@ -41,6 +41,54 @@ export async function middleware(req) {
     return NextResponse.redirect(url);
   }
 
+  // Department-based routing middleware
+  if (token?.isStaff && token?.department) {
+    const departmentPages = {
+      'kitchen': '/kitchen',
+      'service': '/waiter', 
+      'management': '/dashboard',
+      'cleaning': '/login', // No specific page, redirect to login
+      'other': '/login' // No specific page, redirect to login
+    };
+
+    const allowedPage = departmentPages[token.department];
+    
+    // If staff is trying to access a page not meant for their department
+    if (path === '/kitchen' && token.department !== 'kitchen') {
+      return NextResponse.redirect(new URL(allowedPage || '/login', req.url));
+    }
+    
+    if (path === '/waiter' && token.department !== 'service') {
+      return NextResponse.redirect(new URL(allowedPage || '/login', req.url));
+    }
+    
+    if (path === '/dashboard' && token.department !== 'management' && !token.isOwner) {
+      return NextResponse.redirect(new URL(allowedPage || '/login', req.url));
+    }
+    
+    // If staff department has no specific page, redirect to login
+    if (['cleaning', 'other'].includes(token.department) && 
+        ['/kitchen', '/waiter', '/dashboard'].includes(path)) {
+      return NextResponse.redirect(new URL('/login', req.url));
+    }
+  }
+
+  // Prevent staff from accessing owner-only pages
+  if (token?.isStaff && !token?.isOwner) {
+    const ownerOnlyPages = ['/admin', '/profile', '/staff'];
+    if (ownerOnlyPages.some(page => path.startsWith(page))) {
+      const departmentPages = {
+        'kitchen': '/kitchen',
+        'service': '/waiter', 
+        'management': '/dashboard',
+        'cleaning': '/login', // No specific page, redirect to login
+        'other': '/login' // No specific page, redirect to login
+      };
+      const allowedPage = departmentPages[token.department] || '/login';
+      return NextResponse.redirect(new URL(allowedPage, req.url));
+    }
+  }
+
   return NextResponse.next();
 }
 

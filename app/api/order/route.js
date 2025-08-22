@@ -3,6 +3,8 @@ import Order from "@/models/Order";
 import Table from "@/models/Table"; // Import Table model
 import { NextResponse } from "next/server";
 import { setTableOccupied, setTableFree } from "@/lib/tableStatus";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../auth/[...nextauth]/route";
 
 // POST method to create a new order
 export async function POST(req) {
@@ -28,24 +30,58 @@ export async function POST(req) {
       quantity: Number(item.quantity) || 1,
       name: String(item.name || 'Unnamed Item'),
       notes: String(item.notes || ''),
-      size: String(item.size || '')
+      size: String(item.size || ''),
+      subcategory: String(item.subcategory || '') // Ensure subcategory is preserved
     }));
 
-    // Validate processed cart
-    const invalidItems = processedCart.filter(item => !item.menuItemId || isNaN(item.price) || item.price <= 0);
-    if (invalidItems.length > 0) {
-      return NextResponse.json({
-        error: "Invalid cart items",
-        details: "Some items are missing required fields or have invalid prices",
-        code: "INVALID_CART_ITEMS"
-      }, { status: 400 });
+    // Separate beverages and food items
+    const beverageItems = processedCart.filter(item => item.subcategory === 'beverages');
+    const foodItems = processedCart.filter(item => item.subcategory !== 'beverages');
+    
+    const savedOrders = [];
+    
+    // Create beverages order if there are beverages items
+    if (beverageItems.length > 0) {
+      const beveragesTotalAmount = beverageItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      
+      const beveragesOrder = new Order({
+        tableNumber: Number(tableNumber) || 0,
+        items: beverageItems,
+        userId: String(userId || ''),
+        specialRequests: String(orderMessage || ''),
+        status: 'pending', // Beverages start as pending, waiter can serve or cancel
+        orderType: 'beverages',
+        totalAmount: beveragesTotalAmount,
+        paymentStatus: "unpaid",
+        customerName: String(customerName || ''),
+        customerPhone: String(customerPhone || ''),
+      });
+      
+      const savedBeveragesOrder = await beveragesOrder.save();
+      savedOrders.push(savedBeveragesOrder);
     }
-
-    // Calculate total amount
-    const totalAmount = processedCart.reduce((sum, item) => {
-      return sum + (item.price * item.quantity);
-    }, 0);
-
+    
+    // Create food order if there are food items
+    if (foodItems.length > 0) {
+      const foodTotalAmount = foodItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      
+      const foodOrder = new Order({
+        tableNumber: Number(tableNumber) || 0,
+        items: foodItems,
+        userId: String(userId || ''),
+        specialRequests: String(orderMessage || ''),
+        status: status || 'pending', // Food follows normal workflow
+        orderType: 'food',
+        totalAmount: foodTotalAmount,
+        paymentStatus: "unpaid",
+        customerName: String(customerName || ''),
+        customerPhone: String(customerPhone || ''),
+      });
+      
+      const savedFoodOrder = await foodOrder.save();
+      savedOrders.push(savedFoodOrder);
+    }
+    
     // Check if table exists
     const table = await Table.findOne({ userId, tableNumber });
     if (!table) {
@@ -59,7 +95,6 @@ export async function POST(req) {
     try {
       await setTableOccupied(userId, tableNumber);
     } catch (error) {
-      console.error("Error setting table occupied:", error);
       return NextResponse.json({
         error: "Failed to set table status",
         details: error.message,
@@ -67,22 +102,8 @@ export async function POST(req) {
       }, { status: 500 });
     }
 
-    const order = new Order({
-      tableNumber: Number(tableNumber) || 0,
-      items: processedCart,
-      userId: String(userId || ''),
-      specialRequests: String(orderMessage || ''),
-      status: status || "pending",
-      totalAmount,
-      paymentStatus: "unpaid",
-      customerName: String(customerName || ''),
-      customerPhone: String(customerPhone || ''),
-    });
-
-    const savedOrder = await order.save();
-    return NextResponse.json(savedOrder, { status: 201 });
+    return NextResponse.json(savedOrders, { status: 201 });
   } catch (err) {
-    console.error("POST error:", err);
     return NextResponse.json({
       error: "Server error",
       details: err.message,
@@ -96,12 +117,21 @@ export async function GET(req) {
   try {
     await connectDB();
     
-    // Get userId from query parameters
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    // Get authentication from NextAuth session
+    const session = await getServerSession(authOptions);
     
-    if (!userId) {
-      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+    
+    let userId;
+    
+    // For staff users, use hotelOwner as userId
+    if (session.user.isStaff && session.user.hotelOwner) {
+      userId = session.user.hotelOwner;
+    } else {
+      // For regular users, use their own ID
+      userId = session.user.id;
     }
     
     // Only fetch orders for this specific userId that are not completed
@@ -112,7 +142,6 @@ export async function GET(req) {
     
     return NextResponse.json(orders);
   } catch (error) {
-    console.error("Error fetching orders:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

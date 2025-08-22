@@ -21,8 +21,8 @@ export default function QRMenu(paramsPromise) {
   const { userId, tableNumber } = use(paramsPromise.params);
   
   // State
-  const [username, setUsername] = useState('');
-  const [hotelName, setHotelName] = useState('');
+  const [username, setUsername] = useState('Restaurant');
+  const [hotelName, setHotelName] = useState('Restaurant');
   const [apiStatus, setApiStatus] = useState(true);
   const [tableExists, setTableExists] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -79,40 +79,25 @@ export default function QRMenu(paramsPromise) {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch(`/api/me/user?userId=${userId}`);
-        if (res.ok) {
-          const userData = await res.json();
-          setUsername(userData.name);
-          
-          // If the user has a hotel code, use it to get the hotel name
-          if (userData.hotelCode) {
-            try {
-              const hotelRes = await fetch(`/api/hotels`);
-              if (hotelRes.ok) {
-                const { hotels } = await hotelRes.json();
-                const currentHotel = hotels.find(h => h.hotelCode === userData.hotelCode);
-                if (currentHotel) {
-                  setHotelName(currentHotel.businessName || currentHotel.name);
-                }
-              }
-            } catch (error) {
-              console.error('Error fetching hotel data:', error);
-            }
-          }
+        const userResponse = await fetch(`/api/me/user?userId=${userId}`);
+
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          setUsername(userData.username);
+          setHotelName(userData.hotelName || userData.username);
           setApiStatus(true);
         } else {
-          const errorData = await res.json();
-          console.error('Error:', errorData.error);
-          setUsername('wait for user login');
           setApiStatus(false);
         }
-      } catch (err) {
-        console.error('Error fetching user data:', err);
-        setUsername('wait for user login');
+      } catch (error) {
+        console.error('Error fetching user data:', error);
         setApiStatus(false);
       }
     };
-    fetchUser();
+
+    if (userId) {
+      fetchUser();
+    }
   }, [userId]);
 
   // Check table existence
@@ -157,7 +142,8 @@ export default function QRMenu(paramsPromise) {
     const itemWithPrice = {
       ...item,
       price: currentPrice,
-      size: sizeInfo
+      size: sizeInfo,
+      subcategory: item.subcategory || '' // Add subcategory field
     };
     
     addToCart(itemWithPrice, qty);

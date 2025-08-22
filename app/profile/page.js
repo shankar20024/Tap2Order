@@ -45,12 +45,9 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      console.log("Fetching profile data...");
       const response = await fetch('/api/profile');
-      console.log("API response status:", response.status);
       if (response.ok) {
         const data = await response.json();
-        console.log("Raw data from API:", data);
         setProfile(prev => {
           const newProfile = {
             ...prev, ...data,
@@ -59,7 +56,6 @@ export default function ProfilePage() {
             gstDetails: { ...prev.gstDetails, ...(data.gstDetails || {}) },
             fssaiDetails: { ...prev.fssaiDetails, ...(data.fssaiDetails || {}) }
           };
-          console.log("New profile state:", newProfile);
           return newProfile;
         });
         const rate = parseFloat(data.gstDetails?.taxRate) || 0;
@@ -67,13 +63,10 @@ export default function ProfilePage() {
         setCgst(halfRate);
         setSgst(halfRate);
       } else {
-        console.error("Failed to fetch profile, status:", response.status);
         const errorData = await response.json();
-        console.error("Error data:", errorData);
         toast.error('Failed to load profile');
       }
     } catch (error) {
-      console.error('An error occurred while fetching profile:', error);
       toast.error('Failed to load profile');
     } finally {
       setLoading(false);

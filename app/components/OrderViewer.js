@@ -41,25 +41,9 @@ export default function OrderViewer({ userId, tableNumber, isOpen, onClose }) {
                         setCart(formattedCart);
                     }
                 } else {
-                    // Debug: Log received orders data
-                    console.log('[OrderViewer] Received orders:', data.orders);
-                    data.orders.forEach((order, index) => {
-                        console.log(`[OrderViewer] Order ${index} items:`, order.items);
-                        order.items.forEach((item, itemIndex) => {
-                            console.log(`[OrderViewer] Order ${index} Item ${itemIndex}:`, {
-                                name: item.name,
-                                size: item.size,
-                                price: item.price,
-                                quantity: item.quantity
-                            });
-                        });
-                    });
+                    // Set orders data
+                    setOrders(data.orders || []);
 
-                    // Load all orders for this user and table
-                    setOrders(
-                        data.orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                    );
-                    
                     // Don't automatically set cart from orders - let user manage their current cart
                     const stored = localStorage.getItem("cart");
                     if (stored) {

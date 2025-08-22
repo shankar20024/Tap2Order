@@ -32,7 +32,6 @@ export async function PUT(req, { params }) {
   if (!session) return new Response("Unauthorized", { status: 401 });
 
   const body = await req.json();
-  console.log('Received update request for user:', id, 'with data:', body);
   
   const { name, email, role, password, tableLimit, staffLimit, isActive, businessName, businessType, phone, hotelPhone, address } = body;
   
@@ -41,68 +40,38 @@ export async function PUT(req, { params }) {
   try {
     const user = await User.findById(id);
     if (!user) {
-      console.log('User not found:', id);
       return new Response(JSON.stringify({ error: "User not found" }), { status: 404 });
     }
 
-    // Log current user data before update
-    console.log('User before update:', {
-      _id: user._id,
-      isActive: user.isActive,
-      email: user.email
-    });
+    const updates = {
+      name,
+      email,
+      role,
+      tableLimit,
+      staffLimit,
+      isActive,
+      businessName,
+      businessType,
+      phone,
+      hotelPhone,
+      address
+    };
 
-    // Update only the fields that are provided
-    const updates = {};
-    if (name) updates.name = name;
-    if (email) updates.email = email;
-    if (role && ["admin", "user"].includes(role)) updates.role = role;
-    if (tableLimit !== undefined) updates.tableLimit = parseInt(tableLimit) || 10;
-    if (staffLimit !== undefined) {
-      const s = parseInt(staffLimit);
-      updates.staffLimit = Math.min(50, Math.max(1, Number.isNaN(s) ? 5 : s));
-    }
-    if (isActive !== undefined) updates.isActive = isActive;
-    if (businessName !== undefined) updates.businessName = businessName;
-    if (businessType !== undefined) updates.businessType = businessType;
-    if (phone !== undefined) updates.phone = phone;
-    if (hotelPhone !== undefined) updates.hotelPhone = hotelPhone;
-    if (address && typeof address === 'object') {
-      updates.address = {
-        street: address.street ?? user.address?.street ?? "",
-        city: address.city ?? user.address?.city ?? "",
-        state: address.state ?? user.address?.state ?? "",
-        zipCode: address.zipCode ?? user.address?.zipCode ?? "",
-        country: address.country ?? user.address?.country ?? "India",
-      };
-    }
-
-    if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
+    if (password && password.trim() !== '') {
+      const hashedPassword = await bcrypt.hash(password, 12);
       updates.password = hashedPassword;
     }
 
-    console.log('Updating user with:', updates);
-
-    // Use findByIdAndUpdate with { new: true } to return the updated document
     const updatedUser = await User.findByIdAndUpdate(
-      id, 
-      updates, 
+      id,
+      updates,
       { new: true, runValidators: true }
     );
-    
+
     if (!updatedUser) {
-      console.error('Failed to update user:', id);
       return new Response(JSON.stringify({ error: "Failed to update user" }), { status: 500 });
     }
 
-    console.log('User after update:', {
-      _id: updatedUser._id,
-      isActive: updatedUser.isActive,
-      email: updatedUser.email
-    });
-
-    // Return the updated user data
     return new Response(JSON.stringify({
       message: "User updated successfully",
       user: updatedUser
@@ -111,7 +80,6 @@ export async function PUT(req, { params }) {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error("Error updating user:", error);
     return new Response(JSON.stringify({ 
       error: "Failed to update user",
       details: error.message 

@@ -78,7 +78,7 @@ export default function Hero() {
           className="mb-6 sm:mb-8"
         >
           <motion.div
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-100 to-orange-100 px-4 sm:px-6 py-2 sm:py-3 rounded-full border border-amber-200 mb-4 sm:mb-6 mt-3 "
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-100 to-orange-100 px-4 sm:px-6 py-2 sm:py-3 rounded-full border border-amber-200 mb-4 sm:mb-6 mt-3 mx-10 "
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 300 }}
           >

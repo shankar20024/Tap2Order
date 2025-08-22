@@ -24,6 +24,7 @@ export const authOptions = {
               hotelOwner: payload.hotelOwner,
               hotelCode: payload.hotelCode,
               position: payload.position,
+              department: payload.department,
             };
           } catch (e) {
             throw new Error("Invalid or expired staff token");
@@ -68,6 +69,7 @@ export const authOptions = {
           token.hotelOwner = user.hotelOwner;
           token.hotelCode = user.hotelCode;
           token.position = user.position;
+          token.department = user.department;
         }
       }
       return token;
@@ -87,6 +89,7 @@ export const authOptions = {
           session.user.hotelOwner = token.hotelOwner;
           session.user.hotelCode = token.hotelCode;
           session.user.position = token.position;
+          session.user.department = token.department;
         }
       }
       return session;

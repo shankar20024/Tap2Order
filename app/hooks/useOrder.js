@@ -64,7 +64,8 @@ export default function useOrder(userId, tableNumber, cart, getTotalPrice, reset
             price: item.price,
             quantity: item.quantity,
             notes: item.notes || '',
-            size: item.size || ''
+            size: item.size || '',
+            subcategory: item.subcategory || ''
           })),
           userId,
           orderMessage
@@ -75,27 +76,34 @@ export default function useOrder(userId, tableNumber, cart, getTotalPrice, reset
 
       const orderData = await res.json();
 
-      // Publish to Ably channel
-      const channel = ably.channels.get(`orders:${userId}`);
-      await channel.publish("new-order", {
-        _id: orderData._id,
-        tableNumber,
-        items: cart.map(item => ({
-          menuItemId: item.menuItemId,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          size: item.size || ''
-        })),
-        totalAmount: getTotalPrice(),
-        message: orderMessage,
-        createdAt: new Date().toISOString(),
-        timestamp: Date.now(),
-        userId: userId,
-        status: "pending"
-      });
+      // Handle both single order and array of orders (for separated beverages/food orders)
+      const orders = Array.isArray(orderData) ? orderData : [orderData];
+      const firstOrder = orders[0];
 
-      toast.success(`Order #${orderData._id.slice(-4)} placed successfully!`);
+      // Publish to Ably channel for each order
+      const channel = ably.channels.get(`orders:${userId}`);
+      
+      for (const order of orders) {
+        await channel.publish("new-order", {
+          _id: order._id,
+          tableNumber,
+          items: order.items, // Use order.items which already includes subcategory
+          totalAmount: order.totalAmount,
+          message: orderMessage,
+          createdAt: order.createdAt || new Date().toISOString(),
+          timestamp: Date.now(),
+          userId: userId,
+          status: order.status || "pending",
+          orderType: order.orderType || "food"
+        });
+      }
+
+      // Show success message
+      if (orders.length === 1) {
+        toast.success(`Order #${firstOrder._id.slice(-4)} placed successfully!`);
+      } else {
+        toast.success(`${orders.length} orders placed successfully! (Beverages & Food separated)`);
+      }
       
       // Reset cart and order message after successful order
       resetCart();

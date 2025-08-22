@@ -24,6 +24,8 @@ export async function GET(req) {
 
     return NextResponse.json({
       name: user.businessName || user.name, // Use businessName, fallback to personal name
+      username: user.name,
+      hotelName: user.businessName || user.name,
       email: user.email,
       role: user.role,
     });

@@ -39,12 +39,31 @@ const OrderSchema = new mongoose.Schema(
           type: String,
           default: "",
         },
+        subcategory: {
+          type: String,
+          default: "",
+        },
       },
     ],
     status: {
       type: String,
-      enum: ["pending", "preparing", "served", "completed", "cancelled"],
+      enum: ["pending", "preparing", "ready", "served", "completed", "cancelled"],
       default: "pending",
+      validate: {
+        validator: function(status) {
+          // Beverages orders cannot have preparing or ready status
+          if (this.orderType === 'beverages' && (status === 'preparing' || status === 'ready')) {
+            return false;
+          }
+          return true;
+        },
+        message: 'Beverages orders cannot have preparing or ready status'
+      }
+    },
+    orderType: {
+      type: String,
+      enum: ["food", "beverages"],
+      default: "food",
     },
     paymentStatus: {
       type: String,
@@ -110,7 +129,7 @@ try {
     delete mongoose.connection.models.Order;
   }
 } catch (error) {
-  console.log('Model cache clear attempt:', error.message);
+  // Model cache clear attempt failed
 }
 
 export default mongoose.models.Order || mongoose.model("Order", OrderSchema);
