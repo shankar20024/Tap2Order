@@ -18,7 +18,7 @@ export default function LayoutContent({ children }) {
 
   if (isLoginPage) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen w-full overflow-x-hidden">
         {children}
       </div>
     );
