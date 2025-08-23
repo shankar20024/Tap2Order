@@ -13,7 +13,10 @@ export default function LayoutContent({ children }) {
     '/menu',
     '/table',
     '/order-history',
-    '/order-control'
+    '/order-control',
+    '/customers',
+    '/analytics'
+
   ].some(route => pathname.startsWith(route));
 
   if (isLoginPage) {

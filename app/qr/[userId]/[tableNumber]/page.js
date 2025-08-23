@@ -8,8 +8,9 @@ import OrderViewer from "@/app/components/OrderViewer";
 import QRHeader from "@/app/components/qr/QRHeader";
 import MenuSearch from "@/app/components/qr/MenuSearch";
 import MenuGrid from "@/app/components/qr/MenuGrid";
-import CartButton from "@/app/components/qr/CartButton";
+import BottomCart from "@/app/components/qr/BottomCart";
 import CartPanel from "@/app/components/qr/CartPanel";
+import CustomerInfoModal from "@/app/components/qr/CustomerInfoModal";
 
 // Custom Hooks
 import useCart from "@/app/hooks/useCart";
@@ -30,6 +31,11 @@ export default function QRMenu(paramsPromise) {
   const [showCartArrow, setShowCartArrow] = useState(false);
   const [arrowPosition, setArrowPosition] = useState({ x: 0, y: 0 });
   const [viewOrderModalOpen, setViewOrderModalOpen] = useState(false);
+
+  // Customer Info State
+  const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '' });
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [customerInfoSubmitted, setCustomerInfoSubmitted] = useState(false);
 
   // Custom Hooks
   const {
@@ -72,7 +78,11 @@ export default function QRMenu(paramsPromise) {
     errorMessage,
     orderMessage,
     setOrderMessage,
-    placeOrder
+    prepTime,
+    placeOrder,
+    customerInfo: orderCustomerInfo,
+    setCustomerInfo: setOrderCustomerInfo,
+    resetOrderState
   } = useOrder(userId, tableNumber, cart, getTotalPrice, resetCart);
 
   // Fetch user data
@@ -123,6 +133,33 @@ export default function QRMenu(paramsPromise) {
   useEffect(() => {
     checkTableExistence();
   }, [userId, tableNumber]);
+
+  // Customer Info Management
+  useEffect(() => {
+    const savedCustomerInfo = localStorage.getItem(`customerInfo_${userId}_${tableNumber}`);
+    if (savedCustomerInfo) {
+      const parsedInfo = JSON.parse(savedCustomerInfo);
+      setCustomerInfo(parsedInfo);
+      setCustomerInfoSubmitted(true);
+    } else {
+      // Show modal after 500ms if no customer info exists
+      const timer = setTimeout(() => {
+        setShowCustomerModal(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [userId, tableNumber]);
+
+  // Handle customer info submission
+  const handleCustomerInfoSubmit = (info) => {
+    console.log('🎯 Customer info submitted from form:', info);
+    setCustomerInfo(info);
+    setCustomerInfoSubmitted(true);
+    setOrderCustomerInfo(info); // Update useOrder hook's customerInfo
+    console.log('📝 Customer info set in QR page state:', info);
+    localStorage.setItem(`customerInfo_${userId}_${tableNumber}`, JSON.stringify(info));
+    setShowCustomerModal(false);
+  };
 
   // Handle add to cart with quantity reset
   const handleAddToCart = useCallback((item) => {
@@ -198,6 +235,7 @@ export default function QRMenu(paramsPromise) {
         hotelName={hotelName}
         tableNumber={tableNumber}
         apiStatus={apiStatus}
+        customerInfo={customerInfoSubmitted ? customerInfo : null}
       />
 
       {/* Search & Filters */}
@@ -224,12 +262,11 @@ export default function QRMenu(paramsPromise) {
         getPriceForSize={getPriceForSize}
       />
 
-      {/* Cart Button */}
-      <CartButton
-        totalItemsCount={totalItemsCount}
-        onClick={handleCartClick}
-        showArrow={showCartArrow}
-        onArrowPositionUpdate={handleArrowPositionUpdate}
+      {/* Bottom Cart */}
+      <BottomCart
+        cart={cart}
+        onViewCart={handleCartClick}
+        isVisible={totalItemsCount > 0}
       />
 
       {/* Cart Panel */}
@@ -239,7 +276,7 @@ export default function QRMenu(paramsPromise) {
         cart={cart}
         orderMessage={orderMessage}
         setOrderMessage={setOrderMessage}
-        onPlaceOrder={placeOrder}
+        onPlaceOrder={() => placeOrder(customerInfo)} // Update placeOrder call
         onClearCart={clearCart}
         onQuantityDecrease={decreaseQuantity}
         onQuantityIncrease={addToCart}
@@ -253,9 +290,9 @@ export default function QRMenu(paramsPromise) {
       {/* My Orders Button */}
       <button
         onClick={() => setViewOrderModalOpen(true)}
-        className="fixed bottom-5 left-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 
+        className="fixed bottom-5 left-4 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 
                  rounded-full shadow-lg transition-colors duration-200 z-30
-                 focus:outline-none focus:ring-4 focus:ring-blue-300"
+                 focus:outline-none focus:ring-4 focus:ring-amber-300"
       >
         My Orders
       </button>
@@ -266,6 +303,17 @@ export default function QRMenu(paramsPromise) {
         tableNumber={tableNumber}
         isOpen={viewOrderModalOpen}
         onClose={() => setViewOrderModalOpen(false)}
+      />
+
+      {/* Customer Info Modal */}
+      <CustomerInfoModal
+        isOpen={showCustomerModal}
+        onClose={() => setShowCustomerModal(false)}
+        customerInfo={customerInfo}
+        setCustomerInfo={setCustomerInfo}
+        customerInfoSubmitted={customerInfoSubmitted}
+        setCustomerInfoSubmitted={setCustomerInfoSubmitted}
+        onSubmit={handleCustomerInfoSubmit}
       />
     </div>
   );

@@ -21,7 +21,7 @@ export default function useMenu(userId) {
 
         const uniqueCategories = Array.from(
           new Set(data.map(item => item.category || "Uncategorized"))
-        );
+        ).filter(category => category !== "none"); // Filter out "none" category
         
         // Add Jain to categories only if there are Jain items in the menu
         const hasJainItems = data.some(item => item.category === 'jain');

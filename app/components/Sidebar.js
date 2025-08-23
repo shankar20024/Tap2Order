@@ -14,6 +14,7 @@ import {
   FaQuestionCircle,
   FaSlidersH,
   FaUserCog,
+  FaChartLine,
 } from 'react-icons/fa';
 import { HiUserCircle } from 'react-icons/hi';
 import LogoutButton from './Logout';
@@ -23,7 +24,9 @@ const navItems = [
   { name: 'Orders', path: '/order-history', icon: <FaHistory /> },
   { name: 'Menu', path: '/menu', icon: <FaListAlt /> },
   { name: 'Tables', path: '/table', icon: <FaClipboardList /> },
-  { name: 'Staff', path: '/staff-management', icon: <FaUsers /> },
+  { name: 'Customers', path: '/customers', icon: <FaUsers /> },
+  { name: 'Analytics', path: '/analytics', icon: <FaChartLine /> },
+  { name: 'Staff', path: '/staff-management', icon: <FaUserCog /> },
   { name: 'Order Control', path: '/order-control', icon: <FaSlidersH /> },
   { name: 'Support', path: '/support', icon: <FaQuestionCircle /> },
 ];

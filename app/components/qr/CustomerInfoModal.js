@@ -60,8 +60,8 @@ export default function CustomerInfoModal({ isOpen, onSubmit, onClose }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome!</h2>
-            <p className="text-gray-600">Please provide your details to continue</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Our Restaurant!</h2>
+            <p className="text-gray-600">Help us serve you better by sharing your details</p>
           </div>
 
           {/* Form */}
@@ -79,7 +79,7 @@ export default function CustomerInfoModal({ isOpen, onSubmit, onClose }) {
                 className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors ${
                   errors.name ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="Enter your full name"
+                placeholder="Enter your name (for order identification)"
                 autoFocus
               />
               {errors.name && (
@@ -90,7 +90,7 @@ export default function CustomerInfoModal({ isOpen, onSubmit, onClose }) {
             {/* Phone Field */}
             <div>
               <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number *
+                Mobile Number *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -104,7 +104,7 @@ export default function CustomerInfoModal({ isOpen, onSubmit, onClose }) {
                   className={`w-full pl-12 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors ${
                     errors.phone ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="Enter 10-digit mobile number"
+                  placeholder="For order updates & confirmation"
                   maxLength={10}
                 />
               </div>
@@ -120,14 +120,26 @@ export default function CustomerInfoModal({ isOpen, onSubmit, onClose }) {
                        text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 
                        focus:outline-none focus:ring-4 focus:ring-amber-300 transform hover:scale-[1.02]"
             >
-              Continue to Menu
+              Start Ordering 🍽️
             </button>
           </form>
 
           {/* Privacy Note */}
-          <p className="text-xs text-gray-500 text-center mt-4">
-            Your information is secure and will only be used for order processing
-          </p>
+          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-start gap-2">
+              <svg className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="text-xs text-green-800 font-medium mb-1">Your Privacy is Safe</p>
+                <p className="text-xs text-green-700">
+                  • Used only for this order session<br/>
+                  • No spam calls or messages<br/>
+                  • Data not shared with third parties
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

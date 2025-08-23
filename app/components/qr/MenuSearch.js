@@ -18,7 +18,7 @@ export default function MenuSearch({
       <div className="px-4 py-5 space-y-4">
         {/* Search Bar */}
         <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-blue-500/5 rounded-xl pointer-events-none"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-orange-500/5 to-amber-500/5 rounded-xl pointer-events-none"></div>
           <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
           <input
             type="search"
@@ -30,7 +30,7 @@ export default function MenuSearch({
             className={`relative w-full pl-12 pr-12 py-4 text-sm border rounded-xl bg-white/80 backdrop-blur-sm
                      focus:outline-none focus:ring-2 focus:border-transparent shadow-md hover:shadow-lg
                      transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed
-                     ${isSearchFocused ? 'border-blue-300 focus:ring-blue-200 shadow-xl transform scale-[1.01]' : 'border-gray-200 hover:border-gray-300'}`}
+                     ${isSearchFocused ? 'border-amber-300 focus:ring-amber-200 shadow-xl transform scale-[1.01]' : 'border-gray-200 hover:border-gray-300'}`}
             aria-label="Search menu items"
             disabled={orderPlaced}
           />
@@ -61,8 +61,8 @@ export default function MenuSearch({
                 className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 
                          min-h-[40px] flex items-center justify-center whitespace-nowrap border shadow-sm hover:shadow-md ${
                   activeCategory === 'All'
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white border-blue-500 shadow-lg shadow-blue-500/25'
-                    : 'bg-white/80 backdrop-blur-sm text-gray-700 border-gray-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:border-blue-300'
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white border-amber-500 shadow-lg shadow-amber-500/25'
+                    : 'bg-white/80 backdrop-blur-sm text-gray-700 border-gray-200 hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 hover:border-amber-300'
                 }`}
                 aria-current={activeCategory === 'All' ? 'true' : undefined}
                 disabled={orderPlaced}
@@ -101,8 +101,8 @@ export default function MenuSearch({
                     className={`flex-shrink-0 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 
                              min-h-[40px] flex items-center justify-center whitespace-nowrap border shadow-sm hover:shadow-md ${
                       activeCategory === category
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white border-blue-500 shadow-lg shadow-blue-500/25'
-                        : 'bg-white/80 backdrop-blur-sm text-gray-700 border-gray-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:border-blue-300'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white border-amber-500 shadow-lg shadow-amber-500/25'
+                        : 'bg-white/80 backdrop-blur-sm text-gray-700 border-gray-200 hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 hover:border-amber-300'
                     }`}
                     aria-current={activeCategory === category ? 'true' : undefined}
                     disabled={orderPlaced}
@@ -125,7 +125,7 @@ export default function MenuSearch({
           <div className="flex items-center gap-3 text-sm bg-white/70 backdrop-blur-sm rounded-xl px-4 py-3 border border-gray-200/50 shadow-md">
             <span className="text-gray-700 font-semibold">🔍 Active filters:</span>
             {searchTerm && (
-              <span className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-xs font-semibold shadow-sm">
+              <span className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-xs font-semibold shadow-sm">
                 "{searchTerm}"
               </span>
             )}

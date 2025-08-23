@@ -3,13 +3,35 @@ import mongoose from "mongoose";
 const OrderSchema = new mongoose.Schema(
   {
     tableNumber: {
-      type: Number,
+      type: String,
       required: true,
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User ',
+      ref: 'User',
       required: true,
+      index: true
+    },
+    customerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Customer',
+      required: false
+    },
+    customerInfo: {
+      name: {
+        type: String,
+        required: false,
+        default: 'Guest'
+      },
+      phone: {
+        type: String,
+        required: false,
+        default: ''
+      },
+      ip: {
+        type: String,
+        required: false
+      }
     },
     items: [
       {
@@ -100,14 +122,6 @@ const OrderSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    customerName: {
-      type: String,
-      default: '',
-    },
-    customerPhone: {
-      type: String,
-      default: '',
-    },
     cancellationReason: {
       type: String,
       default: "", // Reason for cancellation if applicable
@@ -116,6 +130,10 @@ const OrderSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    orderMessage: {
+      type: String,
+      default: ''
+    }
   },
   { timestamps: true }
 );
@@ -131,5 +149,23 @@ try {
 } catch (error) {
   // Model cache clear attempt failed
 }
+
+// Add validation for beverages orders
+OrderSchema.pre('save', function(next) {
+  if (this.orderType === 'beverages') {
+    const invalidStatuses = ['preparing', 'ready'];
+    if (invalidStatuses.includes(this.status)) {
+      const error = new Error('Beverages orders cannot have preparing or ready status');
+      return next(error);
+    }
+  }
+  next();
+});
+
+// Index for efficient queries
+OrderSchema.index({ userId: 1, createdAt: -1 });
+OrderSchema.index({ userId: 1, tableNumber: 1 });
+OrderSchema.index({ userId: 1, status: 1 });
+OrderSchema.index({ customerId: 1, createdAt: -1 });
 
 export default mongoose.models.Order || mongoose.model("Order", OrderSchema);

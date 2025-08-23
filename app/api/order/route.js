@@ -10,7 +10,7 @@ import { authOptions } from "../auth/[...nextauth]/route";
 export async function POST(req) {
   try {
     await connectDB();
-    const { tableNumber, cart, userId, orderMessage, status, customerName, customerPhone } = await req.json();
+    const { tableNumber, cart, userId, orderMessage, status, customerId, customerInfo } = await req.json();
 
     // Validate cart items
     if (!Array.isArray(cart) || cart.length === 0) {
@@ -45,7 +45,7 @@ export async function POST(req) {
       const beveragesTotalAmount = beverageItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       
       const beveragesOrder = new Order({
-        tableNumber: Number(tableNumber) || 0,
+        tableNumber: String(tableNumber || ''),
         items: beverageItems,
         userId: String(userId || ''),
         specialRequests: String(orderMessage || ''),
@@ -53,8 +53,12 @@ export async function POST(req) {
         orderType: 'beverages',
         totalAmount: beveragesTotalAmount,
         paymentStatus: "unpaid",
-        customerName: String(customerName || ''),
-        customerPhone: String(customerPhone || ''),
+        customerId: customerId || null,
+        customerInfo: {
+          name: customerInfo?.name || 'Guest',
+          phone: customerInfo?.phone || '',
+          ip: customerInfo?.ip || ''
+        }
       });
       
       const savedBeveragesOrder = await beveragesOrder.save();
@@ -66,7 +70,7 @@ export async function POST(req) {
       const foodTotalAmount = foodItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       
       const foodOrder = new Order({
-        tableNumber: Number(tableNumber) || 0,
+        tableNumber: String(tableNumber || ''),
         items: foodItems,
         userId: String(userId || ''),
         specialRequests: String(orderMessage || ''),
@@ -74,8 +78,12 @@ export async function POST(req) {
         orderType: 'food',
         totalAmount: foodTotalAmount,
         paymentStatus: "unpaid",
-        customerName: String(customerName || ''),
-        customerPhone: String(customerPhone || ''),
+        customerId: customerId || null,
+        customerInfo: {
+          name: customerInfo?.name || 'Guest',
+          phone: customerInfo?.phone || '',
+          ip: customerInfo?.ip || ''
+        }
       });
       
       const savedFoodOrder = await foodOrder.save();
@@ -102,7 +110,8 @@ export async function POST(req) {
       }, { status: 500 });
     }
 
-    return NextResponse.json(savedOrders, { status: 201 });
+    // Return the first order for compatibility with existing code
+    return NextResponse.json({ order: savedOrders[0] }, { status: 201 });
   } catch (err) {
     return NextResponse.json({
       error: "Server error",
