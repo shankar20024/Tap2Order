@@ -164,10 +164,10 @@ export async function GET(req) {
       userId = session.user.id;
     }
     
-    // Only fetch orders for this specific userId that are not completed
+    // Only fetch orders for this specific userId that are not completed or cancelled
     const orders = await Order.find({ 
       userId: userId, 
-      status: { $ne: "completed" } 
+      status: { $nin: ["completed", "cancelled"] } 
     });
     
     return NextResponse.json(orders);

@@ -918,7 +918,7 @@ export default function WaiterDashboard() {
   }, 0);
 
   const totalItemsCount = orders.reduce((total, order) => {
-    return total + (order.items?.length || 0);
+    return total + (order.items?.filter(item => item.status !== 'cancelled').length || 0);
   }, 0);
 
   return (
