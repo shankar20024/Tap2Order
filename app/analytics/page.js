@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Header from '../components/Header';
+import ComingSoon from '../components/ComingSoon';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -53,6 +54,9 @@ export default function Analytics() {
   const [error, setError] = useState('');
   const [period, setPeriod] = useState('30');
   
+  // Environment detection
+  const [isProduction, setIsProduction] = useState(false);
+  
   // Filter states
   const [dateRange, setDateRange] = useState({
     startDate: '',
@@ -71,6 +75,19 @@ export default function Analytics() {
     statuses: ['pending', 'preparing', 'ready', 'served', 'completed', 'cancelled'],
     paymentMethods: ['cash', 'card', 'upi', 'wallet']
   });
+
+  // Check environment on component mount
+  useEffect(() => {
+    const checkEnvironment = () => {
+      if (typeof window !== 'undefined') {
+        const hostname = window.location.hostname;
+        const isProductionDomain = hostname.includes('tap2orders.com');
+        setIsProduction(isProductionDomain);
+      }
+    };
+    
+    checkEnvironment();
+  }, []);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -239,6 +256,11 @@ export default function Analytics() {
     },
     cutout: '60%'
   };
+
+  // Show coming soon for production environment
+  if (isProduction) {
+    return <ComingSoon feature="Analytics Dashboard" />;
+  }
 
   if (status === 'loading' || loading) {
     return (
