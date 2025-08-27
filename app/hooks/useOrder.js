@@ -118,7 +118,8 @@ export default function useOrder(userId, tableNumber, cart, getTotalPrice, reset
           quantity: item.quantity,
           notes: item.notes || '',
           size: item.size || '',
-          subcategory: item.subcategory || ''
+          subcategory: item.subcategory || '',
+          category: item.category || 'veg'
         })),
         userId,
         orderMessage,

@@ -2,7 +2,6 @@ import { connectDB } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
-import bcrypt from "bcryptjs";  // password hashing ke liye
 
 async function checkAdminSession() {
   const session = await getServerSession(authOptions);
@@ -13,11 +12,12 @@ async function checkAdminSession() {
 }
 
 export async function GET(req, { params }) {
+  const { id } = await params;
   const session = await checkAdminSession();
   if (!session) return new Response("Unauthorized", { status: 401 });
 
   await connectDB();
-  const user = await User.findById(params.id);
+  const user = await User.findById(id);
   if (!user) return new Response("User not found", { status: 404 });
 
   return new Response(JSON.stringify(user), {
@@ -35,13 +35,19 @@ export async function PUT(req, { params }) {
   
   const { name, email, role, password, tableLimit, staffLimit, isActive, businessName, businessType, phone, hotelPhone, address } = body;
   
+  console.log("🔧 PUT request for user ID:", id);
+  console.log("🔧 Request body:", body);
+  
   await connectDB();
 
   try {
     const user = await User.findById(id);
     if (!user) {
+      console.log("❌ User not found for ID:", id);
       return new Response(JSON.stringify({ error: "User not found" }), { status: 404 });
     }
+
+    console.log("✅ User found:", user.email);
 
     const updates = {
       name,
@@ -58,9 +64,11 @@ export async function PUT(req, { params }) {
     };
 
     if (password && password.trim() !== '') {
-      const hashedPassword = await bcrypt.hash(password, 12);
-      updates.password = hashedPassword;
+      updates.password = password; // Store plain text password
+      console.log("🔐 Password update included");
     }
+
+    console.log("🔧 Updates to apply:", updates);
 
     const updatedUser = await User.findByIdAndUpdate(
       id,
@@ -69,8 +77,11 @@ export async function PUT(req, { params }) {
     );
 
     if (!updatedUser) {
+      console.log("❌ Failed to update user");
       return new Response(JSON.stringify({ error: "Failed to update user" }), { status: 500 });
     }
+
+    console.log("✅ User updated successfully:", updatedUser.email);
 
     return new Response(JSON.stringify({
       message: "User updated successfully",
@@ -80,6 +91,9 @@ export async function PUT(req, { params }) {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
+    console.error("❌ PUT Error details:", error);
+    console.error("❌ Error message:", error.message);
+    console.error("❌ Error stack:", error.stack);
     return new Response(JSON.stringify({ 
       error: "Failed to update user",
       details: error.message 
@@ -91,16 +105,17 @@ export async function PUT(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
+  const { id } = await params;
   const session = await checkAdminSession();
   if (!session) return new Response("Unauthorized", { status: 401 });
 
   await connectDB();
 
   try {
-    const user = await User.findById(params.id);
+    const user = await User.findById(id);
     if (!user) return new Response("User not found", { status: 404 });
 
-    await User.deleteOne({ _id: params.id });
+    await User.deleteOne({ _id: id });
     return new Response("User deleted successfully", { status: 200 });
   } catch (error) {
     return new Response("Failed to delete user", { status: 500 });

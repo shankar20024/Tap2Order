@@ -618,7 +618,7 @@ export default function AdminPanel() {
             {/* Text Logo */}
             <header className="max-w-lg mx-auto text-center mb-10 select-none">
                 <Logo className="mb-6 text-6xl" />
-                <p className="mt-1 text-xl font-semibold text-gray-700 tracking-wider">Admin Panel</p>
+                <p className="mt-1 text-xl font-semibold text-gray-700 tracking-wide">Admin Panel</p>
             </header>
 
             {/* Add User Button */}
@@ -705,6 +705,9 @@ export default function AdminPanel() {
                                         )}
                                     </button>
                                 </div>
+                                <p className="mt-1 text-xs text-gray-500">
+                                    Any length password is allowed. Use a secure password for better security.
+                                </p>
                             </div>
                             <div>
                                 <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
@@ -1140,6 +1143,9 @@ export default function AdminPanel() {
                                                                             onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
                                                                             className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-400 placeholder:text-gray-400"
                                                                         />
+                                                                        <p className="mt-1 text-xs text-gray-500">
+                                                                            Any length password is allowed. Use a secure password for better security.
+                                                                        </p>
                                                                     </div>
                                                                     <div className="flex items-center">
                                                                         <div className="flex items-center h-5">
@@ -1459,6 +1465,9 @@ export default function AdminPanel() {
                                                                                 }
                                                                                 className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-400 placeholder:text-gray-400"
                                                                             />
+                                                                            <p className="mt-1 text-xs text-gray-500">
+                                                                                Any length password is allowed. Use a secure password for better security.
+                                                                            </p>
                                                                         </div>
                                                                         <div className="flex items-center">
                                                                             <div className="flex items-center h-5">

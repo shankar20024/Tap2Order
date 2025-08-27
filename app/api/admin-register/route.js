@@ -1,6 +1,5 @@
 import { connectDB } from "@/lib/mongodb";
 import { User } from "@/models/User";
-import bcrypt from "bcryptjs";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { generateHotelCode } from "@/lib/hotelCodeGenerator";
@@ -39,11 +38,13 @@ export async function POST(req) {
       hotelCode = await generateHotelCode();
     }
     
-    const hashed = await bcrypt.hash(password, 10);
+    console.log(" Creating user with password length:", password?.length);
+    console.log(" Password (plain text):", password);
+    
     const newUser = new User({ 
       name, 
       email, 
-      password: hashed, 
+      password: password, 
       role: userRole,
       tableLimit: tableLimit || 10,
       // Only meaningful for hotel owners; default 5 and clamp to 1..50
@@ -54,9 +55,9 @@ export async function POST(req) {
             return { staffLimit: clamped };
           })()
         : {}),
-      ...(hotelCode && { hotelCode }), // Only add hotelCode if it exists
+      ...(hotelCode && { hotelCode }), 
       createdBy: session.user.id,
-      businessName: businessName || name, // prefer provided hotel name
+      businessName: businessName || name, 
       businessType: businessType || "restaurant",
       phone: phone || "",
       hotelPhone: hotelPhone || "",
@@ -70,6 +71,15 @@ export async function POST(req) {
     });
 
     await newUser.save();
+    
+    console.log(" User created successfully:", {
+      id: newUser._id,
+      email: newUser.email,
+      name: newUser.name,
+      role: newUser.role,
+      password: newUser.password,
+      hotelCode: newUser.hotelCode
+    });
     
     const responseData = { 
       message: "User registered successfully"

@@ -50,6 +50,15 @@ export async function PATCH(req, { params }) {
       { new: true }
     );
 
+    // Publish real-time event to waiter dashboard
+    try {
+      const channel = ably.channels.get(`orders:${updatedOrder.userId}`);
+      await channel.publish('order.updated', updatedOrder);
+    } catch (error) {
+      console.error('Failed to publish order updated event:', error);
+      // Don't fail the order update if real-time publishing fails
+    }
+
     return NextResponse.json(updatedOrder, { status: 200 });
   } catch (err) {
     console.error("PATCH error:", err);
@@ -102,6 +111,16 @@ export async function PUT(req, { params }) {
     }
 
     await setTableFree(order.userId, order.tableNumber);
+
+    // Publish real-time event to waiter dashboard
+    try {
+      const channel = ably.channels.get(`orders:${updatedOrder.userId}`);
+      await channel.publish('order.updated', updatedOrder);
+    } catch (error) {
+      console.error('Failed to publish order updated event:', error);
+      // Don't fail the order update if real-time publishing fails
+    }
+
     return NextResponse.json(updatedOrder, { status: 200 });
   } catch (err) {
     console.error("PUT error:", err);

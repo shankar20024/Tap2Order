@@ -59,7 +59,8 @@ export default function useCart(apiStatus, orderPlaced) {
           quantity: Math.max(1, quantity),
           notes: '',
           size: item.size,
-          subcategory: item.subcategory || ''
+          subcategory: item.subcategory || '',
+          category: item.category || 'veg'
         }];
       }
       return prevCart;

@@ -153,13 +153,13 @@ export default function OrderViewer({ userId, tableNumber, isOpen, onClose }) {
                         ) : (
                             <>
                                 <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 mb-4">
-                                    {orders.map((order, index) => (
-                                        <div key={order.id || index} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow duration-200">
+                                    {orders.map((order, orderIndex) => (
+                                        <div key={order._id || order.id || `order-${orderIndex}`} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow duration-200">
                                             {/* Order Header */}
                                             <div className="flex justify-between items-start mb-3">
                                                 <div>
                                                     <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                                                        Order #{index + 1}
+                                                        Order #{orderIndex + 1}
                                                         {getStatusIcon(order.status)}
                                                     </h3>
                                                     <p className="text-sm text-gray-500">
@@ -178,8 +178,8 @@ export default function OrderViewer({ userId, tableNumber, isOpen, onClose }) {
 
                                             {/* Order Items */}
                                             <div className="space-y-2 mb-3">
-                                                {order.items.map((item) => (
-                                                    <div key={item.menuItemId || item.name} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                                                {order.items.map((item, itemIndex) => (
+                                                    <div key={`${order._id || order.id || orderIndex}-${item.menuItemId || item._id || itemIndex}-${itemIndex}`} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
                                                         <div className="flex-1">
                                                             <span className="font-medium text-gray-800">{item.name}</span>
                                                             <div className="text-sm text-gray-500 flex items-center gap-2">

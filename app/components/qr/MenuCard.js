@@ -77,7 +77,7 @@ export default function MenuCard({
         {item.subcategory && (
           <div className="mb-3">
             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-              item.subcategory === 'beverages' 
+              item.category === 'beverages' 
                 ? 'bg-blue-100 text-blue-800'
                 : item.subcategory === 'desserts'
                 ? 'bg-purple-100 text-purple-800'

@@ -228,7 +228,7 @@ const OrderCard = ({ order, onComplete, onCancel, onPrint }) => {
               <span>Table {order.tableNumber}</span>
             </div>
           </div>
-          <div className={`${config.badge} px-3 py-1 rounded-full text-xs font-medium border flex items-center space-x-1`}>
+          <div className={`${config.badge} px-3 py-1 rounded-full text-xs font-medium border-2`}>
             <StatusIcon className="text-xs" />
             <span className="capitalize">{order.status}</span>
           </div>
@@ -260,9 +260,20 @@ const OrderCard = ({ order, onComplete, onCancel, onPrint }) => {
           {items.length > 0 ? (
             items.slice(0, 3).map((item, idx) => (
               <div key={idx} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-b-0">
-                <div className="flex-1 min-w-0">
+                <div className="flex-1">
                   <p className="text-sm font-medium text-gray-800 truncate">{item.name}</p>
-                  <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                    {/* Individual item status */}
+                    <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                      (item.status || order.status) === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                      (item.status || order.status) === 'preparing' ? 'bg-blue-100 text-blue-700' :
+                      (item.status || order.status) === 'ready' ? 'bg-green-100 text-green-700' : 
+                      'bg-purple-100 text-purple-700'
+                    }`}>
+                      {item.status || order.status}
+                    </div>
+                  </div>
                 </div>
                 <span className="text-sm font-medium text-gray-700 ml-3">
                   ₹{(item.price * item.quantity).toLocaleString('en-IN')}
@@ -448,156 +459,216 @@ function groupOrdersByTable(orders) {
 
 // TableBox - compact 100px table card
 const TableBox = ({ tableNumber, totalAmount, hasOrders, hasPaid, onView, onPrint, onCancel, onMarkPaid }) => (
-  <div className="flex flex-col  items-center ml-8 md:ml-0 sm:ml-0 lg:ml-0">
+  <div className="flex flex-col items-center p-2">
     <div
-      className={`relative w-28 h-28 rounded-md border border-b-0 flex flex-col items-center justify-center p-2 transition-all duration-200 hover:shadow-md bg-gradient-to-b from-white to-slate-50 ${
+      onClick={hasOrders ? onView : undefined}
+      className={`relative w-32 h-32 rounded-2xl border-2 flex flex-col items-center justify-center p-3 transition-all duration-300 transform hover:scale-105 ${
         hasPaid
-          ? 'border-emerald-300 ring-2 ring-emerald-300/70 bg-emerald-50/40'
+          ? 'border-emerald-400 bg-gradient-to-br from-emerald-50 to-emerald-100 shadow-lg shadow-emerald-200/50 ring-2 ring-emerald-300/30'
           : hasOrders
-            ? 'border-red-200 ring-1 ring-red-200/60 hover:ring-red-300/70'
-            : 'border-gray-200'
+            ? 'border-orange-400 bg-gradient-to-br from-orange-50 to-red-50 shadow-lg shadow-orange-200/50 cursor-pointer hover:shadow-xl hover:shadow-orange-300/60 ring-2 ring-orange-300/30'
+            : 'border-gray-300 bg-gradient-to-br from-gray-50 to-slate-100 shadow-md hover:shadow-lg'
       }`}
     >
-      <div className="text-sm font-bold text-gray-800 mb-1">T{tableNumber}</div>
-      <div className={`mb-1 font-semibold ${
-        hasPaid ? 'text-emerald-700 text-[15px]' : (hasOrders ? 'text-blue-700 text-[15px]' : 'text-slate-700 text-[13px]')
-      }`}>₹{totalAmount.toLocaleString('en-IN')}</div>
-      {hasOrders && (
-        <div className="flex gap-1.5">
-          <button
-            onClick={onView}
-            className="px-1.5 py-0.5 rounded text-[11px] border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100"
-            title="View Orders"
-          >
-            <FaEye className="text-xs" />
-          </button>
-          <button
-            onClick={onPrint}
-            className="px-1.5 py-0.5 rounded text-[11px] border border-green-200 text-green-700 bg-green-50 hover:bg-green-100"
-            title="Print Bill"
-          >
-            <FaPrint className="text-xs" />
-          </button>
-        </div>
-      )}
+      {/* Status indicator dot */}
+      <div className={`absolute -top-2 -right-2 w-4 h-4 rounded-full border-2 border-white shadow-sm ${
+        hasPaid ? 'bg-emerald-500' : hasOrders ? 'bg-orange-500 animate-pulse' : 'bg-gray-400'
+      }`}></div>
+      
+      <div className="text-lg font-bold text-gray-800 mb-1 flex items-center">
+        <span className="text-blue-600">T</span>
+        <span className="ml-1">{tableNumber}</span>
+      </div>
+      
+      <div className={`text-center mb-4 ${
+        hasPaid ? 'text-emerald-700' : hasOrders ? 'text-orange-700' : 'text-gray-600'
+      }`}>
+        <div className="text-xs font-medium opacity-80 mb-1">Total Amount</div>
+        <div className="text-base font-bold">₹{totalAmount.toLocaleString('en-IN')}</div>
+      </div>
+      
+      {/* Status badge */}
+      <div className={`absolute bottom-1 left-1/2 transform -translate-x-1/2 px-2 py-0.5 rounded-full text-xs font-medium ${
+        hasPaid 
+          ? 'bg-emerald-200 text-emerald-800' 
+          : hasOrders 
+            ? 'bg-orange-200 text-orange-800' 
+            : 'bg-gray-200 text-gray-600'
+      }`}>
+        {hasPaid ? 'Paid' : hasOrders ? 'Active' : 'Empty'}
+      </div>
     </div>
-    {/* connected capsule (icon-only) */}
-    <div className="-mt-px w-28">
-      <div
-        className={`flex items-stretch h-7 border-x border-b rounded-b overflow-hidden bg-white ${
-          hasOrders ? 'border-red-200' : 'border-gray-200'
+    
+    {/* Bottom action section */}
+    <div className="mt-3 w-32">
+      <button
+        onClick={onCancel}
+        title="Cancel All Orders"
+        disabled={!hasOrders}
+        className={`w-full h-10 rounded-xl border-2 font-medium text-sm transition-all duration-200 flex items-center justify-center space-x-2 ${
+          hasOrders
+            ? 'border-red-300 bg-gradient-to-r from-red-50 to-pink-50 text-red-700 hover:from-red-100 hover:to-pink-100 hover:border-red-400 shadow-md hover:shadow-lg'
+            : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
         }`}
       >
-        <button
-          onClick={onMarkPaid}
-          title="Mark Paid"
-          aria-label="Mark Paid"
-          disabled={hasPaid}
-          className={`flex-1 h-full inline-flex items-center justify-center transition-colors border-r ${
-            hasPaid
-              ? 'bg-green-50 text-green-600 cursor-default border-green-200'
-              : 'text-emerald-700 hover:bg-emerald-50 border-gray-200'
-          }`}
-        >
-          <FaRupeeSign className="text-[13px]" />
-        </button>
-        <button
-          onClick={onCancel}
-          title="Cancel All"
-          aria-label="Cancel All"
-          disabled={!hasOrders}
-          className={`flex-1 h-full inline-flex items-center justify-center transition-colors ${
-            hasOrders
-              ? 'text-red-700 hover:bg-red-50'
-              : 'text-gray-400 cursor-not-allowed'
-          }`}
-        >
-          <FaTimesCircle className="text-[13px]" />
-        </button>
-      </div>
+        <FaTimesCircle className="text-sm" />
+        <span>Cancel</span>
+      </button>
     </div>
   </div>
 );
 
 // TableDetailsModal - shows detailed orders for a table
-const TableDetailsModal = ({ tableNumber, orders, onClose, onPrint }) => {
+const TableDetailsModal = ({ tableNumber, orders, onClose, onPrint, onMarkPaid }) => {
   const totalAmount = orders.reduce((sum, o) => sum + (o.totalAmount || (o.items||o.cart||[]).reduce((s,i)=>s+i.price*i.quantity,0)), 0);
+  const hasPaidOrders = orders.some(order => order.billPaid || order.isPaid || order.paid);
+  
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold flex items-center">
-              <FaTable className="mr-2" /> Table {tableNumber}
-            </h2>
-            <button onClick={onClose} className="text-white hover:text-gray-200 p-1">
-              <FaTimesCircle className="text-xl" />
-            </button>
-          </div>
-          <div className="mt-1 text-sm opacity-90">
-            {orders.length} order{orders.length !== 1 ? 's' : ''} • Total: ₹{totalAmount.toLocaleString('en-IN')}
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden border border-gray-200 flex flex-col">
+        {/* Enhanced Header */}
+        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white p-6 relative overflow-hidden flex-shrink-0">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/90 to-purple-600/90"></div>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                  <FaTable className="text-xl" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold">Table {tableNumber}</h2>
+                  <p className="text-blue-100 text-sm">Order Management</p>
+                  {/* Show customer names if available */}
+                  {orders.length > 0 && orders[0].customerInfo?.name && (
+                    <p className="text-blue-200 text-sm font-medium">Customer: {orders[0].customerInfo.name}</p>
+                  )}
+                </div>
+              </div>
+              <button 
+                onClick={onClose} 
+                className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center transition-all duration-200 backdrop-blur-sm"
+              >
+                <FaTimesCircle className="text-xl" />
+              </button>
+            </div>
+            
+            {/* Stats Row */}
+            <div className="mt-4 flex items-center justify-between bg-white/10 rounded-2xl p-4 backdrop-blur-sm">
+              <div className="text-center">
+                <div className="text-2xl font-bold">{orders.length}</div>
+                <div className="text-blue-100 text-sm">Orders</div>
+              </div>
+              <div className="w-px h-8 bg-white/30"></div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">₹{totalAmount.toLocaleString('en-IN')}</div>
+                <div className="text-blue-100 text-sm">Total Amount</div>
+              </div>
+              <div className="w-px h-8 bg-white/30"></div>
+              <div className="text-center">
+                <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                  hasPaidOrders ? 'bg-emerald-500 text-white' : 'bg-orange-500 text-white'
+                }`}>
+                  {hasPaidOrders ? 'Paid' : 'Pending'}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="p-4 max-h-96 overflow-y-auto">
+
+        {/* Orders Content */}
+        <div className="p-6 overflow-y-auto bg-gradient-to-br from-gray-50 to-blue-50 flex-1">
           {orders.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <FaClipboardList className="text-4xl mx-auto mb-4 text-gray-300" />
-              <p>No active orders for this table</p>
+            <div className="text-center py-12">
+              <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FaClipboardList className="text-3xl text-gray-400" />
+              </div>
+              <p className="text-gray-500 text-lg">No active orders for this table</p>
+              <p className="text-gray-400 text-sm mt-2">Orders will appear here when customers place them</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {orders.map((order, idx) => (
-                <div key={order._id || idx} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">Order #{idx+1}</span>
-                      <span className="text-xs text-gray-600">ID: {order._id?.slice(-6) || 'N/A'}</span>
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-[10px] font-medium ${
-                      order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      order.status === 'preparing' ? 'bg-blue-100 text-blue-800' :
-                      order.status === 'ready' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'
-                    }`}>
-                      {order.status}
-                    </span>
+            <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Order Items</h3>
+                {/* Display customer info if available */}
+                {orders[0]?.customerInfo?.name && (
+                  <div className="text-sm text-gray-600 bg-blue-50 px-3 py-1 rounded-full">
+                    <FaUsers className="inline mr-1" />
+                    {orders[0].customerInfo.name}
+                    {orders[0].customerInfo?.phone && (
+                      <span className="ml-2 text-gray-500">• {orders[0].customerInfo.phone}</span>
+                    )}
                   </div>
-                  {(order.message || order.specialInstructions) && (
-                    <div className="mb-2 p-2 bg-yellow-50 border-l-4 border-yellow-400 rounded">
-                      <p className="text-[11px] font-medium text-yellow-800 mb-1">Special Instructions</p>
-                      <p className="text-xs text-yellow-700">{order.message || order.specialInstructions}</p>
-                    </div>
-                  )}
-                  <div className="space-y-1">
-                    {(order.items || order.cart || []).map((item, i) => (
-                      <div key={i} className="flex justify-between items-center py-1 border-b border-gray-200 last:border-b-0">
-                        <div className="flex-1">
-                          <span className="text-sm text-gray-800">{item.name}</span>
-                          <span className="text-xs text-gray-500 ml-2">×{item.quantity}</span>
-                          {item.size && (
-                            <span className="text-xs text-blue-600 ml-2">• {item.size}</span>
-                          )}
+                )}
+              </div>
+              <div className="space-y-3">
+                {orders.map((order, orderIdx) => 
+                  (order.items || order.cart || []).map((item, itemIdx) => (
+                    <div key={`${orderIdx}-${itemIdx}`} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center space-x-4">
+                        <span className="font-medium text-gray-800">{item.name}</span>
+                        <span className="text-sm text-gray-600">×{item.quantity}</span>
+                        {item.size && (
+                          <span className="text-sm text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">{item.size}</span>
+                        )}
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          (item.status || order.status) === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                          (item.status || order.status) === 'preparing' ? 'bg-blue-100 text-blue-700' :
+                          (item.status || order.status) === 'ready' ? 'bg-green-100 text-green-700' : 
+                          'bg-purple-100 text-purple-700'
+                        }`}>
+                          {item.status || order.status}
                         </div>
-                        <span className="text-sm font-medium text-gray-700">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
                       </div>
-                    ))}
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-gray-300 mt-2">
-                    <span className="text-sm font-medium text-gray-700">Order Total</span>
-                    <span className="font-bold text-base text-gray-900">₹{(order.totalAmount || (order.items||order.cart||[]).reduce((s,i)=>s+i.price*i.quantity,0)).toLocaleString('en-IN')}</span>
-                  </div>
+                      <span className="font-bold text-gray-900">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+              
+              {/* Special Instructions if any */}
+              {orders.some(order => order.message || order.specialInstructions) && (
+                <div className="mt-4 p-3 bg-amber-50 border-l-4 border-amber-400 rounded-lg">
+                  <p className="text-sm font-medium text-amber-800 mb-1">Special Instructions:</p>
+                  {orders.filter(order => order.message || order.specialInstructions).map((order, idx) => (
+                    <p key={idx} className="text-sm text-amber-700">• {order.message || order.specialInstructions}</p>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
-        <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 flex justify-between items-center">
-          <div className="text-sm text-gray-600">Grand Total: <span className="font-bold text-base text-gray-900">₹{totalAmount.toLocaleString('en-IN')}</span></div>
-          <div className="flex space-x-2">
-            <button onClick={onPrint} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-1">
-              <FaPrint className="text-xs" />
-              <span>Print Bill</span>
-            </button>
-            <button onClick={onClose} className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium">Close</button>
+
+        {/* Enhanced Footer */}
+        <div className="bg-gradient-to-br from-gray-50 to-blue-50 px-6 py-4 border-t border-gray-100 flex-shrink-0">
+          <div className="flex justify-between items-center">
+            <div className="text-gray-600">
+              <span className="text-sm">Grand Total: </span>
+              <span className="font-bold text-xl text-gray-900 bg-white px-4 py-2 rounded-xl shadow-sm border">
+                ₹{totalAmount.toLocaleString('en-IN')}
+              </span>
+            </div>
+            <div className="flex space-x-3">
+              <button 
+                onClick={onPrint} 
+                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-3 rounded-xl font-medium flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+              >
+                <FaPrint className="text-sm" />
+                <span>Print Bill</span>
+              </button>
+              <button 
+                onClick={onMarkPaid} 
+                className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-6 py-3 rounded-xl font-medium flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+              >
+                <FaRupeeSign className="text-sm" />
+                <span>Mark Paid</span>
+              </button>
+              <button 
+                onClick={onClose} 
+                className="bg-gradient-to-r from-gray-500 to-slate-500 hover:from-gray-600 hover:to-slate-600 text-white px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -623,24 +694,30 @@ export default function Dashboard() {
   const router = useRouter();
   const refreshTimerRef = useRef(null);
 
-  // Enhanced Stats calculation with trends
+  // Enhanced Stats calculation with trends - Updated to count items instead of orders
   const stats = {
-    totalOrders: orders.length,
-    pendingOrders: orders.filter(o => o.status === 'pending').length,
-    preparingOrders: orders.filter(o => o.status === 'preparing').length,
-    readyOrders: orders.filter(o => o.status === 'ready').length,
+    totalItems: [...orders, ...billOrders].reduce((sum, o) => sum + (o.items || o.cart || []).length, 0),
+    pendingItems: orders.reduce((sum, o) => {
+      if (o.status === 'pending') return sum + (o.items || o.cart || []).length;
+      return sum + (o.items || o.cart || []).filter(item => item.status === 'pending').length;
+    }, 0),
+    preparingItems: orders.reduce((sum, o) => {
+      if (o.status === 'preparing') return sum + (o.items || o.cart || []).length;
+      return sum + (o.items || o.cart || []).filter(item => item.status === 'preparing').length;
+    }, 0),
+    readyItems: orders.reduce((sum, o) => {
+      if (o.status === 'ready') return sum + (o.items || o.cart || []).length;
+      return sum + (o.items || o.cart || []).filter(item => item.status === 'ready').length;
+    }, 0),
+    servedItems: [...orders, ...billOrders].reduce((sum, o) => {
+      if (o.status === 'served') return sum + (o.items || o.cart || []).length;
+      return sum + (o.items || o.cart || []).filter(item => item.status === 'served').length;
+    }, 0),
     totalRevenue: [...orders, ...billOrders].reduce((sum, o) => {
       const items = o.items || o.cart || [];
       return sum + items.reduce((itemSum, item) => itemSum + (item.price * item.quantity), 0);
     }, 0),
     activeTables: new Set([...orders.map(o => o.tableNumber), ...billOrders.map(o => o.tableNumber)]).size
-  };
-
-  const scheduleRefresh = (delay = 400) => {
-    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
-    refreshTimerRef.current = setTimeout(() => {
-      fetchOrders();
-    }, delay);
   };
 
   useEffect(() => {
@@ -1047,6 +1124,13 @@ export default function Dashboard() {
     toast.success(`Printer selected: ${printerName}`);
   };
 
+  const scheduleRefresh = (delay = 400) => {
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    refreshTimerRef.current = setTimeout(() => {
+      fetchOrders();
+    }, delay);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 overflow-x-hidden">
       <Header />
@@ -1158,34 +1242,36 @@ export default function Dashboard() {
         </div>
 
         {/* Enhanced Stats Cards Grid - Fully Responsive */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 lg:mb-12">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 lg:mb-12">
           <StatsCard
-            title="Total Orders"
-            value={stats.totalOrders}
+            title="Total Items"
+            value={stats.totalItems}
             icon={FaClipboardList}
             color="blue"
-            
           />
           <StatsCard
-            title="Pending"
-            value={stats.pendingOrders}
+            title="Pending Items"
+            value={stats.pendingItems}
             icon={FaClock}
             color="amber"
-            
           />
           <StatsCard
-            title="Preparing"
-            value={stats.preparingOrders}
+            title="Preparing Items"
+            value={stats.preparingItems}
             icon={FaUtensils}
             color="indigo"
           />
           <StatsCard
-            title="Ready"
-            value={stats.readyOrders}
+            title="Ready Items"
+            value={stats.readyItems}
             icon={FaCheckCircle}
             color="green"
-            
-            
+          />
+          <StatsCard
+            title="Served Items"
+            value={stats.servedItems}
+            icon={FaBell}
+            color="purple"
           />
           <StatsCard
             title="Active Tables"
@@ -1198,7 +1284,6 @@ export default function Dashboard() {
             value={`₹${stats.totalRevenue.toLocaleString('en-IN')}`}
             icon={FaRupeeSign}
             color="purple"
-            
           />
         </div>
 
@@ -1224,7 +1309,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 xl:grid-cols-10 gap-3 sm:gap-4 auto-rows-max">
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6 sm:gap-8 lg:gap-10 auto-rows-max">
                 {Object.keys(groupOrdersByTable(orders)).map((tn) => {
               const ordersForTable = groupOrdersByTable(orders)[tn];
               // Debug: Log orders for this table
@@ -1269,6 +1354,10 @@ export default function Dashboard() {
             orders={tableModal.orders}
             onClose={() => setTableModal(null)}
             onPrint={() => thermalPrintBill(tableModal.tableNumber, tableModal.orders.flatMap(order => order.items || order.cart || []), tableModal.orders.reduce((sum, o) => sum + (o.totalAmount || (o.items||o.cart||[]).reduce((s,i)=>s+i.price*i.quantity,0)), 0))}
+            onMarkPaid={() => {
+              markTablePaid(tableModal.tableNumber, tableModal.orders, orders);
+              setTableModal(null);
+            }}
           />
         )}
         {showPrinterSettings && (

@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { setTableOccupied, setTableFree } from "@/lib/tableStatus";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
+import ably from "@/lib/ably";
 
 // POST method to create a new order
 export async function POST(req) {
@@ -31,27 +32,62 @@ export async function POST(req) {
       name: String(item.name || 'Unnamed Item'),
       notes: String(item.notes || ''),
       size: String(item.size || ''),
-      subcategory: String(item.subcategory || '') // Ensure subcategory is preserved
+      subcategory: String(item.subcategory || ''),
+      category: String(item.category || 'veg'), // Add category field
+      status: 'pending', // All new items start as pending
     }));
 
-    // Separate beverages and food items
-    const beverageItems = processedCart.filter(item => item.subcategory === 'beverages');
-    const foodItems = processedCart.filter(item => item.subcategory !== 'beverages');
-    
-    const savedOrders = [];
-    
-    // Create beverages order if there are beverages items
-    if (beverageItems.length > 0) {
-      const beveragesTotalAmount = beverageItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    // Check for existing active order for this table (not served/completed)
+    const existingOrder = await Order.findOne({
+      userId: String(userId || ''),
+      tableNumber: String(tableNumber || ''),
+      paymentStatus: "unpaid",
+      status: { $nin: ["served", "completed"] } // Only merge with active orders, not served ones
+    }).sort({ createdAt: -1 });
+
+    let savedOrder;
+
+    // Check if order contains only beverages
+    const isOnlyBeverages = processedCart.every(item => 
+      item.category === 'beverages' || item.subcategory === 'beverages'
+    );
+
+    // Set initial status based on order type
+    const initialStatus = status || 'pending';
+
+    if (existingOrder) {
+      // Add new items to existing order
+      existingOrder.items.push(...processedCart);
+      existingOrder.totalAmount += processedCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       
-      const beveragesOrder = new Order({
+      // Update special requests if provided
+      if (orderMessage) {
+        existingOrder.specialRequests = existingOrder.specialRequests 
+          ? `${existingOrder.specialRequests}\n${orderMessage}` 
+          : orderMessage;
+      }
+      
+      // Update customer info if provided
+      if (customerInfo) {
+        existingOrder.customerInfo = {
+          name: customerInfo.name || existingOrder.customerInfo.name || 'Guest',
+          phone: customerInfo.phone || existingOrder.customerInfo.phone || '',
+          ip: customerInfo.ip || existingOrder.customerInfo.ip || ''
+        };
+      }
+
+      savedOrder = await existingOrder.save();
+    } else {
+      // Create new order
+      const totalAmount = processedCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const newOrder = new Order({
         tableNumber: String(tableNumber || ''),
-        items: beverageItems,
+        items: processedCart,
         userId: String(userId || ''),
         specialRequests: String(orderMessage || ''),
-        status: 'pending', // Beverages start as pending, waiter can serve or cancel
-        orderType: 'beverages',
-        totalAmount: beveragesTotalAmount,
+        status: initialStatus,
+        orderType: isOnlyBeverages ? 'beverages' : 'food',
+        totalAmount: totalAmount,
         paymentStatus: "unpaid",
         customerId: customerId || null,
         customerInfo: {
@@ -61,33 +97,7 @@ export async function POST(req) {
         }
       });
       
-      const savedBeveragesOrder = await beveragesOrder.save();
-      savedOrders.push(savedBeveragesOrder);
-    }
-    
-    // Create food order if there are food items
-    if (foodItems.length > 0) {
-      const foodTotalAmount = foodItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      
-      const foodOrder = new Order({
-        tableNumber: String(tableNumber || ''),
-        items: foodItems,
-        userId: String(userId || ''),
-        specialRequests: String(orderMessage || ''),
-        status: status || 'pending', // Food follows normal workflow
-        orderType: 'food',
-        totalAmount: foodTotalAmount,
-        paymentStatus: "unpaid",
-        customerId: customerId || null,
-        customerInfo: {
-          name: customerInfo?.name || 'Guest',
-          phone: customerInfo?.phone || '',
-          ip: customerInfo?.ip || ''
-        }
-      });
-      
-      const savedFoodOrder = await foodOrder.save();
-      savedOrders.push(savedFoodOrder);
+      savedOrder = await newOrder.save();
     }
     
     // Check if table exists
@@ -110,8 +120,19 @@ export async function POST(req) {
       }, { status: 500 });
     }
 
-    // Return the first order for compatibility with existing code
-    return NextResponse.json({ order: savedOrders[0] }, { status: 201 });
+    // Publish real-time event to waiter dashboard
+    try {
+      console.log('📡 Publishing order.created event to channel:', `orders:${userId}`);
+      console.log('📦 Order data:', JSON.stringify(savedOrder, null, 2));
+      const channel = ably.channels.get(`orders:${userId}`);
+      await channel.publish('order.created', savedOrder);
+      console.log('✅ Successfully published order.created event');
+    } catch (error) {
+      console.error('❌ Failed to publish order created event:', error);
+      // Don't fail the order creation if real-time publishing fails
+    }
+
+    return NextResponse.json({ order: savedOrder }, { status: 201 });
   } catch (err) {
     return NextResponse.json({
       error: "Server error",

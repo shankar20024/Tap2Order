@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import bcryptjs from "bcryptjs";
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -17,7 +16,6 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
-    minlength: 6,
   },
   role: { 
     type: String, 
@@ -239,23 +237,10 @@ userSchema.index({ businessName: 1 });
 userSchema.index({ subscriptionStatus: 1 });
 // Remove duplicate hotelCode index - it's already defined in schema with index: true
 
-// Hash password before saving
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  
-  try {
-    const salt = await bcryptjs.genSalt(12);
-    this.password = await bcryptjs.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
-
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
   try {
-    return await bcryptjs.compare(candidatePassword, this.password);
+    return candidatePassword === this.password;
   } catch (error) {
     throw error;
   }

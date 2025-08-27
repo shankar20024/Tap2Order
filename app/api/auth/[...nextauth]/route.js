@@ -2,7 +2,6 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { connectDB } from "@/lib/mongodb";
 import { User } from "../../../../models/User";
-import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 export const authOptions = {
@@ -32,16 +31,23 @@ export const authOptions = {
         }
 
         await connectDB();
+        
         const user = await User.findOne({ email: credentials.email });
-        if (!user) throw new Error("No user found");
-
+        if (!user) {
+          throw new Error("No user found");
+        }
+        
         // Check if user is active
         if (user.isActive === false) {
           throw new Error("Your subscription has expired. Please contact our support team to renew your subscription and regain access.");
         }
 
-        const isValid = await bcrypt.compare(credentials.password, user.password);
-        if (!isValid) throw new Error("Invalid password");
+        // Simple string comparison for plain text passwords
+        const isValid = credentials.password === user.password;
+        
+        if (!isValid) {
+          throw new Error("Invalid password");
+        }
 
         return {
           id: user._id.toString(),

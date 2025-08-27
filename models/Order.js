@@ -65,6 +65,41 @@ const OrderSchema = new mongoose.Schema(
           type: String,
           default: "",
         },
+        category: {
+          type: String,
+          enum: ["veg", "non-veg", "jain", "beverages", "none"],
+          default: "veg",
+        },
+        status: {
+          type: String,
+          enum: ["pending", "preparing", "ready", "served", "completed", "cancelled"],
+          default: "pending",
+          validate: {
+            validator: function(status) {
+              // Get the parent order document
+              const order = this.parent();
+              
+              // If this is a beverages item, restrict status options
+              if (this.category === 'beverages') {
+                const allowedStatuses = ['pending', 'served', 'completed', 'cancelled'];
+                return allowedStatuses.includes(status);
+              }
+              
+              // For food items, all statuses are allowed
+              return true;
+            },
+            message: 'Beverages items can only have pending, served, completed, or cancelled status'
+          }
+        },
+        preparedAt: {
+          type: Date,
+        },
+        readyAt: {
+          type: Date,
+        },
+        servedAt: {
+          type: Date,
+        },
       },
     ],
     status: {
@@ -150,8 +185,9 @@ try {
   // Model cache clear attempt failed
 }
 
-// Add validation for beverages orders
+// Add pre-save middleware to handle beverages item status
 OrderSchema.pre('save', function(next) {
+  // Handle order-level beverages validation
   if (this.orderType === 'beverages') {
     const invalidStatuses = ['preparing', 'ready'];
     if (invalidStatuses.includes(this.status)) {
@@ -159,6 +195,19 @@ OrderSchema.pre('save', function(next) {
       return next(error);
     }
   }
+  
+  // Handle individual item status for beverages - only prevent invalid statuses
+  if (this.items && this.items.length > 0) {
+    for (let item of this.items) {
+      if (item.category === 'beverages') {
+        // Prevent beverages items from having preparing/ready status
+        if (item.status === 'preparing' || item.status === 'ready') {
+          item.status = 'pending';
+        }
+      }
+    }
+  }
+  
   next();
 });
 

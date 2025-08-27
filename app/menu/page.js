@@ -148,11 +148,12 @@ export default function MenuPage() {
     // Check for duplicate item only when adding new item
     if (!editItem) {
       const existingItem = items.find(item =>
-        item.name.toLowerCase() === form.name.toLowerCase()
+        item.name.toLowerCase() === form.name.toLowerCase() &&
+        item.category === form.category
       );
 
       if (existingItem) {
-        toast.error(`Item "${form.name}" already exists in the menu!`);
+        toast.error(`Item "${form.name}" already exists in the ${form.category} category!`);
         return;
       }
     }
@@ -428,6 +429,32 @@ export default function MenuPage() {
                         </div>
                         <span>Non-Veg</span>
                       </button>
+                      <button 
+                        onClick={() => handleCategoryChange("jain")} 
+                        className={`px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${
+                          selectedCategory === "jain" 
+                            ? "bg-orange-500 text-white shadow-lg" 
+                            : "bg-white/80 text-gray-600 hover:bg-orange-100"
+                        }`}
+                      >
+                        <div className="w-4 h-4 rounded-full border-2 border-orange-200 flex-shrink-0">
+                          <div className="w-2 h-2 bg-orange-200 rounded-full mx-auto mt-0.5"></div>
+                        </div>
+                        <span>Jain</span>
+                      </button>
+                      <button 
+                        onClick={() => handleCategoryChange("beverages")} 
+                        className={`px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${
+                          selectedCategory === "beverages" 
+                            ? "bg-blue-500 text-white shadow-lg" 
+                            : "bg-white/80 text-gray-600 hover:bg-blue-100"
+                        }`}
+                      >
+                        <div className="w-4 h-4 rounded-full border-2 border-blue-200 flex-shrink-0">
+                          <div className="w-2 h-2 bg-blue-200 rounded-full mx-auto mt-0.5"></div>
+                        </div>
+                        <span>Beverages</span>
+                      </button>
                     </div>
                   </div>
                   
@@ -466,10 +493,28 @@ export default function MenuPage() {
                                     <div className="w-2 h-2 bg-green-600 rounded-full"></div>
                                   </div>
                                 </div>
-                              ) : (
+                              ) : item.category === "non-veg" ? (
                                 <div className="bg-red-100 rounded-full p-2 shadow-sm">
                                   <div className="w-4 h-4 border-2 border-red-600 flex items-center justify-center">
                                     <div className="w-0 h-0 border-l-[3px] border-r-[3px] border-b-[5px] border-l-transparent border-r-transparent border-b-red-600"></div>
+                                  </div>
+                                </div>
+                              ) : item.category === "jain" ? (
+                                <div className="bg-orange-100 rounded-full p-2 shadow-sm">
+                                  <div className="w-4 h-4 rounded-full border-2 border-orange-600 flex items-center justify-center">
+                                    <div className="w-2 h-2 bg-orange-600 rounded-full"></div>
+                                  </div>
+                                </div>
+                              ) : item.category === "beverages" ? (
+                                <div className="bg-blue-100 rounded-full p-2 shadow-sm">
+                                  <div className="w-4 h-4 rounded-full border-2 border-blue-600 flex items-center justify-center">
+                                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="bg-gray-100 rounded-full p-2 shadow-sm">
+                                  <div className="w-4 h-4 rounded-full border-2 border-gray-600 flex items-center justify-center">
+                                    <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
                                   </div>
                                 </div>
                               )}
@@ -708,6 +753,22 @@ export default function MenuPage() {
                           <div className={`w-3 h-3 rounded-full ${form.category === "jain" ? "bg-orange-600" : "bg-gray-300"}`}></div>
                         </div>
                         <span className={`font-medium ${form.category === "jain" ? "text-orange-600" : "text-gray-600"}`}>Jain</span>
+                      </label>
+
+                      {/* Beverages */}
+                      <label className="flex items-center space-x-3 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="category"
+                          value="beverages"
+                          checked={form.category === "beverages"}
+                          onChange={(e) => setForm({ ...form, category: e.target.value })}
+                          className="sr-only"
+                        />
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${form.category === "beverages" ? "border-blue-600 bg-blue-100" : "border-gray-300"}`}>
+                          <div className={`w-3 h-3 rounded-full ${form.category === "beverages" ? "bg-blue-600" : "bg-gray-300"}`}></div>
+                        </div>
+                        <span className={`font-medium ${form.category === "beverages" ? "text-blue-600" : "text-gray-600"}`}>Beverages</span>
                       </label>
 
                       {/* None */}

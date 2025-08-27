@@ -5,8 +5,11 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { toast } from 'react-hot-toast';
-import { FiClock, FiCheck, FiAlertCircle, FiUsers, FiRefreshCw, FiCheckCircle, FiUser, FiX, FiHelpCircle, FiPlus, FiMinus, FiShoppingCart } from 'react-icons/fi';
+import { FiClock, FiCheck, FiAlertCircle, FiUsers, FiRefreshCw, FiCheckCircle, FiUser, FiX, FiHelpCircle, FiPlus, FiMinus, FiShoppingCart, FiList } from 'react-icons/fi';
 import ably from '@/lib/ably';
+
+// Global ref to persist expanded state across re-renders
+let expandedOrdersSet = new Set();
 
 export default function WaiterDashboard() {
   const { data: session, status } = useSession();
@@ -153,60 +156,81 @@ export default function WaiterDashboard() {
 
   const initializeAbly = async () => {
     try {
+      console.log('🔄 Initializing Ably connection for tenantUserId:', tenantUserId);
+      console.log('🔑 Ably API Key available:', !!process.env.NEXT_PUBLIC_ABLY_API_KEY);
+      console.log('🌐 Environment:', typeof window !== 'undefined' ? 'Client' : 'Server');
+      
+      // Check if ably instance exists and has connection
+      console.log('📡 Ably instance:', ably);
+      console.log('🔗 Ably connection state:', ably.connection?.state);
+      
+      // Force connection if not connected
+      if (ably.connection?.state !== 'connected') {
+        console.log('🔌 Attempting to connect...');
+        ably.connection.connect();
+      }
+      
       // Connection status monitoring
       ably.connection.on('connected', () => {
+        console.log('✅ Ably connected successfully');
+        console.log('🆔 Connection ID:', ably.connection.id);
         setIsConnected(true);
         toast.success('Connected to real-time updates');
       });
 
       ably.connection.on('disconnected', () => {
+        console.log('❌ Ably disconnected');
         setIsConnected(false);
         toast.error('Disconnected from real-time updates');
       });
 
       ably.connection.on('failed', () => {
+        console.log('💥 Ably connection failed');
+        console.log('❌ Connection error:', ably.connection.errorReason);
         setIsConnected(false);
         toast.error('Failed to connect to real-time updates');
       });
 
       // Subscribe to order updates (use tenantUserId)
-      const orderCh = ably.channels.get(`orders:${tenantUserId}`);
+      const channelName = `orders:${tenantUserId}`;
+      const orderCh = ably.channels.get(channelName);
+      console.log('📡 Subscribing to channel:', channelName);
+      console.log('📺 Channel state:', orderCh.state);
+      
       orderCh.subscribe(['order.created', 'order.updated', 'order-updated', 'order.deleted'], (message) => {
+        console.log('📨 Received order event:', message.name, message.data);
         const eventType = message.name;
         const orderData = message.data;
         
         if (eventType === 'order.created') {
-          setOrders(prevOrders => {
-            const exists = prevOrders.some(order => order._id === orderData._id);
-            if (!exists) {
-              return [orderData, ...prevOrders];
-            }
-            return prevOrders;
-          });
+          console.log('➕ Processing order.created event');
+          console.log('🔄 Refreshing data like refresh button');
+          fetchData(); // Immediate refresh like refresh button
         } else if (eventType === 'order.updated') {
-          setOrders(prevOrders => 
-            prevOrders.map(order => 
-              order._id === orderData._id ? { ...order, ...orderData } : order
-            )
-          );
+          console.log('🔄 Processing order.updated event');
+          console.log('🔄 Refreshing data like refresh button');
+          fetchData(); // Immediate refresh like refresh button
         } else if (eventType === 'order.deleted') {
-          setOrders(prevOrders => 
-            prevOrders.filter(order => order._id !== orderData._id)
-          );
+          console.log('🗑️ Processing order.deleted event');
+          console.log('🔄 Refreshing data like refresh button');
+          fetchData(); // Immediate refresh like refresh button
         }
       });
       
       // Subscribe to new-order events from QR menu
       orderCh.subscribe('new-order', (message) => {
-        const newOrder = message.data;
-        
-        setOrders(prevOrders => {
-          const exists = prevOrders.some(order => order._id === newOrder._id);
-          if (!exists) {
-            return [newOrder, ...prevOrders];
-          }
-          return prevOrders;
-        });
+        console.log('📨 Received new-order event:', message.data);
+        console.log('🔄 Refreshing data like refresh button');
+        fetchData(); // Immediate refresh like refresh button
+      });
+      
+      // Test subscription by logging channel events
+      orderCh.on('attached', () => {
+        console.log('✅ Channel attached successfully:', channelName);
+      });
+      
+      orderCh.on('failed', (err) => {
+        console.error('❌ Channel subscription failed:', err);
       });
       
       setOrderChannel(orderCh);
@@ -214,11 +238,14 @@ export default function WaiterDashboard() {
       // Subscribe to table updates (use tenantUserId)
       const tableCh = ably.channels.get(`tables:${tenantUserId}`);
       tableCh.subscribe(['table.created', 'table.updated', 'table.deleted'], (message) => {
+        console.log('📨 Received table event:', message.name);
         handleTableUpdate(message);
       });
       setTableChannel(tableCh);
 
+      console.log('🎯 Ably initialization completed');
     } catch (error) {
+      console.error('❌ Failed to initialize Ably:', error);
       toast.error('Failed to initialize real-time connection');
     }
   };
@@ -401,6 +428,9 @@ export default function WaiterDashboard() {
         setSpecialInstructions('');
         setShowManualOrderForm(false);
         
+        // Switch to orders tab to show the new order
+        setActiveTab('orders');
+        
         // Refresh orders
         fetchData();
       } else {
@@ -416,13 +446,13 @@ export default function WaiterDashboard() {
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-      const response = await fetch(`/api/order/${orderId}`, {
+      const response = await fetch(`/api/order/bulk-item-update`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ orderId }),
       });
 
       if (response.ok) {
@@ -430,18 +460,50 @@ export default function WaiterDashboard() {
         try {
           const updated = await response.json();
           const ch = ably.channels.get(`orders:${tenantUserId}`);
-          await ch.publish('order.updated', updated);
-          await ch.publish('order-updated', updated);
+          await ch.publish('order.updated', updated.order);
+          await ch.publish('order-updated', updated.order);
         } catch (e) {
           console.error('Ably publish failed from waiter:', e);
         }
-        toast.success(`Order ${newStatus} successfully`);
+        toast.success('Order started preparing');
         // No need to refresh data, Ably will handle it
       } else {
         throw new Error('Failed to update order');
       }
     } catch (error) {
-      toast.error('Failed to update order status');
+      toast.error('Failed to start preparing order');
+    }
+  };
+
+  const updateItemStatus = async (orderId, itemId, newStatus) => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+      const response = await fetch(`/api/order/item`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ orderId, itemId, status: newStatus }),
+      });
+
+      if (response.ok) {
+        // Publish updates so dashboard/waiter sync instantly across clients
+        try {
+          const updated = await response.json();
+          const ch = ably.channels.get(`orders:${tenantUserId}`);
+          await ch.publish('order.updated', updated.order);
+          await ch.publish('order-updated', updated.order);
+        } catch (e) {
+          console.error('Ably publish failed from waiter:', e);
+        }
+        toast.success(`Item marked as ${newStatus}`);
+        // No need to refresh data, Ably will handle it
+      } else {
+        throw new Error('Failed to update item status');
+      }
+    } catch (error) {
+      toast.error('Failed to update item status');
     }
   };
 
@@ -480,14 +542,29 @@ export default function WaiterDashboard() {
   // Helper function to check if order contains only beverages
   const isOnlyBeverages = (order) => {
     if (!order.items || order.items.length === 0) return false;
-    return order.items.every(item => item.subcategory === 'beverages');
+    
+    // Debug logging
+    console.log('🔍 Checking beverages for order:', order._id?.slice(-6));
+    console.log('📦 Order items:', order.items.map(item => ({ 
+      name: item.name, 
+      category: item.category, 
+      subcategory: item.subcategory 
+    })));
+    
+    // Check both category and subcategory for backward compatibility
+    const result = order.items.every(item => 
+      item.category === 'beverages' || item.subcategory === 'beverages'
+    );
+    console.log('🍹 Is only beverages:', result);
+    
+    return result;
   };
 
-  // Professional Compact Order Card Component
+  // Ultra Responsive Order Card Component
   const OrderCard = ({ order }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(expandedOrdersSet.has(order._id));
     const items = order.items || [];
-    const maxVisibleItems = 3; // Show 3 items when collapsed
+    const maxVisibleItems = 2; // Reduced for mobile
     const hasMoreItems = items.length > maxVisibleItems;
     const visibleItems = isExpanded ? items : items.slice(0, maxVisibleItems);
     const onlyBeverages = isOnlyBeverages(order);
@@ -498,142 +575,230 @@ export default function WaiterDashboard() {
         case 'preparing': return 'bg-blue-50 border-blue-200 text-blue-800';
         case 'ready': return 'bg-green-50 border-green-200 text-green-800';
         case 'served': return 'bg-purple-50 border-purple-200 text-purple-800';
+        case 'cancelled': return 'bg-red-50 border-red-200 text-red-800';
         default: return 'bg-gray-50 border-gray-200 text-gray-800';
       }
     };
 
     const getStatusIcon = (status) => {
       switch (status) {
-        case 'pending': return <FiClock className="w-4 h-4" />;
-        case 'preparing': return <FiRefreshCw className="w-4 h-4" />;
-        case 'ready': return <FiCheckCircle className="w-4 h-4" />;
-        case 'served': return <FiCheck className="w-4 h-4" />;
-        default: return <FiAlertCircle className="w-4 h-4" />;
+        case 'pending': return <FiClock className="w-3 h-3 sm:w-4 sm:h-4" />;
+        case 'preparing': return <FiAlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />;
+        case 'ready': return <FiCheck className="w-3 h-3 sm:w-4 sm:h-4" />;
+        case 'served': return <FiCheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />;
+        case 'cancelled': return <FiAlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />;
+        default: return <FiAlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />;
       }
     };
 
     const getNextStatus = (order) => {
-      // For beverages orders, skip kitchen workflow
-      if (onlyBeverages && order.status === 'pending') {
-        return 'served';
-      }
+      console.log('Getting next status for order:', order._id?.slice(-6), 'Current status:', order.status, 'Only beverages:', onlyBeverages);
+      
+      // For beverages orders: only served -> completed (no preparing/ready stages)
       if (onlyBeverages && order.status === 'served') {
         return 'completed';
       }
       
-      const statusFlow = {
-        'pending': 'preparing',
-        'preparing': 'ready',
-        'ready': 'served',
-        'served': 'completed'
-      };
-      return statusFlow[order.status];
+      // For regular food orders: pending -> preparing -> ready -> served -> completed
+      switch (order.status) {
+        case 'pending': return 'preparing';
+        case 'preparing': return 'ready';
+        case 'ready': return 'served';
+        case 'served': return 'completed';
+        default: return order.status;
+      }
     };
 
     const getActionText = (order) => {
-      // For beverages orders, show direct serving option
-      if (onlyBeverages && order.status === 'pending') {
-        return 'Mark Served';
-      }
-      if (onlyBeverages && order.status === 'served') {
-        return 'Complete Order';
+      console.log('Getting action text for order:', order._id?.slice(-6), 'Current status:', order.status, 'Only beverages:', onlyBeverages);
+      
+      // For beverages orders: only Mark Served and Complete Order buttons
+      if (onlyBeverages) {
+        switch (order.status) {
+          case 'pending': return 'Mark Served';
+          case 'served': return 'Complete Order';
+          default: return 'Update Status';
+        }
       }
       
-      const actionText = {
-        'pending': 'Start Preparing',
-        'preparing': 'Mark Ready',
-        'ready': 'Mark Served',
-        'served': 'Complete'
-      };
-      return actionText[order.status] || 'Update';
+      // For regular food orders
+      switch (order.status) {
+        case 'pending': return 'Start Preparing';
+        case 'preparing': return 'Mark Ready';
+        case 'ready': return 'Mark Served';
+        case 'served': return 'Complete Order';
+        default: return 'Update Status';
+      }
+    };
+
+    const handleToggleExpanded = () => {
+      const newExpanded = !isExpanded;
+      setIsExpanded(newExpanded);
+      
+      if (newExpanded) {
+        expandedOrdersSet.add(order._id);
+      } else {
+        expandedOrdersSet.delete(order._id);
+      }
     };
 
     return (
-      <div className={`bg-white rounded-xl border-2 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden ${
-        onlyBeverages ? 'border-blue-200 bg-blue-50/30' : 'border-gray-200'
+      <div className={`bg-white rounded-lg sm:rounded-xl lg:rounded-2xl border-2 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden transform hover:scale-[1.02] ${
+        onlyBeverages ? 'border-blue-200 bg-gradient-to-br from-blue-50/50 to-white' : 'border-gray-200 hover:border-gray-300'
       }`}>
-        {/* Compact Header */}
-        <div className="px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-gray-900 text-sm">#{order._id?.slice(-6) || 'N/A'}</span>
+        {/* Ultra Responsive Header */}
+        <div className="px-3 sm:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-4 border-b border-gray-100">
+          <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 xs:gap-3">
+            <div className="flex items-center gap-4">
+              <span className="font-bold text-gray-900 text-xs sm:text-sm lg:text-base">
+                #{order._id?.slice(-6) || 'N/A'}
+              </span>
               {onlyBeverages && (
-                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
-                  Beverages Only
+                <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-blue-100 text-blue-700 text-xs sm:text-xs lg:text-sm rounded-full font-medium whitespace-nowrap">
+                  <span className="hidden sm:inline">Beverages Only</span>
+                  <span className="sm:hidden">🥤</span>
                 </span>
               )}
             </div>
-            <div className={`flex items-center gap-2 px-2 py-1 rounded-full border text-xs font-medium ${getStatusColor(order.status)}`}>
+            <div className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border text-xs sm:text-sm font-medium ${getStatusColor(order.status)} min-h-[28px] sm:min-h-[32px]`}>
               {getStatusIcon(order.status)}
-              <span className="capitalize">{order.status}</span>
+              <span className="capitalize hidden xs:inline">{order.status}</span>
+              <span className="capitalize xs:hidden">{order.status.slice(0,4)}</span>
             </div>
           </div>
           
-          <div className="flex items-center justify-between text-xs text-gray-600">
-            <div className="flex items-center gap-1">
-              <FiUser className="w-3 h-3" />
-              <span>Table {order.tableNumber}</span>
+          <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-1 xs:gap-2 text-xs sm:text-sm text-gray-600">
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              <FiUser className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
+              <span className="font-medium">Table {order.tableNumber}</span>
             </div>
             {order.customerName && (
-              <div className="flex items-center gap-1">
-                <span>{order.customerName}</span>
+              <div className="flex items-center gap-1 truncate">
+                <span className="text-gray-500 hidden sm:inline">•</span>
+                <span className="truncate max-w-[120px] sm:max-w-[150px]">{order.customerName}</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Compact Items List */}
-        <div className="px-4 py-3">
-          <div className="space-y-1.5">
+        {/* Simple Items List */}
+        <div className="px-3 sm:px-4 lg:px-5 py-2">
+          <div className="space-y-1">
             {visibleItems.map((item, index) => (
-              <div key={index} className="flex justify-between items-center text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-xs font-medium text-gray-600">
+              <div key={item._id || index} className="flex items-center justify-between py-1.5 text-xs border-b border-gray-100 last:border-b-0 min-h-[28px]">
+                <div className="flex items-center gap-2 flex-1 min-w-0 pr-2">
+                  <span className="w-5 h-5 bg-gray-100 rounded flex items-center justify-center text-xs font-medium text-gray-700 flex-shrink-0">
                     {item.quantity}
                   </span>
-                  <span className="text-gray-900 font-medium">{item.name}</span>
-                  {item.subcategory === 'beverages' && (
-                    <span className="px-1.5 py-0.5 bg-blue-100 text-blue-600 text-xs rounded">🥤</span>
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <span className="text-gray-900 truncate max-w-[120px] sm:max-w-[160px] lg:max-w-[200px]" title={item.name}>
+                      {item.name}
+                    </span>
+                    {item.size && (
+                      <span className="text-gray-500 text-xs flex-shrink-0">({item.size})</span>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <span className="text-gray-600 font-medium text-xs whitespace-nowrap">₹{(item.price * item.quantity)}</span>
+                  
+                  <span className={`px-1.5 py-0.5 text-xs rounded whitespace-nowrap ${
+                    item.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                    item.status === 'preparing' ? 'bg-blue-100 text-blue-700' :
+                    item.status === 'ready' ? 'bg-green-100 text-green-700' :
+                    item.status === 'served' ? 'bg-purple-100 text-purple-700' :
+                    item.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {item.status || 'pending'}
+                  </span>
+                  
+                  {item.status === 'pending' && (
+                    <div className="flex items-center gap-1">
+                      {item.category === 'beverages' || item.subcategory === 'beverages' ? (
+                        <>
+                          <button
+                            onClick={() => updateItemStatus(order._id, item._id, 'served')}
+                            className="px-2 py-0.5 bg-purple-600 text-white text-xs rounded whitespace-nowrap hover:bg-purple-700 transition-colors"
+                          >
+                            Mark Served
+                          </button>
+                          <button
+                            onClick={() => updateItemStatus(order._id, item._id, 'cancelled')}
+                            className="px-2 py-0.5 bg-red-600 text-white text-xs rounded whitespace-nowrap hover:bg-red-700 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => updateItemStatus(order._id, item._id, 'preparing')}
+                            className="px-2 py-0.5 bg-blue-600 text-white text-xs rounded whitespace-nowrap hover:bg-blue-700 transition-colors"
+                          >
+                            Start
+                          </button>
+                          <button
+                            onClick={() => updateItemStatus(order._id, item._id, 'cancelled')}
+                            className="px-2 py-0.5 bg-red-600 text-white text-xs rounded whitespace-nowrap hover:bg-red-700 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {item.status === 'preparing' && (
+                    <button
+                      onClick={() => updateItemStatus(order._id, item._id, 'ready')}
+                      className="px-2 py-0.5 bg-green-600 text-white text-xs rounded whitespace-nowrap hover:bg-green-700 transition-colors"
+                    >
+                      Ready
+                    </button>
+                  )}
+                  {item.status === 'ready' && (
+                    <button
+                      onClick={() => updateItemStatus(order._id, item._id, 'served')}
+                      className="px-2 py-0.5 bg-purple-600 text-white text-xs rounded whitespace-nowrap hover:bg-purple-700 transition-colors"
+                    >
+                      Serve
+                    </button>
                   )}
                 </div>
-                <span className="text-gray-600 font-medium">₹{(item.price * item.quantity).toFixed(0)}</span>
               </div>
             ))}
             
-            {hasMoreItems && !isExpanded && (
+            {hasMoreItems && (
               <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full text-center text-xs text-blue-600 hover:text-blue-800 font-medium py-1 transition-colors"
+                onClick={handleToggleExpanded}
+                className="w-full text-center text-xs text-blue-600 py-1 hover:bg-blue-50 transition-colors"
               >
-                {isExpanded ? (
-                  'Show less'
-                ) : (
-                  `+${items.length - maxVisibleItems} more items`
-                )}
+                {isExpanded ? 'Show less' : `+${items.length - maxVisibleItems} more items`}
               </button>
             )}
           </div>
         </div>
 
-        {/* Compact Footer with Actions */}
-        <div className="px-4 py-3 bg-gray-50/30 border-t border-gray-100">
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <div className="font-bold text-gray-900">
+        {/* Ultra Responsive Footer */}
+        <div className="px-3 sm:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-4 bg-gradient-to-r from-gray-50/50 to-gray-100/50 border-t border-gray-100">
+          <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 xs:gap-3">
+            <div className="flex items-center justify-between xs:justify-start xs:flex-col xs:items-start gap-2 xs:gap-0">
+              <div className="font-bold text-gray-900 text-base sm:text-lg lg:text-xl">
                 ₹{order.totalAmount || (order.items || []).reduce((sum, item) => sum + (item.price * item.quantity), 0)}
               </div>
-              <div className="text-xs text-gray-500">
+              <div className="text-xs sm:text-sm text-gray-500">
                 {(() => {
                   const timeToShow = order.createdAt || order.timestamp;
                   
                   if (!timeToShow) {
-                    return 'No time available';
+                    return 'No time';
                   }
                   
                   try {
                     const date = new Date(timeToShow);
                     if (isNaN(date.getTime())) {
-                      return 'Invalid time format';
+                      return 'Invalid time';
                     }
                     return date.toLocaleTimeString('en-IN', { 
                       hour: '2-digit', 
@@ -645,31 +810,16 @@ export default function WaiterDashboard() {
                 })()}
               </div>
             </div>
-            {order.status !== 'served' && order.status !== 'completed' && (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => updateOrderStatus(order._id, getNextStatus(order))}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-                    onlyBeverages && order.status === 'pending'
-                      ? 'bg-green-600 hover:bg-green-700 text-white'
-                      : order.status === 'pending' 
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                      : order.status === 'preparing'
-                      ? 'bg-green-600 hover:bg-green-700 text-white'
-                      : 'bg-purple-600 hover:bg-purple-700 text-white'
-                  }`}
-                >
-                  {getActionText(order)}
-                </button>
-                {order.status === 'pending' && (
-                  <button
-                    onClick={() => updateOrderStatus(order._id, 'cancelled')}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 bg-red-600 hover:bg-red-700 text-white"
-                  >
-                    Cancel
-                  </button>
-                )}
-              </div>
+            
+            {/* Action Button - Ultra Touch Friendly */}
+            {order.status === 'pending' && !onlyBeverages && (
+              <button
+                onClick={() => updateOrderStatus(order._id, getNextStatus(order))}
+                className="px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-medium transition-all duration-200 text-xs sm:text-sm lg:text-base min-h-[40px] sm:min-h-[44px] lg:min-h-[48px] min-w-[100px] sm:min-w-[120px] lg:min-w-[140px] bg-yellow-600 hover:bg-yellow-700 text-white shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
+              >
+                <span className="hidden sm:inline">Start Preparing</span>
+                <span className="sm:hidden">▶️ Start</span>
+              </button>
             )}
           </div>
         </div>
@@ -682,7 +832,7 @@ export default function WaiterDashboard() {
     const isOccupied = table.status === 'occupied';
     
     return (
-      <div className={`rounded-xl border-2 transition-all duration-200 hover:shadow-md ${
+      <div className={`rounded-lg sm:rounded-xl lg:rounded-2xl border-2 transition-all duration-200 hover:shadow-md ${
         isOccupied 
           ? 'bg-red-50 border-red-200 hover:border-red-300' 
           : 'bg-green-50 border-green-200 hover:border-green-300'
@@ -717,16 +867,59 @@ export default function WaiterDashboard() {
   }
 
   // Filter orders by status
-  const activeOrders = orders.filter(order => 
-    ['pending', 'preparing', 'ready'].includes(order.status)
-  );
-  const servedOrders = orders.filter(order => 
-    ['served', 'completed'].includes(order.status)
-  );
-  const pendingOrders = orders.filter(order => order.status === 'pending');
-  const preparingOrders = orders.filter(order => order.status === 'preparing');
-
+  console.log('Total orders received:', orders.length);
+  console.log('All orders data:', orders.map(o => ({ id: o._id, status: o.status, items: o.items?.length })));
   
+  const activeOrders = orders.filter(order => {
+    const status = (order.status || '').toLowerCase().trim();
+    const isActive = ['pending', 'preparing', 'ready'].includes(status);
+    console.log('Order ID:', order._id, 'Status:', order.status, 'Normalized:', status, 'Is Active:', isActive);
+    return isActive;
+  });
+  
+  const servedOrders = orders.filter(order => {
+    const status = (order.status || '').toLowerCase().trim();
+    const isServed = ['served', 'completed'].includes(status);
+    console.log('Order ID:', order._id, 'Status:', order.status, 'Normalized:', status, 'Is Served:', isServed);
+    return isServed;
+  });
+  
+  console.log('Active orders count:', activeOrders.length);
+  console.log('Served orders count:', servedOrders.length);
+  console.log('Active orders:', activeOrders.map(o => ({ id: o._id, status: o.status })));
+  console.log('Served orders:', servedOrders.map(o => ({ id: o._id, status: o.status })));
+  
+  const pendingItemsCount = orders.reduce((total, order) => {
+    return total + (order.items?.filter(item => item.status === 'pending').length || 0);
+  }, 0);
+
+  const preparingItemsCount = orders.reduce((total, order) => {
+    return total + (order.items?.filter(item => item.status === 'preparing').length || 0);
+  }, 0);
+
+  const activeItemsCount = orders.reduce((total, order) => {
+    return total + (order.items?.filter(item => 
+      ['pending', 'preparing', 'ready'].includes(item.status)
+    ).length || 0);
+  }, 0);
+
+  const servedItemsCount = orders.reduce((total, order) => {
+    return total + (order.items?.filter(item => 
+      ['served', 'completed'].includes(item.status)
+    ).length || 0);
+  }, 0);
+
+  const readyItemsCount = orders.reduce((total, order) => {
+    return total + (order.items?.filter(item => item.status === 'ready').length || 0);
+  }, 0);
+
+  const actualServedItemsCount = orders.reduce((total, order) => {
+    return total + (order.items?.filter(item => item.status === 'served').length || 0);
+  }, 0);
+
+  const totalItemsCount = orders.reduce((total, order) => {
+    return total + (order.items?.length || 0);
+  }, 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -782,13 +975,22 @@ export default function WaiterDashboard() {
           </div>
 
           {/* Compact Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+            <div className="bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg p-3 text-white shadow-md">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-xs font-medium">Total Items</h3>
+                <FiList className="w-4 h-4 opacity-70" />
+              </div>
+              <div className="text-lg font-bold">{totalItemsCount}</div>
+              <div className="text-indigo-100 text-xs">All items</div>
+            </div>
+
             <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg p-3 text-white shadow-md">
               <div className="flex items-center justify-between mb-1">
                 <h3 className="text-xs font-medium">Pending</h3>
                 <FiClock className="w-4 h-4 opacity-70" />
               </div>
-              <div className="text-lg font-bold">{pendingOrders.length}</div>
+              <div className="text-lg font-bold">{pendingItemsCount}</div>
               <div className="text-yellow-100 text-xs">Awaiting prep</div>
             </div>
 
@@ -797,26 +999,26 @@ export default function WaiterDashboard() {
                 <h3 className="text-xs font-medium">Preparing</h3>
                 <FiRefreshCw className="w-4 h-4 opacity-70" />
               </div>
-              <div className="text-lg font-bold">{preparingOrders.length}</div>
+              <div className="text-lg font-bold">{preparingItemsCount}</div>
               <div className="text-blue-100 text-xs">In kitchen</div>
             </div>
 
             <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg p-3 text-white shadow-md">
               <div className="flex items-center justify-between mb-1">
-                <h3 className="text-xs font-medium">Total</h3>
-                <FiCheckCircle className="w-4 h-4 opacity-70" />
+                <h3 className="text-xs font-medium">Ready</h3>
+                <FiCheck className="w-4 h-4 opacity-70" />
               </div>
-              <div className="text-lg font-bold">{activeOrders.length}</div>
-              <div className="text-green-100 text-xs">Active orders</div>
+              <div className="text-lg font-bold">{readyItemsCount}</div>
+              <div className="text-green-100 text-xs">Ready to serve</div>
             </div>
 
             <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg p-3 text-white shadow-md">
               <div className="flex items-center justify-between mb-1">
-                <h3 className="text-xs font-medium">Tables</h3>
-                <FiUser className="w-4 h-4 opacity-70" />
+                <h3 className="text-xs font-medium">Served</h3>
+                <FiCheckCircle className="w-4 h-4 opacity-70" />
               </div>
-              <div className="text-lg font-bold">{Array.isArray(tables) ? tables.length : 0}</div>
-              <div className="text-purple-100 text-xs">Total tables</div>
+              <div className="text-lg font-bold">{actualServedItemsCount}</div>
+              <div className="text-purple-100 text-xs">Served to customers</div>
             </div>
           </div>
 
@@ -832,8 +1034,8 @@ export default function WaiterDashboard() {
                       : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <span className="sm:hidden">Orders ({activeOrders.length})</span>
-                  <span className="hidden sm:inline">Orders ({activeOrders.length})</span>
+                  <span className="sm:hidden">Orders ({activeItemsCount})</span>
+                  <span className="hidden sm:inline">Orders ({activeItemsCount})</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('served-orders')}
@@ -843,8 +1045,8 @@ export default function WaiterDashboard() {
                       : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <span className="sm:hidden">Served Orders ({servedOrders.length})</span>
-                  <span className="hidden sm:inline">Served Orders ({servedOrders.length})</span>
+                  <span className="sm:hidden">Served Orders ({servedItemsCount})</span>
+                  <span className="hidden sm:inline">Served Orders ({servedItemsCount})</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('manual-order')}
@@ -893,11 +1095,13 @@ export default function WaiterDashboard() {
                     <p className="text-sm sm:text-base text-gray-500">All orders completed. Great job!</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-cols-max">
                     {activeOrders
                       .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
                       .map((order) => (
-                        <OrderCard key={order._id} order={order} />
+                        <div key={order._id} className="w-full min-w-0">
+                          <OrderCard order={order} />
+                        </div>
                       ))}
                   </div>
                 )}
@@ -1146,7 +1350,7 @@ export default function WaiterDashboard() {
                               {manualCart.map((item, index) => (
                                 <div key={`${item.id}-${item.size}-${index}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
                                   <div className="flex-1 min-w-0">
-                                    <h4 className="font-medium text-sm text-gray-900 truncate">{item.name}</h4>
+                                    <h4 className="font-medium text-sm text-gray-900">{item.name}</h4>
                                     {item.size && (
                                       <p className="text-xs text-blue-600 font-medium">{item.size}</p>
                                     )}

@@ -8,7 +8,7 @@ const menuItemSchema = new mongoose.Schema({
   },
   name: { type: String, required: true },
   description: { type: String },
-  category: { type: String, enum: ["veg", "non-veg", "jain", "none"], default: "veg", required: true },
+  category: { type: String, enum: ["veg", "non-veg", "jain", "beverages", "none"], default: "veg", required: true },
   available: { type: Boolean, default: true },
   
   // Unit and sizing system
