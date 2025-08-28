@@ -970,16 +970,16 @@ export default function Dashboard() {
       <Header />
       
       {/* Main Content Container */}
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-26 sm:pt-24 pb-8">
         
         {/* Modern Dashboard Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 sm:mb-12">
-          <div className="flex flex-col sm:flex-row sm:items-center mb-6 lg:mb-0">
+          <div className="flex flex-row items-center gap-4">
             <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-orange-600 p-4 rounded-3xl mr-0 sm:mr-6 mb-4 sm:mb-0 self-start">
-              <FaUtensils className="text-white text-2xl sm:text-3xl" />
+              <FaUtensils className="text-white text-xl sm:text-3xl" />
             </div>
             <div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-2">
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-2">
                 Restaurant Dashboard
               </h1>
               <p className="text-gray-600 text-base sm:text-lg">

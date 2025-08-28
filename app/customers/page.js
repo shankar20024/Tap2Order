@@ -153,7 +153,7 @@ export default function CustomersPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Daily Growth Rate</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.dailyGrowthRate}%</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.dailyGrowthRate.toFixed(1)}%</p>
               </div>
             </div>
           </div>
