@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import thermalPrinter from '@/lib/thermalPrinter';
 import toast from 'react-hot-toast';
 import { FaPrint, FaArrowLeft, FaCog, FaEye } from 'react-icons/fa';
 
-export default function BillPreview() {
+function BillPreviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
@@ -411,5 +411,24 @@ export default function BillPreview() {
         }
       `}</style>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading bill preview...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function BillPreview() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <BillPreviewContent />
+    </Suspense>
   );
 }

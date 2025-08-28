@@ -1,18 +1,18 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { User } from '@/models/User';
-import { authMiddleware } from '@/lib/auth-middleware';
+import { getAuthUser } from '@/lib/auth-middleware';
 
 export async function GET(request) {
   try {
     // Use auth middleware to get authenticated user
-    const authResult = await authMiddleware(request);
+    const authResult = await getAuthUser(request);
     
     if (!authResult.success) {
-      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+      return NextResponse.json({ error: authResult.error }, { status: 401 });
     }
 
-    const { userId } = authResult;
+    const userId = authResult.user.id;
     
     await connectDB();
     
