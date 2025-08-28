@@ -19,7 +19,8 @@ export default function CartPanel({
   getTotalPrice, 
   orderPlaced = false,
   placingOrder = false,
-  errorMessage = '' 
+  errorMessage = '',
+  gstDetails = null
 }) {
   const totalPrice = getTotalPrice();
   const cartLength = cart.length;
@@ -118,6 +119,7 @@ export default function CartPanel({
                   cartLength={cartLength}
                   orderPlaced={orderPlaced}
                   placingOrder={placingOrder}
+                  gstDetails={gstDetails}
                 />
               </>
             )}

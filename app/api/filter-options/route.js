@@ -40,7 +40,6 @@ export async function GET(request) {
     return NextResponse.json(filterOptions);
     
   } catch (error) {
-    console.error('Filter options API error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch filter options', details: error.message },
       { status: 500 }

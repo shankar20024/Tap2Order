@@ -1,6 +1,7 @@
 import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
 import Table from "@/models/Table"; // Import Table model
+import { User } from "@/models/User"; // Import User model for GST details
 import { NextResponse } from "next/server";
 import { setTableOccupied, setTableFree } from "@/lib/tableStatus";
 import { getServerSession } from "next-auth";
@@ -122,13 +123,9 @@ export async function POST(req) {
 
     // Publish real-time event to waiter dashboard
     try {
-      console.log('📡 Publishing order.created event to channel:', `orders:${userId}`);
-      console.log('📦 Order data:', JSON.stringify(savedOrder, null, 2));
       const channel = ably.channels.get(`orders:${userId}`);
       await channel.publish('order.created', savedOrder);
-      console.log('✅ Successfully published order.created event');
     } catch (error) {
-      console.error('❌ Failed to publish order created event:', error);
       // Don't fail the order creation if real-time publishing fails
     }
 
@@ -164,14 +161,70 @@ export async function GET(req) {
       userId = session.user.id;
     }
     
+    // Fetch user's business profile for GST details
+    let user, taxRate = 0, hasGstNumber = false;
+    try {
+      user = await User.findOne({ _id: userId });
+      taxRate = user?.gstDetails?.taxRate || 0;
+      hasGstNumber = user?.gstDetails?.gstNumber && user.gstDetails.gstNumber.trim() !== '';
+    } catch (userError) {
+      // Continue without GST calculation if user fetch fails
+    }
+    
     // Only fetch orders for this specific userId that are not completed or cancelled
     const orders = await Order.find({ 
       userId: userId, 
       status: { $nin: ["completed", "cancelled"] } 
     });
     
-    return NextResponse.json(orders);
+    // Calculate grand total with GST for each order
+    const ordersWithGST = orders.map(order => {
+      try {
+        const orderObj = order.toObject();
+        const subtotal = orderObj.totalAmount || (orderObj.items || orderObj.cart || []).reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        
+        // Apply GST only if user has GST number and tax rate > 0
+        if (hasGstNumber && taxRate > 0) {
+          const gstAmount = subtotal * (taxRate / 100);
+          const grandTotal = subtotal + gstAmount;
+          
+          return {
+            ...orderObj,
+            gstDetails: {
+              subtotal: subtotal,
+              cgstAmount: gstAmount / 2,
+              sgstAmount: gstAmount / 2,
+              totalGst: gstAmount,
+              grandTotal: grandTotal,
+              isGstApplicable: true,
+              taxRate: taxRate
+            }
+          };
+        } else {
+          return {
+            ...orderObj,
+            gstDetails: {
+              subtotal: subtotal,
+              cgstAmount: 0,
+              sgstAmount: 0,
+              totalGst: 0,
+              grandTotal: subtotal,
+              isGstApplicable: false,
+              taxRate: 0
+            }
+          };
+        }
+      } catch (orderError) {
+        // Return original order if GST calculation fails
+        return order.toObject();
+      }
+    });
+    
+    return NextResponse.json(ordersWithGST);
   } catch (error) {
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Internal Server Error", 
+      details: error.message 
+    }, { status: 500 });
   }
 }

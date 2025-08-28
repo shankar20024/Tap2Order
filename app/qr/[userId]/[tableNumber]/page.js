@@ -31,11 +31,46 @@ export default function QRMenu(paramsPromise) {
   const [showCartArrow, setShowCartArrow] = useState(false);
   const [arrowPosition, setArrowPosition] = useState({ x: 0, y: 0 });
   const [viewOrderModalOpen, setViewOrderModalOpen] = useState(false);
+  const [businessInfo, setBusinessInfo] = useState(null);
 
   // Customer Info State
   const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '' });
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [customerInfoSubmitted, setCustomerInfoSubmitted] = useState(false);
+
+  // GST Calculation Function
+  const calculateGST = useCallback((subtotal) => {
+    const taxRate = businessInfo?.gstDetails?.taxRate || 0;
+    const hasGstNumber = businessInfo?.gstDetails?.gstNumber && businessInfo.gstDetails.gstNumber.trim() !== '';
+    
+    let gstDetails = {
+      subtotal: subtotal,
+      cgstAmount: 0,
+      sgstAmount: 0,
+      totalGst: 0,
+      grandTotal: subtotal,
+      isGstApplicable: false,
+      taxRate: taxRate
+    };
+
+    // Apply GST only if user has GST number and tax rate > 0
+    if (hasGstNumber && taxRate > 0) {
+      const totalTax = subtotal * (taxRate / 100);
+      const cgst = totalTax / 2;
+      const sgst = totalTax / 2;
+      gstDetails = {
+        subtotal: subtotal,
+        cgstAmount: cgst,
+        sgstAmount: sgst,
+        totalGst: totalTax,
+        grandTotal: subtotal + totalTax,
+        isGstApplicable: true,
+        taxRate: taxRate
+      };
+    }
+
+    return gstDetails;
+  }, [businessInfo]);
 
   // Custom Hooks
   const {
@@ -83,7 +118,7 @@ export default function QRMenu(paramsPromise) {
     customerInfo: orderCustomerInfo,
     setCustomerInfo: setOrderCustomerInfo,
     resetOrderState
-  } = useOrder(userId, tableNumber, cart, getTotalPrice, resetCart);
+  } = useOrder(userId, tableNumber, cart, getTotalPrice, resetCart, calculateGST(getTotalPrice()));
 
   // Fetch user data
   useEffect(() => {
@@ -100,13 +135,32 @@ export default function QRMenu(paramsPromise) {
           setApiStatus(false);
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
         setApiStatus(false);
       }
     };
 
     if (userId) {
       fetchUser();
+    }
+  }, [userId]);
+
+  // Fetch business info
+  useEffect(() => {
+    const fetchBusinessInfo = async () => {
+      try {
+        const businessResponse = await fetch(`/api/business/info?userId=${userId}`);
+
+        if (businessResponse.ok) {
+          const businessData = await businessResponse.json();
+          setBusinessInfo(businessData);
+        }
+      } catch (error) {
+        // Error fetching business info, continue
+      }
+    };
+
+    if (userId) {
+      fetchBusinessInfo();
     }
   }, [userId]);
 
@@ -123,7 +177,6 @@ export default function QRMenu(paramsPromise) {
         setTableExists(false);
       }
     } catch (err) {
-      console.error("Error checking table existence:", err);
       setTableExists(false);
     } finally {
       setLoading(false);
@@ -152,11 +205,9 @@ export default function QRMenu(paramsPromise) {
 
   // Handle customer info submission
   const handleCustomerInfoSubmit = (info) => {
-    console.log('🎯 Customer info submitted from form:', info);
     setCustomerInfo(info);
     setCustomerInfoSubmitted(true);
     setOrderCustomerInfo(info); // Update useOrder hook's customerInfo
-    console.log('📝 Customer info set in QR page state:', info);
     localStorage.setItem(`customerInfo_${userId}_${tableNumber}`, JSON.stringify(info));
     setShowCustomerModal(false);
   };
@@ -285,6 +336,7 @@ export default function QRMenu(paramsPromise) {
         orderPlaced={orderPlaced}
         placingOrder={placingOrder}
         errorMessage={errorMessage}
+        gstDetails={calculateGST(getTotalPrice())}
       />
 
       {/* My Orders Button */}

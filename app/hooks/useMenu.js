@@ -31,10 +31,10 @@ export default function useMenu(userId) {
         setActiveCategory('All');
         setFilteredMenu(data);
       } else {
-        console.error("Failed to fetch menu");
+        // Failed to fetch menu
       }
     } catch (err) {
-      console.error("Menu fetch error:", err);
+      // Menu fetch error
     } finally {
       setLoading(false);
     }

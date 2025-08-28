@@ -365,7 +365,7 @@ export default function ProfilePage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-300 mb-2">GST Registration Date</label>
-                          <input type="date" value={profile.gstDetails.gstRegistrationDate} onChange={(e) => handleInputChange('gstDetails', 'gstRegistrationDate', e.target.value)} disabled={!editing} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:bg-gray-600/50" />
+                          <input type="date" value={profile.gstDetails.gstRegistrationDate || ''} onChange={(e) => handleInputChange('gstDetails', 'gstRegistrationDate', e.target.value)} disabled={!editing} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:bg-gray-600/50" />
                         </div>
                         <div className="md:col-span-2">
                           <label className="block text-sm font-medium text-gray-300 mb-2">Tax Rate (%)</label>

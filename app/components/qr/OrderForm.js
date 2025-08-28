@@ -11,20 +11,46 @@ export default function OrderForm({
   totalPrice, 
   cartLength, 
   orderPlaced = false,
-  placingOrder = false 
+  placingOrder = false,
+  gstDetails = null
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <div className="border-t border-gray-200 bg-gray-50">
-      {/* Total Section */}
+      {/* Total Section with GST Breakdown */}
       <div className="px-4 py-3 bg-white border-b border-gray-100">
-        <div className="flex justify-between items-center">
-          <span className="text-lg font-semibold text-gray-800">Total:</span>
-          <span className="text-xl font-bold text-amber-600">
-            ₹{totalPrice.toFixed(2)}
-          </span>
-        </div>
+        {gstDetails && gstDetails.isGstApplicable ? (
+          <div className="space-y-2">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-gray-600">Subtotal:</span>
+              <span className="font-medium">₹{gstDetails.subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-gray-600">CGST ({(gstDetails.taxRate / 2).toFixed(1)}%):</span>
+              <span className="font-medium">₹{gstDetails.cgstAmount.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-gray-600">SGST ({(gstDetails.taxRate / 2).toFixed(1)}%):</span>
+              <span className="font-medium">₹{gstDetails.sgstAmount.toFixed(2)}</span>
+            </div>
+            <div className="border-t border-gray-200 pt-2">
+              <div className="flex justify-between items-center">
+                <span className="text-lg font-semibold text-gray-800">Grand Total:</span>
+                <span className="text-xl font-bold text-amber-600">
+                  ₹{gstDetails.grandTotal.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-semibold text-gray-800">Total:</span>
+            <span className="text-xl font-bold text-amber-600">
+              ₹{totalPrice.toFixed(2)}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Special Instructions Section */}

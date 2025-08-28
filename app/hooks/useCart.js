@@ -14,7 +14,7 @@ export default function useCart(apiStatus, orderPlaced) {
       try {
         setCart(JSON.parse(savedCart));
       } catch (err) {
-        console.error("Error loading cart from localStorage:", err);
+        // Error loading cart from localStorage
       }
     }
   }, [orderPlaced]);

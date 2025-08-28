@@ -99,10 +99,10 @@ export default function StaffManagement() {
         setStaff(data.staff);
         setStats(data.stats);
       } else {
-        console.error("Failed to fetch staff:", data.error);
+        // Failed to fetch staff
       }
     } catch (error) {
-      console.error("Error fetching staff:", error);
+      // Error fetching staff
     } finally {
       setLoading(false);
     }

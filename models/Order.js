@@ -137,6 +137,55 @@ const OrderSchema = new mongoose.Schema(
       required: true,
       min: 0, // Ensure total amount is non-negative
     },
+    gstDetails: {
+      subtotal: {
+        type: Number,
+        default: 0,
+        min: 0
+      },
+      cgstRate: {
+        type: Number,
+        default: 9, // 9% CGST (can be configured)
+        min: 0,
+        max: 50
+      },
+      sgstRate: {
+        type: Number,
+        default: 9, // 9% SGST (can be configured)
+        min: 0,
+        max: 50
+      },
+      cgstAmount: {
+        type: Number,
+        default: 0,
+        min: 0
+      },
+      sgstAmount: {
+        type: Number,
+        default: 0,
+        min: 0
+      },
+      totalGst: {
+        type: Number,
+        default: 0,
+        min: 0
+      },
+      grandTotal: {
+        type: Number,
+        default: 0,
+        min: 0
+      },
+      taxRate: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 28
+      },
+      isGstApplicable: {
+        type: Boolean,
+        default: true
+      }
+    },
     preparingAt: {
       type: Date,
     },

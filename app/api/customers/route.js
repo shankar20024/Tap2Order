@@ -7,10 +7,8 @@ export async function POST(request) {
     await connectDB();
     
     const { name, phone, userId, tableNumber, ip } = await request.json();
-    console.log(' Customer API received data:', { name, phone, userId, tableNumber, ip });
     
     if (!name || !phone || !userId) {
-      console.log(' Customer API validation failed - missing required fields');
       return NextResponse.json(
         { error: 'Name, phone, and userId are required' },
         { status: 400 }
@@ -19,7 +17,6 @@ export async function POST(request) {
 
     // Check if customer already exists for this hotel
     let customer = await Customer.findOne({ userId, phone });
-    console.log(' Existing customer found:', customer ? 'Yes' : 'No');
     
     if (customer) {
       // Update existing customer
@@ -39,16 +36,12 @@ export async function POST(request) {
       // 2. Same day but different table (customer moved tables)
       if (!isSameDay || customer.tableNumber !== tableNumber) {
         customer.visitCount += 1;
-        console.log(' Visit count incremented - New visit detected');
-      } else {
-        console.log(' Same day, same table - Visit count not incremented (reorder)');
       }
       
       customer.lastVisit = new Date();
       if (ip) customer.ip = ip;
       
       await customer.save();
-      console.log(' Existing customer updated:', customer._id);
     } else {
       // Create new customer
       customer = new Customer({
@@ -60,7 +53,6 @@ export async function POST(request) {
       });
       
       await customer.save();
-      console.log(' New customer created:', customer._id);
     }
 
     return NextResponse.json({ 
@@ -74,7 +66,6 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error(' Customer API error:', error);
     return NextResponse.json(
       { error: 'Failed to process customer data' },
       { status: 500 }
@@ -103,7 +94,6 @@ export async function GET(request) {
     return NextResponse.json({ customers });
 
   } catch (error) {
-    console.error('Get customers error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch customers' },
       { status: 500 }

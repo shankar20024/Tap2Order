@@ -24,6 +24,7 @@ export default function WaiterDashboard() {
   const [orderChannel, setOrderChannel] = useState(null);
   const [tableChannel, setTableChannel] = useState(null);
   const [hotelName, setHotelName] = useState('');
+  const [businessInfo, setBusinessInfo] = useState(null);
   
   // Manual order states
   const [showManualOrderForm, setShowManualOrderForm] = useState(false);
@@ -142,7 +143,9 @@ export default function WaiterDashboard() {
 
   // Initialize Ably and fetch initial data on tenant change
   useEffect(() => {
-    if (!tenantUserId) return;
+    if (!tenantUserId) {
+      return;
+    }
     fetchHotelOwnerName(tenantUserId);
     initializeAbly();
     fetchData();
@@ -156,96 +159,57 @@ export default function WaiterDashboard() {
 
   const initializeAbly = async () => {
     try {
-      console.log('🔄 Initializing Ably connection for tenantUserId:', tenantUserId);
-      console.log('🔑 Ably API Key available:', !!process.env.NEXT_PUBLIC_ABLY_API_KEY);
-      console.log('🌐 Environment:', typeof window !== 'undefined' ? 'Client' : 'Server');
-      
-      // Check if ably instance exists and has connection
-      console.log('📡 Ably instance:', ably);
-      console.log('🔗 Ably connection state:', ably.connection?.state);
-      
-      // Force connection if not connected
-      if (ably.connection?.state !== 'connected') {
-        console.log('🔌 Attempting to connect...');
-        ably.connection.connect();
+      const ablyInstance = ably;
+      if (ablyInstance.connection?.state !== 'connected') {
+        ablyInstance.connection.connect();
       }
       
-      // Connection status monitoring
-      ably.connection.on('connected', () => {
-        console.log('✅ Ably connected successfully');
-        console.log('🆔 Connection ID:', ably.connection.id);
+      ablyInstance.connection.on('connected', () => {
         setIsConnected(true);
         toast.success('Connected to real-time updates');
       });
 
-      ably.connection.on('disconnected', () => {
-        console.log('❌ Ably disconnected');
+      ablyInstance.connection.on('disconnected', () => {
         setIsConnected(false);
         toast.error('Disconnected from real-time updates');
       });
 
-      ably.connection.on('failed', () => {
-        console.log('💥 Ably connection failed');
-        console.log('❌ Connection error:', ably.connection.errorReason);
+      ablyInstance.connection.on('failed', () => {
         setIsConnected(false);
         toast.error('Failed to connect to real-time updates');
       });
 
       // Subscribe to order updates (use tenantUserId)
       const channelName = `orders:${tenantUserId}`;
-      const orderCh = ably.channels.get(channelName);
-      console.log('📡 Subscribing to channel:', channelName);
-      console.log('📺 Channel state:', orderCh.state);
+      const orderCh = ablyInstance.channels.get(channelName);
       
       orderCh.subscribe(['order.created', 'order.updated', 'order-updated', 'order.deleted'], (message) => {
-        console.log('📨 Received order event:', message.name, message.data);
         const eventType = message.name;
         const orderData = message.data;
         
         if (eventType === 'order.created') {
-          console.log('➕ Processing order.created event');
-          console.log('🔄 Refreshing data like refresh button');
           fetchData(); // Immediate refresh like refresh button
         } else if (eventType === 'order.updated') {
-          console.log('🔄 Processing order.updated event');
-          console.log('🔄 Refreshing data like refresh button');
           fetchData(); // Immediate refresh like refresh button
         } else if (eventType === 'order.deleted') {
-          console.log('🗑️ Processing order.deleted event');
-          console.log('🔄 Refreshing data like refresh button');
           fetchData(); // Immediate refresh like refresh button
         }
       });
       
       // Subscribe to new-order events from QR menu
       orderCh.subscribe('new-order', (message) => {
-        console.log('📨 Received new-order event:', message.data);
-        console.log('🔄 Refreshing data like refresh button');
         fetchData(); // Immediate refresh like refresh button
-      });
-      
-      // Test subscription by logging channel events
-      orderCh.on('attached', () => {
-        console.log('✅ Channel attached successfully:', channelName);
-      });
-      
-      orderCh.on('failed', (err) => {
-        console.error('❌ Channel subscription failed:', err);
       });
       
       setOrderChannel(orderCh);
 
       // Subscribe to table updates (use tenantUserId)
-      const tableCh = ably.channels.get(`tables:${tenantUserId}`);
+      const tableCh = ablyInstance.channels.get(`tables:${tenantUserId}`);
       tableCh.subscribe(['table.created', 'table.updated', 'table.deleted'], (message) => {
-        console.log('📨 Received table event:', message.name);
         handleTableUpdate(message);
       });
       setTableChannel(tableCh);
-
-      console.log('🎯 Ably initialization completed');
     } catch (error) {
-      console.error('❌ Failed to initialize Ably:', error);
       toast.error('Failed to initialize real-time connection');
     }
   };
@@ -329,30 +293,27 @@ export default function WaiterDashboard() {
 
   // Manual order functions
   const addToManualCart = (item, size = null) => {
-    const cartItem = {
-      id: item._id,
-      name: item.name,
-      size: size || (item.pricing && item.pricing.length > 0 ? item.pricing[0].size : ''),
-      price: size ? item.pricing.find(p => p.size === size)?.price || item.price : (item.pricing && item.pricing.length > 0 ? item.pricing[0].price : item.price),
-      quantity: 1,
-      category: item.category,
-      unit: item.unit,
-      subcategory: item.subcategory || '' // Add subcategory field
-    };
-
-    setManualCart(prev => {
-      const existingIndex = prev.findIndex(cartItem => 
+    const existingItem = manualCart.find(cartItem => 
+      cartItem.id === item._id && cartItem.size === (size || (item.pricing && item.pricing.length > 0 ? item.pricing[0].size : ''))
+    );
+    
+    if (existingItem) {
+      setManualCart(prev => prev.map(cartItem =>
         cartItem.id === item._id && cartItem.size === (size || (item.pricing && item.pricing.length > 0 ? item.pricing[0].size : ''))
-      );
-      
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex].quantity += 1;
-        return updated;
-      } else {
-        return [...prev, cartItem];
-      }
-    });
+          ? { ...cartItem, quantity: cartItem.quantity + 1 }
+          : cartItem
+      ));
+    } else {
+      setManualCart(prev => [...prev, {
+        id: item._id,
+        name: item.name,
+        size: size || (item.pricing && item.pricing.length > 0 ? item.pricing[0].size : ''),
+        price: size ? item.pricing.find(p => p.size === size)?.price || item.price : (item.pricing && item.pricing.length > 0 ? item.pricing[0].price : item.price),
+        quantity: 1,
+        category: item.category,
+        unit: item.unit,
+      }]);
+    }
   };
 
   const updateManualCartQuantity = (itemId, size, newQuantity) => {
@@ -377,27 +338,36 @@ export default function WaiterDashboard() {
       return;
     }
 
+    if (!customerName.trim()) {
+      toast.error('Please enter customer name');
+      return;
+    }
+
     setCreatingOrder(true);
+
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-      
       const orderData = {
-        tableNumber: Number(selectedTable),
+        tableNumber: parseInt(selectedTable),
         cart: manualCart.map(item => ({
-          menuItemId: item.id, // Use the item's original _id
+          menuItemId: item.id,
           name: item.name,
           price: item.price,
           quantity: item.quantity,
           size: item.size,
-          notes: '' // Include notes field, even if empty
+          category: item.category,
+          notes: ''
         })),
-        orderMessage: specialInstructions,
-        status: 'preparing', // Send 'preparing' status for manual orders
+        orderMessage: specialInstructions.trim(),
+        status: 'pending',
         userId: tenantUserId,
-        customerName,
-        customerPhone,
+        customerInfo: {
+          name: customerName,
+          phone: customerPhone
+        }
       };
 
+      const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+      
       const response = await fetch('/api/order', {
         method: 'POST',
         headers: {
@@ -415,7 +385,7 @@ export default function WaiterDashboard() {
           const ch = ably.channels.get(`orders:${tenantUserId}`);
           await ch.publish('order.created', newOrder);
         } catch (e) {
-          console.error('Ably publish failed:', e);
+          // Ably publish failed
         }
 
         toast.success('Manual order created successfully!');
@@ -463,7 +433,7 @@ export default function WaiterDashboard() {
           await ch.publish('order.updated', updated.order);
           await ch.publish('order-updated', updated.order);
         } catch (e) {
-          console.error('Ably publish failed from waiter:', e);
+          // Ably publish failed from waiter
         }
         toast.success('Order started preparing');
         // No need to refresh data, Ably will handle it
@@ -495,7 +465,7 @@ export default function WaiterDashboard() {
           await ch.publish('order.updated', updated.order);
           await ch.publish('order-updated', updated.order);
         } catch (e) {
-          console.error('Ably publish failed from waiter:', e);
+          // Ably publish failed from waiter
         }
         toast.success(`Item marked as ${newStatus}`);
         // No need to refresh data, Ably will handle it
@@ -543,19 +513,10 @@ export default function WaiterDashboard() {
   const isOnlyBeverages = (order) => {
     if (!order.items || order.items.length === 0) return false;
     
-    // Debug logging
-    console.log('🔍 Checking beverages for order:', order._id?.slice(-6));
-    console.log('📦 Order items:', order.items.map(item => ({ 
-      name: item.name, 
-      category: item.category, 
-      subcategory: item.subcategory 
-    })));
-    
     // Check both category and subcategory for backward compatibility
     const result = order.items.every(item => 
       item.category === 'beverages' || item.subcategory === 'beverages'
     );
-    console.log('🍹 Is only beverages:', result);
     
     return result;
   };
@@ -592,7 +553,6 @@ export default function WaiterDashboard() {
     };
 
     const getNextStatus = (order) => {
-      console.log('Getting next status for order:', order._id?.slice(-6), 'Current status:', order.status, 'Only beverages:', onlyBeverages);
       
       // For beverages orders: only served -> completed (no preparing/ready stages)
       if (onlyBeverages && order.status === 'served') {
@@ -610,7 +570,6 @@ export default function WaiterDashboard() {
     };
 
     const getActionText = (order) => {
-      console.log('Getting action text for order:', order._id?.slice(-6), 'Current status:', order.status, 'Only beverages:', onlyBeverages);
       
       // For beverages orders: only Mark Served and Complete Order buttons
       if (onlyBeverages) {
@@ -784,9 +743,9 @@ export default function WaiterDashboard() {
         <div className="px-3 sm:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-4 bg-gradient-to-r from-gray-50/50 to-gray-100/50 border-t border-gray-100">
           <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 xs:gap-3">
             <div className="flex items-center justify-between xs:justify-start xs:flex-col xs:items-start gap-2 xs:gap-0">
-              <div className="font-bold text-gray-900 text-base sm:text-lg lg:text-xl">
+              {/* <div className="font-bold text-gray-900 text-base sm:text-lg lg:text-xl">
                 ₹{order.totalAmount || (order.items || []).reduce((sum, item) => sum + (item.price * item.quantity), 0)}
-              </div>
+              </div> */}
               <div className="text-xs sm:text-sm text-gray-500">
                 {(() => {
                   const timeToShow = order.createdAt || order.timestamp;
@@ -818,7 +777,7 @@ export default function WaiterDashboard() {
                 className="px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-medium transition-all duration-200 text-xs sm:text-sm lg:text-base min-h-[40px] sm:min-h-[44px] lg:min-h-[48px] min-w-[100px] sm:min-w-[120px] lg:min-w-[140px] bg-yellow-600 hover:bg-yellow-700 text-white shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
               >
                 <span className="hidden sm:inline">Start Preparing</span>
-                <span className="sm:hidden">▶️ Start</span>
+                <span className="sm:hidden"> Start</span>
               </button>
             )}
           </div>
@@ -867,27 +826,18 @@ export default function WaiterDashboard() {
   }
 
   // Filter orders by status
-  console.log('Total orders received:', orders.length);
-  console.log('All orders data:', orders.map(o => ({ id: o._id, status: o.status, items: o.items?.length })));
   
   const activeOrders = orders.filter(order => {
     const status = (order.status || '').toLowerCase().trim();
     const isActive = ['pending', 'preparing', 'ready'].includes(status);
-    console.log('Order ID:', order._id, 'Status:', order.status, 'Normalized:', status, 'Is Active:', isActive);
     return isActive;
   });
   
   const servedOrders = orders.filter(order => {
     const status = (order.status || '').toLowerCase().trim();
     const isServed = ['served', 'completed'].includes(status);
-    console.log('Order ID:', order._id, 'Status:', order.status, 'Normalized:', status, 'Is Served:', isServed);
     return isServed;
   });
-  
-  console.log('Active orders count:', activeOrders.length);
-  console.log('Served orders count:', servedOrders.length);
-  console.log('Active orders:', activeOrders.map(o => ({ id: o._id, status: o.status })));
-  console.log('Served orders:', servedOrders.map(o => ({ id: o._id, status: o.status })));
   
   const pendingItemsCount = orders.reduce((total, order) => {
     return total + (order.items?.filter(item => item.status === 'pending').length || 0);
@@ -1387,10 +1337,6 @@ export default function WaiterDashboard() {
                                   Subtotal:
                                 </span>
                                 <span className="text-sm font-medium text-gray-900">₹{getManualCartTotal()}</span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="font-bold text-lg text-gray-900">Total:</span>
-                                <span className="font-bold text-xl text-green-600">₹{getManualCartTotal()}</span>
                               </div>
                             </div>
                             

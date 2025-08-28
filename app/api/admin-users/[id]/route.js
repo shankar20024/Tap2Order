@@ -35,19 +35,13 @@ export async function PUT(req, { params }) {
   
   const { name, email, role, password, tableLimit, staffLimit, isActive, businessName, businessType, phone, hotelPhone, address } = body;
   
-  console.log("🔧 PUT request for user ID:", id);
-  console.log("🔧 Request body:", body);
-  
   await connectDB();
 
   try {
     const user = await User.findById(id);
     if (!user) {
-      console.log("❌ User not found for ID:", id);
       return new Response(JSON.stringify({ error: "User not found" }), { status: 404 });
     }
-
-    console.log("✅ User found:", user.email);
 
     const updates = {
       name,
@@ -65,10 +59,7 @@ export async function PUT(req, { params }) {
 
     if (password && password.trim() !== '') {
       updates.password = password; // Store plain text password
-      console.log("🔐 Password update included");
     }
-
-    console.log("🔧 Updates to apply:", updates);
 
     const updatedUser = await User.findByIdAndUpdate(
       id,
@@ -77,11 +68,8 @@ export async function PUT(req, { params }) {
     );
 
     if (!updatedUser) {
-      console.log("❌ Failed to update user");
       return new Response(JSON.stringify({ error: "Failed to update user" }), { status: 500 });
     }
-
-    console.log("✅ User updated successfully:", updatedUser.email);
 
     return new Response(JSON.stringify({
       message: "User updated successfully",
@@ -91,9 +79,6 @@ export async function PUT(req, { params }) {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error("❌ PUT Error details:", error);
-    console.error("❌ Error message:", error.message);
-    console.error("❌ Error stack:", error.stack);
     return new Response(JSON.stringify({ 
       error: "Failed to update user",
       details: error.message 

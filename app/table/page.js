@@ -47,10 +47,10 @@ export default function TablePage() {
   const fetchAnalysisData = async () => {
     try {
       const res = await fetch('/api/table/analysis');
+      if (!res.ok) throw new Error("Failed to fetch analysis");
       const data = await res.json();
       setAnalysisData(data);
     } catch (error) {
-      console.error("Error fetching analysis data:", error);
       toast.error("Error loading table analysis");
       setAnalysisData({
         totalTables: 0,
@@ -65,6 +65,7 @@ export default function TablePage() {
     setLoading(true);
     try {
       const res = await fetch(`/api/table?page=${page}&limit=${itemsPerPage}&filter=${filter}&search=${encodeURIComponent(searchValue)}`);
+      if (!res.ok) throw new Error("Failed to fetch tables");
       const data = await res.json();
 
       const pagination = data?.pagination || {
@@ -80,7 +81,6 @@ export default function TablePage() {
       setTotalItems(pagination.totalItems);
       setHasTables(data.hasTables || false);
     } catch (error) {
-      console.error("Error fetching tables:", error);
       toast.error("Error loading tables");
       setOriginalTables([]);
       setTables([]);
@@ -109,17 +109,15 @@ export default function TablePage() {
         body: JSON.stringify({ tableNumber }),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
-        throw new Error(data.error || "Failed to add table");
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to add table");
       }
 
       setTableNumber("");
       await Promise.all([fetchTables(), fetchAnalysisData()]);
       toast.success("Table added successfully!");
     } catch (error) {
-      console.error("Error creating table:", error);
       toast.error(error.message || "Failed to add table");
     }
   };
@@ -158,7 +156,10 @@ export default function TablePage() {
         body: JSON.stringify({ _id: tableId, userId: session.user.id })
       });
 
-      if (res.ok) {
+      if (!res.ok) {
+        const error = await res.json();
+        toast.error(`${error.error || "Failed to update table status"}`);
+      } else {
         const updatedTable = await res.json();
         setTables(tables.map(table =>
           table._id === tableId ? updatedTable : table
@@ -166,12 +167,8 @@ export default function TablePage() {
         // Refresh analysis data after status change
         fetchAnalysisData();
         toast.success(`Table status updated to ${updatedTable.status}`);
-      } else {
-        const error = await res.json();
-        toast.error(`${error.error || "Failed to update table status"}`);
       }
     } catch (error) {
-      console.error("Error in toggleTableStatus:", error);
       toast.error("Error updating table status");
     }
   };

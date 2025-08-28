@@ -39,7 +39,6 @@ export async function PATCH(req, { params }) {
       try {
         await setTableFree(order.userId, order.tableNumber);
       } catch (error) {
-        console.error("Error setting table free:", error);
         // Don't fail the order update if table status update fails
       }
     }
@@ -55,13 +54,11 @@ export async function PATCH(req, { params }) {
       const channel = ably.channels.get(`orders:${updatedOrder.userId}`);
       await channel.publish('order.updated', updatedOrder);
     } catch (error) {
-      console.error('Failed to publish order updated event:', error);
       // Don't fail the order update if real-time publishing fails
     }
 
     return NextResponse.json(updatedOrder, { status: 200 });
   } catch (err) {
-    console.error("PATCH error:", err);
     return NextResponse.json({
       error: "Server error",
       details: err.message,
@@ -117,13 +114,11 @@ export async function PUT(req, { params }) {
       const channel = ably.channels.get(`orders:${updatedOrder.userId}`);
       await channel.publish('order.updated', updatedOrder);
     } catch (error) {
-      console.error('Failed to publish order updated event:', error);
       // Don't fail the order update if real-time publishing fails
     }
 
     return NextResponse.json(updatedOrder, { status: 200 });
   } catch (err) {
-    console.error("PUT error:", err);
     return NextResponse.json({
       error: "Server error",
       details: err.message,
@@ -161,7 +156,7 @@ export async function DELETE(req, { params }) {
       const ch = ably.channels.get(`orders:${order.userId}`);
       await ch.publish('order.deleted', { _id: id, tableNumber: order.tableNumber });
     } catch (e) {
-      console.error('Ably publish failed on order delete:', e);
+      // Ably publish failed on order delete
     }
 
     return NextResponse.json({
@@ -170,7 +165,6 @@ export async function DELETE(req, { params }) {
       status: "cancelled"
     }, { status: 200 });
   } catch (err) {
-    console.error("DELETE error:", err);
     return NextResponse.json({
       error: "Server error",
       details: err.message,

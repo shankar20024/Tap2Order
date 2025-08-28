@@ -134,12 +134,12 @@ export async function GET(req) {
       }
     });
   } catch (error) {
-    console.error("Error fetching tables:", error);
     return new Response(JSON.stringify({ 
       error: "Internal server error",
       hasTables: false
     }), {
       status: 500,
+      headers: { "Content-Type": "application/json" }
     });
   }
 }
@@ -172,7 +172,6 @@ export async function PUT(req) {
 
     return Response.json(table);
   } catch (error) {
-    console.error("Error toggling table status:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
     });

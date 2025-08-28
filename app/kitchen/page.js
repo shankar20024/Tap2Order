@@ -67,7 +67,6 @@ export default function KitchenPage() {
       setOrders(kitchenOrders);
       updateStats(kitchenOrders);
     } catch (error) {
-      console.error('Error fetching orders:', error);
       toast.error('Failed to load orders');
     } finally {
       setLoading(false);
@@ -164,7 +163,7 @@ export default function KitchenPage() {
       const data = await response.json();
       setHotelName(data.hotelName || data.name || 'Kitchen');
     } catch (error) {
-      console.error('Error fetching hotel name:', error);
+      // Error fetching hotel name, continue with default
     }
   };
 
@@ -206,12 +205,11 @@ export default function KitchenPage() {
         await ch.publish('order.updated', result.order);
         await ch.publish('order-updated', result.order);
       } catch (e) {
-        console.error('Ably publish failed from kitchen:', e);
+        // Ably publish failed from kitchen
       }
 
       toast.success(`Item marked as ${newStatus}`);
     } catch (error) {
-      console.error('Error updating item status:', error);
       toast.error('Failed to update item status');
     }
   };

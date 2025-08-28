@@ -387,7 +387,6 @@ export async function GET(request) {
     return NextResponse.json(analytics);
     
   } catch (error) {
-    console.error('Analytics API error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch analytics data', details: error.message },
       { status: 500 }

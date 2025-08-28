@@ -38,9 +38,6 @@ export async function POST(req) {
       hotelCode = await generateHotelCode();
     }
     
-    console.log(" Creating user with password length:", password?.length);
-    console.log(" Password (plain text):", password);
-    
     const newUser = new User({ 
       name, 
       email, 
@@ -72,15 +69,6 @@ export async function POST(req) {
 
     await newUser.save();
     
-    console.log(" User created successfully:", {
-      id: newUser._id,
-      email: newUser.email,
-      name: newUser.name,
-      role: newUser.role,
-      password: newUser.password,
-      hotelCode: newUser.hotelCode
-    });
-    
     const responseData = { 
       message: "User registered successfully"
     };
@@ -96,7 +84,6 @@ export async function POST(req) {
     });
     
   } catch (error) {
-    console.error("Error creating user:", error);
     return new Response(error.message || "Failed to create user", { status: 500 });
   }
 }

@@ -6,12 +6,10 @@ import Table from '@/models/Table';
 export async function GET() {
     
     if (!User || typeof User.countDocuments !== 'function') {
-        console.error('User model is not properly initialized:', User);
         return NextResponse.json(
             { 
                 error: 'Server configuration error',
-                details: 'User model is not properly initialized',
-                model: User ? 'User exists but is missing methods' : 'User is undefined'
+                details: 'User model not properly initialized'
             },
             { status: 500 }
         );
@@ -67,12 +65,10 @@ export async function GET() {
         return NextResponse.json(responseData);
 
     } catch (error) {
-        console.error('Error in analytics API:', error);
         return NextResponse.json(
             { 
                 error: 'Failed to fetch analytics data',
-                details: error.message,
-                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+                details: error.message 
             },
             { status: 500 }
         );

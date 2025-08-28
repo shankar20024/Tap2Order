@@ -21,12 +21,6 @@ export async function POST(req) {
       }), { status: 404 });
     }
 
-    console.log("🧪 Password Debug Test for:", email);
-    console.log("🔐 Provided password:", password);
-    console.log("🔐 Provided password length:", password.length);
-    console.log("🔐 Stored hash:", user.password);
-    console.log("🔐 Stored hash length:", user.password?.length);
-    
     // Test multiple scenarios
     const tests = [
       { name: "Original", password: password },
@@ -43,14 +37,11 @@ export async function POST(req) {
         length: test.password.length,
         valid: isValid
       };
-      console.log(`🧪 Test "${test.name}": ${isValid ? '✅ PASS' : '❌ FAIL'} - "${test.password}"`);
     }
     
     // Test if we can create a new hash with same password and compare
-    console.log("🧪 Testing fresh hash creation...");
     const freshHash = await bcrypt.hash(password, 10);
     const freshTest = await bcrypt.compare(password, freshHash);
-    console.log("🧪 Fresh hash test:", freshTest ? '✅ PASS' : '❌ FAIL');
     
     return new Response(JSON.stringify({
       message: "Password debug test completed",

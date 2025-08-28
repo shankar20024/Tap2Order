@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import ably from "@/lib/ably";
 import toast from 'react-hot-toast';
 
-export default function useOrder(userId, tableNumber, cart, getTotalPrice, resetCart) {
+export default function useOrder(userId, tableNumber, cart, getTotalPrice, resetCart, gstDetails = null) {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -45,8 +45,6 @@ export default function useOrder(userId, tableNumber, cart, getTotalPrice, reset
   }, [userId, tableNumber, resetCart]);
 
   const placeOrder = useCallback(async () => {
-    console.log('🔍 placeOrder called with customerInfo:', customerInfo);
-    
     if (cart.length === 0) {
       toast.error("Cart is empty, please add items before placing order.");
       return;
@@ -64,17 +62,14 @@ export default function useOrder(userId, tableNumber, cart, getTotalPrice, reset
         const ipResponse = await fetch('https://api.ipify.org?format=json');
         const ipData = await ipResponse.json();
         clientIP = ipData.ip;
-        console.log('📍 Client IP fetched:', clientIP);
       } catch (ipError) {
-        console.log('Could not fetch IP:', ipError);
+        // IP fetch failed, continue without IP
       }
 
       // Create/update customer record first
       let customerId = null;
-      console.log('👤 Checking customer info:', { customerInfo, hasName: !!customerInfo?.name, hasPhone: !!customerInfo?.phone });
       
       if (customerInfo && customerInfo.name && customerInfo.phone) {
-        console.log('✅ Creating customer with info:', customerInfo);
         try {
           const customerPayload = {
             name: customerInfo.name,
@@ -83,7 +78,6 @@ export default function useOrder(userId, tableNumber, cart, getTotalPrice, reset
             tableNumber,
             ip: clientIP
           };
-          console.log('📤 Customer API payload:', customerPayload);
           
           const customerResponse = await fetch('/api/customers', {
             method: 'POST',
@@ -96,19 +90,16 @@ export default function useOrder(userId, tableNumber, cart, getTotalPrice, reset
           if (customerResponse.ok) {
             const customerResult = await customerResponse.json();
             customerId = customerResult.customer._id;
-            console.log('✅ Customer created with ID:', customerId);
-          } else {
-            const errorData = await customerResponse.json();
-            console.error('❌ Customer creation failed:', errorData);
           }
         } catch (customerError) {
-          console.error('Customer creation error:', customerError);
+          // Customer creation failed, continue without customer ID
         }
-      } else {
-        console.log('⚠️ No customer info provided, proceeding as guest');
       }
 
-      // Place order with customer details
+      // Calculate total amount based on GST details
+      const totalAmount = gstDetails && gstDetails.isGstApplicable ? gstDetails.grandTotal : getTotalPrice();
+
+      // Place order with customer details and GST information
       const orderPayload = {
         tableNumber,
         cart: cart.map(item => ({
@@ -128,10 +119,10 @@ export default function useOrder(userId, tableNumber, cart, getTotalPrice, reset
           name: customerInfo?.name || 'Guest',
           phone: customerInfo?.phone || '',
           ip: clientIP
-        }
+        },
+        totalAmount: totalAmount,
+        gstDetails: gstDetails
       };
-      
-      console.log('📦 Order payload:', orderPayload);
 
       const response = await fetch('/api/order', {
         method: 'POST',
@@ -160,7 +151,7 @@ export default function useOrder(userId, tableNumber, cart, getTotalPrice, reset
               }),
             });
           } catch (statsError) {
-            console.error('Customer stats update error:', statsError);
+            // Stats update failed, continue
           }
         }
         
@@ -196,14 +187,13 @@ export default function useOrder(userId, tableNumber, cart, getTotalPrice, reset
         toast.error(result.error || 'Failed to place order');
       }
     } catch (error) {
-      console.error('Order placement error:', error);
       const errorMsg = 'Network error. Please check your connection and try again.';
       setErrorMessage(errorMsg);
       toast.error(errorMsg);
     } finally {
       setPlacingOrder(false);
     }
-  }, [cart, customerInfo, placingOrder, resetCart, userId, tableNumber, orderMessage]);
+  }, [cart, customerInfo, placingOrder, resetCart, userId, tableNumber, orderMessage, gstDetails, getTotalPrice]);
 
   const resetOrderState = useCallback(() => {
     setOrderPlaced(false);

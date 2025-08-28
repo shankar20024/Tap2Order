@@ -35,7 +35,6 @@ export async function GET(req) {
                         tableCount: tableCount || 0
                     };
                 } catch (error) {
-                    console.error(`Error counting tables for user ${user._id}:`, error);
                     return {
                         ...user.toObject(),
                         tableCount: 0
@@ -49,7 +48,6 @@ export async function GET(req) {
             status: 200,
         });
     } catch (error) {
-        console.error("Error in admin-users API:", error);
         return new Response(
             JSON.stringify({ 
                 error: "Failed to fetch users",

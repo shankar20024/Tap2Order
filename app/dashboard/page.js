@@ -29,6 +29,9 @@ import {
   FaFire,
   FaConciergeBell
 } from "react-icons/fa";
+import { useSession } from "next-auth/react";
+import { toast } from "react-hot-toast";
+import TableDetailsModal from "@/app/components/TableDetailsModal";
 import LoadingSpinner from "../components/LoadingSpinner";
 import AlertPing from "../components/AlertPing";
 import Header from "../components/Header";
@@ -36,8 +39,6 @@ import NavButton from "../components/NavButton";
 import LogoutButton from "../components/Logout";
 import PrinterSettingsModal from '../components/PrinterSettingsModal';
 import thermalPrinter from "@/lib/thermalPrinter";
-import toast from "react-hot-toast";
-import { useSession } from "next-auth/react";
 
 // Modern Stats Card Component with Advanced Visual Effects
 const StatsCard = ({ title, value, icon: Icon, trend, trendValue, color = "blue", className = "" }) => {
@@ -345,7 +346,7 @@ const BillCard = ({ tableNumber, orders, onPrintBill, onCompleteBill }) => {
               <FaTable className="text-amber-700" />
             </div>
             <div>
-              <span className="font-bold text-gray-800">Table {tableNumber}</span>
+              <h2 className="text-2xl font-bold">Table {tableNumber}</h2>
               <p className="text-xs text-gray-600">Ready for billing</p>
             </div>
           </div>
@@ -358,7 +359,7 @@ const BillCard = ({ tableNumber, orders, onPrintBill, onCompleteBill }) => {
       <div className="p-6 bg-gradient-to-br from-white to-gray-50">
         <div className="space-y-2 max-h-32 overflow-y-auto">
           {items.slice(0, 5).map((item, idx) => (
-            <div key={idx} className="flex justify-between items-center p-2 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
+            <div key={idx} className="flex justify-between items-center p-2 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-lg transition-colors duration-200 hover:scale-105">
               <span className="text-sm text-gray-700 truncate flex-1 mr-2">
                 {item.name} × {item.quantity}
               </span>
@@ -458,7 +459,7 @@ function groupOrdersByTable(orders) {
 }
 
 // TableBox - compact 100px table card
-const TableBox = ({ tableNumber, totalAmount, hasOrders, hasPaid, onView, onPrint, onCancel, onMarkPaid }) => (
+const TableBox = ({ tableNumber, totalAmount, hasOrders, hasPaid, onView, onPrint, onCancel, onMarkPaid, gstDetails }) => (
   <div className="flex flex-col items-center p-2">
     <div
       onClick={hasOrders ? onView : undefined}
@@ -483,8 +484,15 @@ const TableBox = ({ tableNumber, totalAmount, hasOrders, hasPaid, onView, onPrin
       <div className={`text-center mb-4 ${
         hasPaid ? 'text-emerald-700' : hasOrders ? 'text-orange-700' : 'text-gray-600'
       }`}>
-        <div className="text-xs font-medium opacity-80 mb-1">Total Amount</div>
-        <div className="text-base font-bold">₹{totalAmount.toLocaleString('en-IN')}</div>
+        <div className="text-xs font-medium opacity-80 mb-1">
+          {gstDetails && gstDetails.isGstApplicable ? 'Total Amount' : 'Total Amount'}
+        </div>
+        <div className="text-base font-bold">
+          ₹{(gstDetails && gstDetails.grandTotal > 0 
+            ? gstDetails.grandTotal 
+            : totalAmount
+          ).toLocaleString('en-IN')}
+        </div>
       </div>
       
       {/* Status badge */}
@@ -517,164 +525,6 @@ const TableBox = ({ tableNumber, totalAmount, hasOrders, hasPaid, onView, onPrin
     </div>
   </div>
 );
-
-// TableDetailsModal - shows detailed orders for a table
-const TableDetailsModal = ({ tableNumber, orders, onClose, onPrint, onMarkPaid }) => {
-  const totalAmount = orders.reduce((sum, o) => sum + (o.totalAmount || (o.items||o.cart||[]).reduce((s,i)=>s+i.price*i.quantity,0)), 0);
-  const hasPaidOrders = orders.some(order => order.billPaid || order.isPaid || order.paid);
-  
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden border border-gray-200 flex flex-col">
-        {/* Enhanced Header */}
-        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white p-6 relative overflow-hidden flex-shrink-0">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/90 to-purple-600/90"></div>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                  <FaTable className="text-xl" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold">Table {tableNumber}</h2>
-                  <p className="text-blue-100 text-sm">Order Management</p>
-                  {/* Show customer names if available */}
-                  {orders.length > 0 && orders[0].customerInfo?.name && (
-                    <p className="text-blue-200 text-sm font-medium">Customer: {orders[0].customerInfo.name}</p>
-                  )}
-                </div>
-              </div>
-              <button 
-                onClick={onClose} 
-                className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center transition-all duration-200 backdrop-blur-sm"
-              >
-                <FaTimesCircle className="text-xl" />
-              </button>
-            </div>
-            
-            {/* Stats Row */}
-            <div className="mt-4 flex items-center justify-between bg-white/10 rounded-2xl p-4 backdrop-blur-sm">
-              <div className="text-center">
-                <div className="text-2xl font-bold">{orders.length}</div>
-                <div className="text-blue-100 text-sm">Orders</div>
-              </div>
-              <div className="w-px h-8 bg-white/30"></div>
-              <div className="text-center">
-                <div className="text-2xl font-bold">₹{totalAmount.toLocaleString('en-IN')}</div>
-                <div className="text-blue-100 text-sm">Total Amount</div>
-              </div>
-              <div className="w-px h-8 bg-white/30"></div>
-              <div className="text-center">
-                <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                  hasPaidOrders ? 'bg-emerald-500 text-white' : 'bg-orange-500 text-white'
-                }`}>
-                  {hasPaidOrders ? 'Paid' : 'Pending'}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Orders Content */}
-        <div className="p-6 overflow-y-auto bg-gradient-to-br from-gray-50 to-blue-50 flex-1">
-          {orders.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FaClipboardList className="text-3xl text-gray-400" />
-              </div>
-              <p className="text-gray-500 text-lg">No active orders for this table</p>
-              <p className="text-gray-400 text-sm mt-2">Orders will appear here when customers place them</p>
-            </div>
-          ) : (
-            <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Order Items</h3>
-                {/* Display customer info if available */}
-                {orders[0]?.customerInfo?.name && (
-                  <div className="text-sm text-gray-600 bg-blue-50 px-3 py-1 rounded-full">
-                    <FaUsers className="inline mr-1" />
-                    {orders[0].customerInfo.name}
-                    {orders[0].customerInfo?.phone && (
-                      <span className="ml-2 text-gray-500">• {orders[0].customerInfo.phone}</span>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="space-y-3">
-                {orders.map((order, orderIdx) => 
-                  (order.items || order.cart || []).map((item, itemIdx) => (
-                    <div key={`${orderIdx}-${itemIdx}`} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center space-x-4">
-                        <span className="font-medium text-gray-800">{item.name}</span>
-                        <span className="text-sm text-gray-600">×{item.quantity}</span>
-                        {item.size && (
-                          <span className="text-sm text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">{item.size}</span>
-                        )}
-                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          (item.status || order.status) === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                          (item.status || order.status) === 'preparing' ? 'bg-blue-100 text-blue-700' :
-                          (item.status || order.status) === 'ready' ? 'bg-green-100 text-green-700' : 
-                          'bg-purple-100 text-purple-700'
-                        }`}>
-                          {item.status || order.status}
-                        </div>
-                      </div>
-                      <span className="font-bold text-gray-900">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-              
-              {/* Special Instructions if any */}
-              {orders.some(order => order.message || order.specialInstructions) && (
-                <div className="mt-4 p-3 bg-amber-50 border-l-4 border-amber-400 rounded-lg">
-                  <p className="text-sm font-medium text-amber-800 mb-1">Special Instructions:</p>
-                  {orders.filter(order => order.message || order.specialInstructions).map((order, idx) => (
-                    <p key={idx} className="text-sm text-amber-700">• {order.message || order.specialInstructions}</p>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Enhanced Footer */}
-        <div className="bg-gradient-to-br from-gray-50 to-blue-50 px-6 py-4 border-t border-gray-100 flex-shrink-0">
-          <div className="flex justify-between items-center">
-            <div className="text-gray-600">
-              <span className="text-sm">Grand Total: </span>
-              <span className="font-bold text-xl text-gray-900 bg-white px-4 py-2 rounded-xl shadow-sm border">
-                ₹{totalAmount.toLocaleString('en-IN')}
-              </span>
-            </div>
-            <div className="flex space-x-3">
-              <button 
-                onClick={onPrint} 
-                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-3 rounded-xl font-medium flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-              >
-                <FaPrint className="text-sm" />
-                <span>Print Bill</span>
-              </button>
-              <button 
-                onClick={onMarkPaid} 
-                className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-6 py-3 rounded-xl font-medium flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-              >
-                <FaRupeeSign className="text-sm" />
-                <span>Mark Paid</span>
-              </button>
-              <button 
-                onClick={onClose} 
-                className="bg-gradient-to-r from-gray-500 to-slate-500 hover:from-gray-600 hover:to-slate-600 text-white px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // Main Dashboard Component
 export default function Dashboard() {
@@ -714,8 +564,13 @@ export default function Dashboard() {
       return sum + (o.items || o.cart || []).filter(item => item.status === 'served').length;
     }, 0),
     totalRevenue: [...orders, ...billOrders].reduce((sum, o) => {
+      // Use GST grandTotal if available, otherwise fall back to totalAmount
+      if (o.gstDetails && o.gstDetails.isGstApplicable && o.gstDetails.grandTotal > 0) {
+        return sum + o.gstDetails.grandTotal;
+      }
+      // Fallback to calculating from items if no totalAmount
       const items = o.items || o.cart || [];
-      return sum + items.reduce((itemSum, item) => itemSum + (item.price * item.quantity), 0);
+      return sum + (o.totalAmount || items.reduce((itemSum, item) => itemSum + (item.price * item.quantity), 0));
     }, 0),
     activeTables: new Set([...orders.map(o => o.tableNumber), ...billOrders.map(o => o.tableNumber)]).size
   };
@@ -845,7 +700,6 @@ export default function Dashboard() {
       setOrders(filteredData);
       setLoading(false);
     } catch (error) {
-      console.error("Error fetching orders:", error);
       setError(error);
       setLoading(false);
     }
@@ -884,7 +738,6 @@ export default function Dashboard() {
       }
       
     } catch (error) {
-      console.error("Error completing order:", error);
       toast.error(error.message);
     }
   };
@@ -923,133 +776,116 @@ export default function Dashboard() {
       }
       
     } catch (error) {
-      console.error("Error cancelling order:", error);
       toast.error(error.message);
     }
   };
 
-  const thermalPrintBill = async (tableNumber, items, total, orderIds) => {
+  const thermalPrintBill = async (tableNumber, items, total, orderIds, orders) => {
     try {
-      if (!selectedPrinter) {
-        throw new Error('Please select a printer first');
+      // Quick check for printer availability without triggering permissions
+      const isAvailable = await thermalPrinter.checkPrinterAvailability();
+      
+      if (isAvailable) {
+        // Try to connect (will use cached permission if already granted)
+        await thermalPrinter.connect();
+        const printers = await thermalPrinter.getPrinters();
+        
+        if (printers.length > 0) {
+          // Direct thermal printing - skip preview
+          
+          // Get customer name from orders
+          const customerName = orders && orders.length > 0 && orders[0].customerInfo?.name 
+            ? orders[0].customerInfo.name 
+            : 'Walk-in Customer';
+
+          // Generate bill number
+          const billNumberResponse = await fetch('/api/bill-number', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session?.accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          let billNumber = 1;
+          if (billNumberResponse.ok) {
+            const billData = await billNumberResponse.json();
+            billNumber = billData.billNumber;
+          }
+
+          // Fetch business info for receipt
+          const profileResponse = await fetch('/api/profile', {
+            headers: {
+              'Authorization': `Bearer ${session?.accessToken}`,
+            },
+          });
+          
+          let businessInfo = null;
+          if (profileResponse.ok) {
+            businessInfo = await profileResponse.json();
+          }
+
+          // Prepare receipt data with same format as preview
+          const receiptData = {
+            tableNumber: parseInt(tableNumber),
+            orderIds: orderIds || [],
+            items: items,
+            total: parseFloat(total),
+            itemsTotal: items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+            customerName: customerName,
+            timestamp: Date.now(),
+            billNumber: billNumber,
+            businessInfo: businessInfo
+          };
+
+          // Print directly using thermal printer
+          await thermalPrinter.printReceipt(receiptData);
+          toast.success('Bill printed successfully!');
+          return;
+        }
       }
-      
-      await thermalPrinter.printReceipt({
-        tableNumber,
-        items,
-        total,
-        orderIds,
-        printer: selectedPrinter // Explicitly pass selected printer
-      });
-      
-      toast.success(`Receipt printed for Table ${tableNumber}`);
     } catch (error) {
-      console.error('Thermal printing failed:', error);
-      
-      // Show user-friendly error with fallback option
-      const errorMessage = error.message || 'Thermal printing failed';
-      
-      if (errorMessage.includes('printer')) {
-        // Printer related error - offer printer setup
-        toast.error(
-          <div>
-            <p className="font-medium">Printer Error</p>
-            <p className="text-sm mt-1">{errorMessage}</p>
-            <button 
-              onClick={() => setShowPrinterSettings(true)}
-              className="mt-2 text-blue-600 underline text-sm"
-            >
-              Configure Printer Settings
-            </button>
-          </div>,
-          { duration: 8000 }
-        );
-      } else {
-        // Other errors - offer browser print fallback
-        toast.error(
-          <div>
-            <p className="font-medium">Printing Failed</p>
-            <p className="text-sm mt-1">{errorMessage}</p>
-            <button 
-              onClick={() => fallbackBrowserPrint(tableNumber, items, total, orderIds)}
-              className="mt-2 text-blue-600 underline text-sm"
-            >
-              Use Browser Print Instead
-            </button>
-          </div>,
-          { duration: 8000 }
-        );
-      }
+      // Don't show error toast, just fall back to preview silently
     }
+
+    // Fallback to preview if thermal printing fails or not available
+    const itemsParam = encodeURIComponent(JSON.stringify(items));
+    const ordersParam = (orderIds || []).join(',');
+    
+    // Get customer name from orders
+    const customerName = orders && orders.length > 0 && orders[0].customerInfo?.name 
+      ? orders[0].customerInfo.name 
+      : 'Walk-in Customer';
+    
+    const url = `/bill-preview?table=${tableNumber}&items=${itemsParam}&total=${total}&orders=${ordersParam}&customer=${encodeURIComponent(customerName)}`;
+    router.push(url);
   };
 
-  const fallbackBrowserPrint = (tableNumber, items, total, orderIds) => {
-    const printContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto;">
-        <h2 style="text-align: center; margin-bottom: 20px;">Table ${tableNumber} Bill</h2>
-        <p><strong>Order IDs:</strong> ${orderIds.join(', ')}</p>
-        <hr style="margin: 15px 0;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="border-bottom: 1px solid #ddd;">
-              <th style="text-align: left; padding: 8px;">Item</th>
-              <th style="text-align: center; padding: 8px;">Qty</th>
-              <th style="text-align: right; padding: 8px;">Price</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${items.map(item => `
-              <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 8px;">${item.name}</td>
-                <td style="text-align: center; padding: 8px;">${item.quantity}</td>
-                <td style="text-align: right; padding: 8px;">₹${(item.price * item.quantity).toFixed(2)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-        <hr style="margin: 15px 0;">
-        <div style="text-align: right;">
-          <p style="margin: 5px 0;"><strong>Total: ₹${total.toFixed(2)}</strong></p>
-        </div>
-        <p style="text-align: center; margin-top: 20px; font-size: 12px;">Thank you for your visit!</p>
-      </div>
-    `;
-
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Table ${tableNumber} Bill</title>
-          <style>
-            @media print {
-              body { margin: 0; }
-              @page { margin: 10mm; }
-            }
-          </style>
-        </head>
-        <body>
-          ${printContent}
-          <script>
-            window.onload = function() {
-              window.print();
-              window.onafterprint = function() {
-                window.close();
-              };
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+  const fallbackBrowserPrint = (tableNumber, items, total, orderIds, orders) => {
+    // Also redirect to bill preview for consistency
+    const itemsParam = encodeURIComponent(JSON.stringify(items));
+    const ordersParam = (orderIds || []).join(',');
+    
+    // Get customer name from orders
+    const customerName = orders && orders.length > 0 && orders[0].customerInfo?.name 
+      ? orders[0].customerInfo.name 
+      : 'Walk-in Customer';
+    
+    const url = `/bill-preview?table=${tableNumber}&items=${itemsParam}&total=${total}&orders=${ordersParam}&customer=${encodeURIComponent(customerName)}`;
+    router.push(url);
   };
 
-  const markOrderPaid = async (orderId) => {
+  const markOrderPaid = async (orderId, gstDetails) => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     const res = await fetch(`/api/order/${orderId}`, {
       method: 'PUT',
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {})
-      }
+      },
+      body: JSON.stringify({
+        paymentStatus: 'paid',
+        gstDetails: gstDetails
+      })
     });
     if (!res.ok) {
       const text = await res.text().catch(() => '');
@@ -1066,12 +902,11 @@ export default function Dashboard() {
       toast.success(`Cancelled ${active.length} order(s) for Table ${tableNumber}`);
       await fetchOrders();
     } catch (e) {
-      console.error('Bulk cancel failed', e);
       toast.error('Failed to cancel orders');
     }
   };
 
-  const markTablePaid = async (tableNumber, tableOrders, allOrdersForTable) => {
+  const markTablePaid = async (tableNumber, tableOrders, allOrdersForTable, gstDetails) => {
     try {
       // consider all non-cancelled & not already paid orders
       const candidates = (allOrdersForTable || tableOrders).filter(o => o.status !== 'cancelled' && !isOrderPaid(o));
@@ -1080,11 +915,10 @@ export default function Dashboard() {
         toast.info(`All orders already paid for Table ${tableNumber}`);
         return;
       }
-      await Promise.all(candidates.map(o => markOrderPaid(o._id)));
+      await Promise.all(candidates.map(o => markOrderPaid(o._id, gstDetails)));
       toast.success(`Marked ${candidates.length} order(s) paid for Table ${tableNumber}`);
       await fetchOrders();
     } catch (e) {
-      console.error('Bulk paid failed', e);
       toast.error('Failed to mark orders paid');
     }
   };
@@ -1114,7 +948,7 @@ export default function Dashboard() {
       const printers = await thermalPrinter.getAvailablePrinters();
       setAvailablePrinters(printers);
     } catch (error) {
-      console.error('Failed to refresh printers:', error);
+      // Don't show error toast, just fall back to preview silently
     }
   };
 
@@ -1141,7 +975,7 @@ export default function Dashboard() {
         {/* Modern Dashboard Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 sm:mb-12">
           <div className="flex flex-col sm:flex-row sm:items-center mb-6 lg:mb-0">
-            <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-orange-500 p-4 rounded-3xl mr-0 sm:mr-6 mb-4 sm:mb-0 self-start">
+            <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-orange-600 p-4 rounded-3xl mr-0 sm:mr-6 mb-4 sm:mb-0 self-start">
               <FaUtensils className="text-white text-2xl sm:text-3xl" />
             </div>
             <div>
@@ -1184,7 +1018,7 @@ export default function Dashboard() {
                 <select
                   value={selectedPrinter || ''}
                   onChange={(e) => handlePrinterChange(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 font-medium"
                 >
                   <option value="">Choose a printer...</option>
                   {availablePrinters.map((printer, index) => (
@@ -1333,9 +1167,10 @@ export default function Dashboard() {
                   hasOrders={hasOrders}
                   hasPaid={hasPaid}
                   onView={() => setTableModal({ tableNumber: tn, orders: activeOrders })}
-                  onPrint={() => thermalPrintBill(tn, activeOrders.flatMap(order => order.items || order.cart || []), total)}
+                  onPrint={() => thermalPrintBill(tn, activeOrders.flatMap(order => order.items || order.cart || []), total, activeOrders.map(o => o._id), activeOrders)}
                   onCancel={() => cancelTableOrders(tn, activeOrders)}
-                  onMarkPaid={() => markTablePaid(tn, activeOrders, ordersForTable)}
+                  onMarkPaid={() => markTablePaid(tn, activeOrders, activeOrders, ordersForTable[0]?.gstDetails)}
+                  gstDetails={ordersForTable[0]?.gstDetails}
                 />
               );
                 })}
@@ -1349,15 +1184,16 @@ export default function Dashboard() {
           {/* Content will be added here as per user requirements */}
         </div>
         {tableModal && (
-          <TableDetailsModal
-            tableNumber={tableModal.tableNumber}
-            orders={tableModal.orders}
-            onClose={() => setTableModal(null)}
-            onPrint={() => thermalPrintBill(tableModal.tableNumber, tableModal.orders.flatMap(order => order.items || order.cart || []), tableModal.orders.reduce((sum, o) => sum + (o.totalAmount || (o.items||o.cart||[]).reduce((s,i)=>s+i.price*i.quantity,0)), 0))}
-            onMarkPaid={() => {
-              markTablePaid(tableModal.tableNumber, tableModal.orders, orders);
+          <TableDetailsModal 
+            tableNumber={tableModal.tableNumber} 
+            orders={tableModal.orders} 
+            onClose={() => setTableModal(null)} 
+            onPrint={() => thermalPrintBill(tableModal.tableNumber, tableModal.orders.flatMap(order => order.items || order.cart || []), tableModal.orders.reduce((sum, o) => sum + (o.totalAmount || (o.items||o.cart||[]).reduce((s,i)=>s+i.price*i.quantity,0)), 0), tableModal.orders.map(o => o._id), tableModal.orders)}
+            onMarkPaid={(gstDetails) => {
+              markTablePaid(tableModal.tableNumber, tableModal.orders, tableModal.orders, gstDetails);
               setTableModal(null);
             }}
+            userProfile={session?.user}
           />
         )}
         {showPrinterSettings && (

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 
 const logAudioState = (message, data = '') => {
-  // console.log(`[Audio] ${message}`, data);
+  // Audio logging disabled for production
 };
 
 // Check if running on mobile

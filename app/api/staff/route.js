@@ -110,7 +110,6 @@ export async function GET(req) {
       },
     });
   } catch (error) {
-    console.error("/api/staff GET error:", error);
     return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
   }
 }
@@ -183,7 +182,6 @@ export async function POST(req) {
 
     return NextResponse.json({ success: true, staff, generatedPasscode: rawPasscode }, { status: 201 });
   } catch (error) {
-    console.error("/api/staff POST error:", error);
     // handle duplicate key errors gracefully
     if (error?.code === 11000) {
       return NextResponse.json({ success: false, error: "Duplicate field value" }, { status: 400 });

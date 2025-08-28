@@ -95,7 +95,6 @@ export default function OrderControlPage() {
       setResults(Array.isArray(data.orders) ? data.orders : []);
       if (!data.orders?.length) toast('No matching orders found');
     } catch (e) {
-      console.error('Search error:', e);
       toast.error('Failed to search orders');
     } finally {
       setLoading(false);
@@ -107,7 +106,7 @@ export default function OrderControlPage() {
       const ch = ably.channels.get(`orders:${tenantUserId}`);
       await ch.publish(eventName, payload);
     } catch (e) {
-      console.error('Ably publish failed (order-control):', e);
+      // Ably publish failed (order-control)
     }
   };
 
@@ -128,7 +127,6 @@ export default function OrderControlPage() {
       await publishUpdate('order.updated', updated);
       toast.success(`Order marked ${newStatus}`);
     } catch (e) {
-      console.error('Patch error:', e);
       toast.error('Failed to update');
     }
   };
@@ -149,7 +147,6 @@ export default function OrderControlPage() {
       await publishUpdate('order.updated', updated);
       toast.success('Order completed');
     } catch (e) {
-      console.error('Complete error:', e);
       toast.error('Failed to complete');
     }
   };
@@ -171,7 +168,6 @@ export default function OrderControlPage() {
       await publishUpdate('order.deleted', { _id: orderId });
       toast.success('Order dismissed and deleted');
     } catch (e) {
-      console.error('Delete error:', e);
       toast.error('Failed to delete');
     }
   };

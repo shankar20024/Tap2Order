@@ -114,7 +114,7 @@ export default function Analytics() {
         setFilterOptions(options);
       }
     } catch (error) {
-      console.error('Error fetching filter options:', error);
+      // Error fetching filter options, continue with defaults
     }
   };
 
@@ -140,7 +140,6 @@ export default function Analytics() {
         setError('Failed to fetch analytics data');
       }
     } catch (error) {
-      console.error('Error fetching analytics:', error);
       setError('Error loading analytics');
     } finally {
       setLoading(false);
@@ -564,8 +563,8 @@ export default function Analytics() {
                 <p className="text-2xl sm:text-3xl font-bold">{analytics.kpis.completionRate}%</p>
                 <p className="text-orange-200 text-sm mt-2">Success rate</p>
               </div>
-              <div className="bg-white/20 p-3 sm:p-4 rounded-xl">
-                <FaCheckCircle className="w-6 h-6 sm:w-8 sm:h-8" />
+              <div className="text-2xl">
+                {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '⭐'}
               </div>
             </div>
           </div>

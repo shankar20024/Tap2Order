@@ -51,7 +51,7 @@ export default function QRCodePreview({ userId, tableNumber }) {
           ctx.drawImage(qrImage, 0, qrTop, size, size);
   
           // Brand Text - Centered on QR
-          const brand = "Tap2Order";
+          const brand = "Tap2Orders";
           ctx.font = `bold ${Math.floor(size * 0.08)}px ${dancingScript.style.fontFamily}`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
@@ -92,7 +92,6 @@ export default function QRCodePreview({ userId, tableNumber }) {
   
         qrImage.src = qrDataUrl;
       } catch (err) {
-        console.error("QR generation failed", err);
         resolve();
       }
     });

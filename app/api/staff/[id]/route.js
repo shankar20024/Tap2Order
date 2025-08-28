@@ -25,7 +25,6 @@ export async function GET(req, { params }) {
 
     return NextResponse.json({ success: true, staff });
   } catch (error) {
-    console.error("/api/staff/[id] GET error:", error);
     return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
   }
 }
@@ -86,7 +85,6 @@ export async function PUT(req, { params }) {
 
     return NextResponse.json({ success: true, staff });
   } catch (error) {
-    console.error("/api/staff/[id] PUT error:", error);
     return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
   }
 }
@@ -126,7 +124,6 @@ export async function POST(req, { params }) {
 
     return NextResponse.json({ success: true, newPasscode, staff: updated });
   } catch (error) {
-    console.error("/api/staff/[id] POST error:", error);
     return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
   }
 }
@@ -166,7 +163,6 @@ export async function DELETE(req, { params }) {
 
     return NextResponse.json({ success: true, message: "Staff deleted" });
   } catch (error) {
-    console.error("/api/staff/[id] DELETE error:", error);
     return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
   }
 }

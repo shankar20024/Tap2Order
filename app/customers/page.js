@@ -64,7 +64,6 @@ export default function CustomersPage() {
           setError('Failed to fetch customers');
         }
       } catch (error) {
-        console.error('Error fetching customers:', error);
         setError('Error loading customers');
       } finally {
         setLoading(false);

@@ -21,16 +21,11 @@ export async function POST(req) {
       }), { status: 404 });
     }
 
-    console.log("🔄 Resetting password for:", email);
-    console.log("🔐 New password length:", newPassword.length);
-    
     // Create fresh hash
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    console.log("🔐 New hash created, length:", hashedPassword.length);
     
     // Test the new hash immediately
     const testVerification = await bcrypt.compare(newPassword, hashedPassword);
-    console.log("🧪 New hash verification test:", testVerification ? '✅ PASS' : '❌ FAIL');
     
     if (!testVerification) {
       return new Response(JSON.stringify({ 
@@ -42,8 +37,6 @@ export async function POST(req) {
     await User.findByIdAndUpdate(user._id, { 
       password: hashedPassword 
     });
-    
-    console.log("✅ Password reset successful for:", email);
     
     return new Response(JSON.stringify({
       message: "Password reset successful",

@@ -22,7 +22,6 @@ export async function GET(request) {
 
     return NextResponse.json(user);
   } catch (error) {
-    console.error('Error fetching user in GET /api/profile:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -93,15 +92,14 @@ export async function PUT(request) {
 
     return NextResponse.json(updatedUser);
   } catch (error) {
-    console.error("Error in PUT /api/profile:", error);
     
     if (error.name === 'ValidationError') {
       return NextResponse.json({ 
-        error: 'Validation error', 
-        details: Object.values(error.errors).map(err => err.message)
+        error: 'Validation failed',
+        details: error.message 
       }, { status: 400 });
     }
     
-    return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

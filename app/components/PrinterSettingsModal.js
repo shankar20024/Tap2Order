@@ -48,7 +48,6 @@ const PrinterSettingsModal = ({ isOpen, onClose, onSave }) => {
         setSelectedPrinter(availablePrinters[0]);
       }
     } catch (error) {
-      console.error('Error loading printers:', error);
       setIsConnected(false);
       toast.error('Failed to connect to QZ Tray. Please ensure it is running.');
     } finally {
@@ -110,7 +109,6 @@ const PrinterSettingsModal = ({ isOpen, onClose, onSave }) => {
       await thermalPrinter.testPrint();
       toast.success('Test receipt printed successfully!');
     } catch (error) {
-      console.error('Test print failed:', error);
       toast.error(`Test print failed: ${error.message}`);
     } finally {
       setIsTesting(false);

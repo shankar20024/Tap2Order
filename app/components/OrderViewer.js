@@ -59,11 +59,9 @@ export default function OrderViewer({ userId, tableNumber, isOpen, onClose }) {
                     }
                 }
             } else {
-                console.error("Failed to fetch orders:", data.message);
                 setOrders([]);
             }
         } catch (error) {
-            console.error("Error loading orders:", error);
             setOrders([]);
         } finally {
             setLoading(false);

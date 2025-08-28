@@ -42,7 +42,6 @@ export async function POST(request, { params }) {
     });
 
   } catch (error) {
-    console.error('Update customer stats error:', error);
     return NextResponse.json(
       { error: 'Failed to update customer statistics' },
       { status: 500 }
