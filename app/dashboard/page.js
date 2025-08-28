@@ -750,7 +750,7 @@ export default function Dashboard() {
       }
 
       const response = await fetch(`/api/order/${orderId}`, {
-        method: 'PUT',
+        method: 'PATCH', // Changed from PUT to PATCH
         headers: {
           'Content-Type': 'application/json',
         },
