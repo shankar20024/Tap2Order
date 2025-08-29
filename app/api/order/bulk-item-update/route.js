@@ -45,23 +45,29 @@ export async function PATCH(req) {
       }, { status: 404 });
     }
 
-    // Update all items to preparing status
+    // Update all non-beverage pending items to preparing status
     const now = new Date();
+    let itemsUpdated = false;
     order.items.forEach(item => {
-      if (item.status === 'pending') {
+      if (item.status === 'pending' && item.subcategory !== 'beverages') {
         item.status = 'preparing';
         item.preparedAt = now;
+        itemsUpdated = true;
       }
     });
 
-    // Update overall order status
-    order.status = 'preparing';
-    order.preparingAt = now;
+    // Update overall order status only if some items were updated
+    if (itemsUpdated) {
+      order.status = 'preparing';
+      if (!order.preparingAt) {
+        order.preparingAt = now;
+      }
+    }
 
     const updatedOrder = await order.save();
 
     return NextResponse.json({
-      message: "All items updated to preparing status",
+      message: "All applicable items updated to preparing status",
       order: updatedOrder
     });
 

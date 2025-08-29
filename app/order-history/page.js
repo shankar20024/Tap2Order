@@ -169,9 +169,11 @@ export default function OrderHistory() {
 
   // Helper function to safely get order total
   const getOrderTotal = (order) => {
-    return order && order.items && order.items.length > 0 
-      ? order.items.reduce((sum, item) => sum + (getItemPrice(item) * (item.quantity || 0)), 0)
-      : 0;
+    // Use the total from API response which already includes tax if available
+    // Fallback to local calculation if for some reason total is not available
+    return order?.total !== undefined 
+      ? order.total 
+      : (order?.items?.reduce((sum, item) => sum + (getItemPrice(item) * (item.quantity || 0)), 0) || 0);
   };
 
   return (

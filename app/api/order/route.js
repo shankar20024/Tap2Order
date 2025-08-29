@@ -12,7 +12,7 @@ import ably from "@/lib/ably";
 export async function POST(req) {
   try {
     await connectDB();
-    const { tableNumber, cart, userId, orderMessage, status, customerId, customerInfo } = await req.json();
+    const { tableNumber, cart, userId, orderMessage, status, customerId, customerInfo, totalAmount: frontendTotalAmount, gstDetails } = await req.json();
 
     // Validate cart items
     if (!Array.isArray(cart) || cart.length === 0) {
@@ -43,7 +43,7 @@ export async function POST(req) {
       userId: String(userId || ''),
       tableNumber: String(tableNumber || ''),
       paymentStatus: "unpaid",
-      status: { $nin: ["served", "completed"] } // Only merge with active orders, not served ones
+      status: { $nin: [ "completed", "cancelled"] } // Only merge with active orders, not served ones
     }).sort({ createdAt: -1 });
 
     let savedOrder;
@@ -59,8 +59,36 @@ export async function POST(req) {
     if (existingOrder) {
       // Add new items to existing order
       existingOrder.items.push(...processedCart);
-      existingOrder.totalAmount += processedCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      
+
+      // Re-evaluate orderType. If any item is not a beverage, it's a food order.
+      const hasFoodItems = existingOrder.items.some(item => item.category !== 'beverages');
+      if (hasFoodItems) {
+        existingOrder.orderType = 'food';
+      }
+
+      // Calculate the subtotal of the new items
+      const newItemsSubtotal = processedCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+      // Add the new subtotal to the existing totalAmount
+      existingOrder.totalAmount += newItemsSubtotal;
+
+      // If new GST details are provided, update the existing ones by adding the new values
+      if (gstDetails && existingOrder.gstDetails) {
+        existingOrder.gstDetails.subtotal += gstDetails.subtotal || 0;
+        existingOrder.gstDetails.cgstAmount += gstDetails.cgstAmount || 0;
+        existingOrder.gstDetails.sgstAmount += gstDetails.sgstAmount || 0;
+        existingOrder.gstDetails.totalGst += gstDetails.totalGst || 0;
+        existingOrder.gstDetails.grandTotal += gstDetails.grandTotal || 0;
+      } else if (gstDetails) {
+        // If the existing order didn't have GST but the new one does
+        existingOrder.gstDetails = gstDetails;
+      }
+
+      // Ensure totalAmount reflects the grandTotal if GST is applied
+      if (existingOrder.gstDetails && existingOrder.gstDetails.isGstApplicable) {
+        existingOrder.totalAmount = existingOrder.gstDetails.grandTotal;
+      }
+
       // Update special requests if provided
       if (orderMessage) {
         existingOrder.specialRequests = existingOrder.specialRequests 
@@ -80,7 +108,7 @@ export async function POST(req) {
       savedOrder = await existingOrder.save();
     } else {
       // Create new order
-      const totalAmount = processedCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const totalAmount = frontendTotalAmount || processedCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const newOrder = new Order({
         tableNumber: String(tableNumber || ''),
         items: processedCart,
@@ -89,6 +117,7 @@ export async function POST(req) {
         status: initialStatus,
         orderType: isOnlyBeverages ? 'beverages' : 'food',
         totalAmount: totalAmount,
+        gstDetails: gstDetails, // Save the provided GST details
         paymentStatus: "unpaid",
         customerId: customerId || null,
         customerInfo: {

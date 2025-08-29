@@ -106,16 +106,6 @@ const OrderSchema = new mongoose.Schema(
       type: String,
       enum: ["pending", "preparing", "ready", "served", "completed", "cancelled"],
       default: "pending",
-      validate: {
-        validator: function(status) {
-          // Beverages orders cannot have preparing or ready status
-          if (this.orderType === 'beverages' && (status === 'preparing' || status === 'ready')) {
-            return false;
-          }
-          return true;
-        },
-        message: 'Beverages orders cannot have preparing or ready status'
-      }
     },
     orderType: {
       type: String,
@@ -236,15 +226,6 @@ try {
 
 // Add pre-save middleware to handle beverages item status
 OrderSchema.pre('save', function(next) {
-  // Handle order-level beverages validation
-  if (this.orderType === 'beverages') {
-    const invalidStatuses = ['preparing', 'ready'];
-    if (invalidStatuses.includes(this.status)) {
-      const error = new Error('Beverages orders cannot have preparing or ready status');
-      return next(error);
-    }
-  }
-  
   // Handle individual item status for beverages - only prevent invalid statuses
   if (this.items && this.items.length > 0) {
     for (let item of this.items) {

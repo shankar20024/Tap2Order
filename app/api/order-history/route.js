@@ -78,10 +78,17 @@ export async function GET(request) {
       statusCounts[order.status] = (statusCounts[order.status] || 0) + 1;
 
       if (order.status === "completed") {
-        order.items.forEach(item => {
-          const itemTotal = item.quantity * item.price;
-          dailyRevenue += itemTotal;
+        // Use totalAmount if available, otherwise fallback to item calculation
+        if (order.totalAmount) {
+          dailyRevenue += order.totalAmount;
+        } else {
+          // Fallback to item-based calculation if totalAmount is not available
+          const orderTotal = order.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+          dailyRevenue += orderTotal;
+        }
 
+        // Still track item sales for reporting
+        order.items.forEach(item => {
           const key = item.name;
           itemSales[key] = itemSales[key] || {
             quantity: 0,
@@ -89,7 +96,7 @@ export async function GET(request) {
             price: item.price
           };
           itemSales[key].quantity += item.quantity;
-          itemSales[key].revenue += itemTotal;
+          itemSales[key].revenue += item.quantity * item.price;
         });
       }
     });
@@ -97,18 +104,24 @@ export async function GET(request) {
     // Monthly revenue
     monthlyOrders.forEach(order => {
       if (order.status === "completed") {
-        order.items.forEach(item => {
-          monthlyRevenue += item.quantity * item.price;
-        });
+        // Use totalAmount if available, otherwise fallback to item calculation
+        if (order.totalAmount) {
+          monthlyRevenue += order.totalAmount;
+        } else {
+          monthlyRevenue += order.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+        }
       }
     });
 
     // Yearly revenue
     yearlyOrders.forEach(order => {
       if (order.status === "completed") {
-        order.items.forEach(item => {
-          yearlyRevenue += item.quantity * item.price;
-        });
+        // Use totalAmount if available, otherwise fallback to item calculation
+        if (order.totalAmount) {
+          yearlyRevenue += order.totalAmount;
+        } else {
+          yearlyRevenue += order.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+        }
       }
     });
 
@@ -116,7 +129,7 @@ export async function GET(request) {
     const response = {
       dailyOrders: dailyOrders.map(order => ({
         ...order.toObject(),
-        total: order.items.reduce((sum, item) => sum + (item.quantity * item.price), 0)
+        total: order.totalAmount || order.items.reduce((sum, item) => sum + (item.quantity * item.price), 0)
       })),
       itemSales,
       dailyRevenue,

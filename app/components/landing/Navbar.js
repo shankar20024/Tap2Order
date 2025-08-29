@@ -19,8 +19,8 @@ export default function Navbar() {
             whileHover={{ scale: 1.05 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="flex flex-col">
-              <Logo className="text-2xl" />
+            <div className="flex flex-col gap-1 ">
+              <Logo className="text-3xl" />
               <span className="text-xs text-amber-600 font-medium -mt-1">Smart Restaurant Solutions</span>
             </div>
           </motion.div>

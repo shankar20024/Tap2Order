@@ -4,7 +4,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
+import OrderCard from '../components/waiter/OrderCard';
+import ServedOrderCard from '../components/waiter/ServedOrderCard';
+import TableCard from '../components/waiter/TableCard';
 import { FiClock, FiCheck, FiAlertCircle, FiUsers, FiRefreshCw, FiCheckCircle, FiUser, FiX, FiHelpCircle, FiPlus, FiMinus, FiShoppingCart, FiList } from 'react-icons/fi';
 import ably from '@/lib/ably';
 
@@ -477,28 +480,6 @@ export default function WaiterDashboard() {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'preparing': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'served': return 'bg-green-100 text-green-800 border-green-200';
-      case 'completed': return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'pending': return <FiClock className="w-4 h-4" />;
-      case 'preparing': return <FiRefreshCw className="w-4 h-4" />;
-      case 'served': return <FiCheck className="w-4 h-4" />;
-      case 'completed': return <FiCheck className="w-4 h-4" />;
-      case 'cancelled': return <FiAlertCircle className="w-4 h-4" />;
-      default: return <FiClock className="w-4 h-4" />;
-    }
-  };
-
   // Consider an order paid if any paid flags are true or any payment/bill fields include paid-like statuses
   const isOrderPaid = (o) => {
     const norm = (v) => (v == null ? '' : String(v).toLowerCase().trim());
@@ -631,10 +612,10 @@ export default function WaiterDashboard() {
               <FiUser className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
               <span className="font-medium">Table {order.tableNumber}</span>
             </div>
-            {order.customerName && (
+            {order.customerInfo?.name && (
               <div className="flex items-center gap-1 truncate">
                 <span className="text-gray-500 hidden sm:inline">•</span>
-                <span className="truncate max-w-[120px] sm:max-w-[150px]">{order.customerName}</span>
+                <span className="truncate max-w-[120px] sm:max-w-[150px]">{order.customerInfo?.name}</span>
               </div>
             )}
           </div>
@@ -786,59 +767,28 @@ export default function WaiterDashboard() {
     );
   };
 
-  // Professional Compact Table Card Component  
-  const TableCard = ({ table }) => {
-    const isOccupied = table.status === 'occupied';
-    
-    return (
-      <div className={`rounded-lg sm:rounded-xl lg:rounded-2xl border-2 transition-all duration-200 hover:shadow-md ${
-        isOccupied 
-          ? 'bg-red-50 border-red-200 hover:border-red-300' 
-          : 'bg-green-50 border-green-200 hover:border-green-300'
-      }`}>
-        <div className="p-4 text-center">
-          <div className="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center ${
-            isOccupied ? 'bg-red-100' : 'bg-green-100'
-          }">
-            <FiUser className={`w-6 h-6 ${isOccupied ? 'text-red-600' : 'text-green-600'}`} />
-          </div>
-          <div className="font-bold text-lg text-gray-900 mb-1">
-            Table {table.tableNumber || table.number}
-          </div>
-          <div className={`text-sm font-medium px-2 py-1 rounded-full ${
-            isOccupied 
-              ? 'bg-red-100 text-red-800' 
-              : 'bg-green-100 text-green-800'
-          }`}>
-            {isOccupied ? 'Occupied' : 'Available'}
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const activeOrders = useMemo(() => {
+    if (!Array.isArray(orders)) return [];
+    return orders.filter(order => {
+      if (!order.items || order.items.length === 0) return false;
+      // An order is active if it has at least one item that is not served or cancelled.
+      const hasActiveItems = order.items.some(item => 
+        item.status === 'pending' || item.status === 'preparing' || item.status === 'ready'
+      );
+      return hasActiveItems && !isOrderPaid(order);
+    });
+  }, [orders]);
 
-  if (status === 'loading' || loading) {
-    return <LoadingSpinner />;
-  }
+  const servedOrders = useMemo(() => {
+    if (!Array.isArray(orders)) return [];
+    return orders.filter(order => {
+      if (!order.items || order.items.length === 0) return false;
+      // An order is considered for the served tab if it has at least ONE item that is served.
+      const hasServedItems = order.items.some(item => item.status === 'served');
+      return hasServedItems && !isOrderPaid(order);
+    });
+  }, [orders]);
 
-  if (!session) {
-    return null;
-  }
-
-  // Filter orders by status
-  
-  const activeOrders = orders.filter(order => {
-    const status = (order.status || '').toLowerCase().trim();
-    const isActive = ['pending', 'preparing', 'ready'].includes(status);
-    return isActive;
-  });
-  
-  const servedOrders = orders.filter(order => {
-    const status = (order.status || '').toLowerCase().trim();
-    const isServed = ['served', 'completed'].includes(status);
-    return isServed;
-  });
-  
   const pendingItemsCount = orders.reduce((total, order) => {
     return total + (order.items?.filter(item => item.status === 'pending').length || 0);
   }, 0);
@@ -871,6 +821,35 @@ export default function WaiterDashboard() {
     return total + (order.items?.filter(item => item.status !== 'cancelled').length || 0);
   }, 0);
 
+  const [isPayModalOpen, setIsPayModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [expandedOrderIds, setExpandedOrderIds] = useState(new Set());
+  const [expandedServedOrderIds, setExpandedServedOrderIds] = useState(new Set());
+
+  const toggleOrderExpand = (orderId) => {
+    setExpandedOrderIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleServedOrderExpand = (orderId) => {
+    setExpandedServedOrderIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {loading ? (
@@ -893,7 +872,7 @@ export default function WaiterDashboard() {
                       <span className="text-blue-100">Welcome back, <span className="font-semibold text-white">{session?.user?.name || 'User'}</span></span>
                       {hotelName && (
                         <span className="bg-white/20 backdrop-blur-sm px-2 py-1 sm:px-3 rounded-full text-white text-xs sm:text-sm font-medium w-fit">
-                          {hotelName}
+                          {hotelName}cance
                         </span>
                       )}
                       {tenantUserId && (
@@ -1047,10 +1026,18 @@ export default function WaiterDashboard() {
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-cols-max">
                     {activeOrders
-                      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+                      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                       .map((order) => (
                         <div key={order._id} className="w-full min-w-0">
-                          <OrderCard order={order} />
+                          <OrderCard 
+                            order={order} 
+                            expandedOrderId={expandedOrderIds.has(order._id) ? order._id : null}
+                            toggleExpand={toggleOrderExpand}
+                            handleUpdateItemStatus={updateItemStatus}
+                            handlePrintOrder={() => {}}
+                            handleEditOrder={() => {}}
+                            handleCancelOrder={() => {}}
+                          />
                         </div>
                       ))}
                   </div>
@@ -1072,7 +1059,13 @@ export default function WaiterDashboard() {
                     {servedOrders
                       .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
                       .map((order) => (
-                        <OrderCard key={order._id} order={order} />
+                        <ServedOrderCard 
+                          key={order._id} 
+                          order={order} 
+                          expandedOrderId={expandedServedOrderIds.has(order._id) ? order._id : null}
+                          toggleExpand={toggleServedOrderExpand}
+                          tabType="served"
+                        />
                       ))}
                   </div>
                 )}
@@ -1217,7 +1210,7 @@ export default function WaiterDashboard() {
                               <div className="flex justify-between items-start mb-2">
                                 <div className="flex-1">
                                   <h4 className="font-medium text-gray-900">{item.name}</h4>
-                                  <div className="flex items-center gap-2 mt-1">
+                                  <div className="flex items-center gap-1.5 mt-1">
                                     <span className={`text-xs px-2 py-1 rounded-full ${
                                       item.category === 'veg' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                     }`}>

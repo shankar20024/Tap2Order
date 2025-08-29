@@ -46,11 +46,7 @@ const TableDetailsModal = ({ tableNumber, orders, onClose, onPrint, onMarkPaid, 
 
   // Calculate subtotal from orders
   const subTotal = orders.reduce((sum, order) => {
-    // Use order.totalAmount if available (from QR orders with GST included)
-    if (order.totalAmount) {
-      return sum + order.totalAmount;
-    }
-    // Fallback to calculating from items for legacy orders
+    // Always calculate from items to get the true subtotal before any taxes
     return sum + (order.items || order.cart || []).reduce((itemSum, item) => itemSum + (item.price * item.quantity), 0);
   }, 0);
 
@@ -58,39 +54,43 @@ const TableDetailsModal = ({ tableNumber, orders, onClose, onPrint, onMarkPaid, 
   
   // GST Calculation using useMemo to recalculate when businessInfo changes
   const gstDetails = useMemo(() => {
-    // Always recalculate GST using current businessInfo instead of using existing order GST
+    // Recalculate subtotal here to ensure it's always fresh within this memo
+    const currentSubTotal = orders.reduce((sum, order) => {
+      return sum + (order.items || order.cart || []).reduce((itemSum, item) => itemSum + (item.price * item.quantity), 0);
+    }, 0);
+
     const taxRate = businessInfo?.gstDetails?.taxRate || 0;
     const hasGstNumber = businessInfo?.gstDetails?.gstNumber && businessInfo.gstDetails.gstNumber.trim() !== '';
     
     let gstCalc = {
-      subtotal: subTotal,
+      subtotal: currentSubTotal,
       cgstAmount: 0,
       sgstAmount: 0,
       totalGst: 0,
-      grandTotal: subTotal,
+      grandTotal: currentSubTotal,
       isGstApplicable: false,
       taxRate: taxRate
     };
 
     // Apply GST only if user has GST number and tax rate > 0
     if (hasGstNumber && taxRate > 0) {
-      const totalTax = subTotal * (taxRate / 100);
+      const totalTax = currentSubTotal * (taxRate / 100);
       const cgst = totalTax / 2;
       const sgst = totalTax / 2;
       
       gstCalc = {
-        subtotal: subTotal,
+        subtotal: currentSubTotal,
         cgstAmount: cgst,
         sgstAmount: sgst,
         totalGst: totalTax,
-        grandTotal: subTotal + totalTax,
+        grandTotal: currentSubTotal + totalTax,
         isGstApplicable: true,
         taxRate: taxRate
       };
     }
     
     return gstCalc;
-  }, [businessInfo, subTotal, orders]);
+  }, [businessInfo, orders]);
 
   // Calculate item-wise status counts
   const itemStatusCounts = orders.reduce((counts, order) => {

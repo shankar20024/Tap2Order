@@ -39,44 +39,8 @@ import NavButton from "../components/NavButton";
 import LogoutButton from "../components/Logout";
 import PrinterSettingsModal from '../components/PrinterSettingsModal';
 import thermalPrinter from "@/lib/thermalPrinter";
-
-// Modern Stats Card Component with Advanced Visual Effects
-const StatsCard = ({ title, value, icon: Icon, trend, trendValue, color = "blue", className = "" }) => {
-  const colorClasses = {
-    blue: "bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 text-white shadow-blue-500/30",
-    green: "bg-gradient-to-br from-emerald-500 via-green-600 to-teal-700 text-white shadow-emerald-500/30",
-    amber: "bg-gradient-to-br from-amber-500 via-orange-600 to-red-600 text-white shadow-amber-500/30",
-    red: "bg-gradient-to-br from-red-500 via-pink-600 to-rose-700 text-white shadow-red-500/30",
-    purple: "bg-gradient-to-br from-purple-500 via-violet-600 to-indigo-700 text-white shadow-purple-500/30",
-    indigo: "bg-gradient-to-br from-indigo-500 via-blue-600 to-cyan-700 text-white shadow-indigo-500/30"
-  };
-
-  return (
-    <div className={`${colorClasses[color]} rounded-lg p-2 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border border-white/20 backdrop-blur-sm ${className}`}>
-      <div className="flex items-center justify-between">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium opacity-90 mb-1 truncate">{title}</p>
-          <p className="text-lg font-bold mb-1 truncate">{value}</p>
-          {trend && (
-            <div className="flex items-center space-x-1">
-              {trend === 'up' ? (
-                <FaArrowUp className="text-xs text-green-200" />
-              ) : (
-                <FaArrowDown className="text-xs text-red-200" />
-              )}
-              <span className="text-xs opacity-80">{trendValue}%</span>
-            </div>
-          )}
-        </div>
-        <div className="ml-2 flex-shrink-0">
-          <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-            <Icon className="text-base" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+import TableBox from "../components/TableBox";
+import DashboardStats from "../components/DashboardStats";
 
 // Enhanced Quick Actions with Stunning Effects
 const QuickActions = ({ onRefresh, onViewHistory, onManageTables, onViewAnalytics, onViewWaiter, className = "" }) => (
@@ -457,75 +421,6 @@ function groupOrdersByTable(orders) {
     return acc;
   }, {});
 }
-
-// TableBox - compact 100px table card
-const TableBox = ({ tableNumber, totalAmount, hasOrders, hasPaid, onView, onPrint, onCancel, onMarkPaid, gstDetails }) => (
-  <div className="flex flex-col items-center p-2">
-    <div
-      onClick={hasOrders ? onView : undefined}
-      className={`relative w-32 h-32 rounded-2xl border-2 flex flex-col items-center justify-center p-3 transition-all duration-300 transform hover:scale-105 ${
-        hasPaid
-          ? 'border-emerald-400 bg-gradient-to-br from-emerald-50 to-emerald-100 shadow-lg shadow-emerald-200/50 ring-2 ring-emerald-300/30'
-          : hasOrders
-            ? 'border-orange-400 bg-gradient-to-br from-orange-50 to-red-50 shadow-lg shadow-orange-200/50 cursor-pointer hover:shadow-xl hover:shadow-orange-300/60 ring-2 ring-orange-300/30'
-            : 'border-gray-300 bg-gradient-to-br from-gray-50 to-slate-100 shadow-md hover:shadow-lg'
-      }`}
-    >
-      {/* Status indicator dot */}
-      <div className={`absolute -top-2 -right-2 w-4 h-4 rounded-full border-2 border-white shadow-sm ${
-        hasPaid ? 'bg-emerald-500' : hasOrders ? 'bg-orange-500 animate-pulse' : 'bg-gray-400'
-      }`}></div>
-      
-      <div className="text-lg font-bold text-gray-800 mb-1 flex items-center">
-        <span className="text-blue-600">T</span>
-        <span className="ml-1">{tableNumber}</span>
-      </div>
-      
-      <div className={`text-center mb-4 ${
-        hasPaid ? 'text-emerald-700' : hasOrders ? 'text-orange-700' : 'text-gray-600'
-      }`}>
-        <div className="text-xs font-medium opacity-80 mb-1">
-          {gstDetails && gstDetails.isGstApplicable ? 'Total Amount' : 'Total Amount'}
-        </div>
-        <div className="text-base font-bold">
-          ₹{(gstDetails && gstDetails.grandTotal > 0 
-            ? gstDetails.grandTotal 
-            : totalAmount
-          ).toLocaleString('en-IN')}
-        </div>
-      </div>
-      
-      {/* Status badge */}
-      <div className={`absolute bottom-1 left-1/2 transform -translate-x-1/2 px-2 py-0.5 rounded-full text-xs font-medium ${
-        hasPaid 
-          ? 'bg-emerald-200 text-emerald-800' 
-          : hasOrders 
-            ? 'bg-orange-200 text-orange-800' 
-            : 'bg-gray-200 text-gray-600'
-      }`}>
-        {hasPaid ? 'Paid' : hasOrders ? 'Active' : 'Empty'}
-      </div>
-    </div>
-    
-    {/* Bottom action section */}
-    <div className="mt-3 w-32">
-      <button
-        onClick={onCancel}
-        title="Cancel All Orders"
-        disabled={!hasOrders}
-        className={`w-full h-10 rounded-xl border-2 font-medium text-sm transition-all duration-200 flex items-center justify-center space-x-2 ${
-          hasOrders
-            ? 'border-red-300 bg-gradient-to-r from-red-50 to-pink-50 text-red-700 hover:from-red-100 hover:to-pink-100 hover:border-red-400 shadow-md hover:shadow-lg'
-            : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
-        }`}
-      >
-        <FaTimesCircle className="text-sm" />
-        <span>Cancel</span>
-      </button>
-    </div>
-  </div>
-);
-
 // Main Dashboard Component
 export default function Dashboard() {
   const [orders, setOrders] = useState([]);
@@ -565,9 +460,7 @@ export default function Dashboard() {
     }, 0),
     totalRevenue: [...orders, ...billOrders].reduce((sum, o) => {
       // Use GST grandTotal if available, otherwise fall back to totalAmount
-      if (o.gstDetails && o.gstDetails.isGstApplicable && o.gstDetails.grandTotal > 0) {
-        return sum + o.gstDetails.grandTotal;
-      }
+      
       // Fallback to calculating from items if no totalAmount
       const items = o.items || o.cart || [];
       return sum + (o.totalAmount || items.reduce((itemSum, item) => itemSum + (item.price * item.quantity), 0));
@@ -967,8 +860,8 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 overflow-x-hidden">
-      <Header />
-      
+      <Header onRefresh={scheduleRefresh} onSettingsClick={() => setShowPrinterSettings(true)} />
+
       {/* Main Content Container */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-26 sm:pt-24 pb-8">
         
@@ -1076,49 +969,8 @@ export default function Dashboard() {
         </div>
 
         {/* Enhanced Stats Cards Grid - Fully Responsive */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 lg:mb-12">
-          <StatsCard
-            title="Total Items"
-            value={stats.totalItems}
-            icon={FaClipboardList}
-            color="blue"
-          />
-          <StatsCard
-            title="Pending Items"
-            value={stats.pendingItems}
-            icon={FaClock}
-            color="amber"
-          />
-          <StatsCard
-            title="Preparing Items"
-            value={stats.preparingItems}
-            icon={FaUtensils}
-            color="indigo"
-          />
-          <StatsCard
-            title="Ready Items"
-            value={stats.readyItems}
-            icon={FaCheckCircle}
-            color="green"
-          />
-          <StatsCard
-            title="Served Items"
-            value={stats.servedItems}
-            icon={FaBell}
-            color="purple"
-          />
-          <StatsCard
-            title="Active Tables"
-            value={stats.activeTables}
-            icon={FaTable}
-            color="green"
-          />
-          <StatsCard
-            title="Revenue"
-            value={`₹${stats.totalRevenue.toLocaleString('en-IN')}`}
-            icon={FaRupeeSign}
-            color="purple"
-          />
+        <div className="mb-6">
+          <DashboardStats stats={stats} />
         </div>
 
         {/* Table Management Grid */}

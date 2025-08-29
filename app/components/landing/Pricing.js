@@ -7,7 +7,7 @@ export default function Pricing() {
   const plans = [
     {
       name: "Starter",
-      price: "₹999",
+      price: "₹99",
       period: "/month",
       description: "Perfect for small restaurants and cafes",
       icon: FaRocket,
@@ -17,11 +17,11 @@ export default function Pricing() {
       features: [
         { text: "Up to 10 tables", included: true },
         { text: "QR code ordering", included: true },
-        { text: "Basic menu management", included: true },
+        { text: "Menu management", included: true },
         { text: "Order management", included: true },
         { text: "Basic analytics", included: true },
         { text: "Email support", included: true },
-        { text: "Staff accounts (2)", included: true },
+        { text: "Staff accounts (5)", included: true },
         { text: "Multi-language support", included: false },
         { text: "Advanced analytics", included: false },
         { text: "Priority support", included: false }
@@ -29,7 +29,7 @@ export default function Pricing() {
     },
     {
       name: "Professional",
-      price: "₹2,499",
+      price: "₹199",
       period: "/month",
       description: "Best for growing restaurants with multiple locations",
       icon: FaCrown,
@@ -39,15 +39,14 @@ export default function Pricing() {
       features: [
         { text: "Up to 50 tables", included: true },
         { text: "QR code ordering", included: true },
-        { text: "Advanced menu management", included: true },
+        { text: "Menu management", included: true },
         { text: "Order management", included: true },
-        { text: "Advanced analytics", included: true },
+        // { text: "Advanced analytics", included: true },
         { text: "Priority email & chat support", included: true },
-        { text: "Unlimited staff accounts", included: true },
-        { text: "Multi-language support", included: true },
-        { text: "Custom branding", included: true },
-        { text: "API access", included: false }
-      ]
+        { text: "Staff accounts (10)", included: true },
+        // { text: "Multi-language support", included: true },
+        // { text: "Custom branding", included: true },
+        ]
     },
     {
       name: "Enterprise",
@@ -61,14 +60,13 @@ export default function Pricing() {
       features: [
         { text: "Unlimited tables", included: true },
         { text: "QR code ordering", included: true },
-        { text: "Enterprise menu management", included: true },
-        { text: "Advanced order management", included: true },
-        { text: "Enterprise analytics", included: true },
+        { text: "Menu management", included: true },
+        { text: "Order management", included: true },
+        { text: "Analytics", included: true },
         { text: "24/7 phone support", included: true },
         { text: "Unlimited staff accounts", included: true },
         { text: "Multi-language support", included: true },
-        { text: "Full custom branding", included: true },
-        { text: "Full API access", included: true }
+        // { text: "Full custom branding", included: true },
       ]
     }
   ];

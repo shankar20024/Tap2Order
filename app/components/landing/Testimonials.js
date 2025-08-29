@@ -8,7 +8,7 @@ export default function Testimonials() {
     {
       name: "Rajesh Kumar",
       role: "Owner, Spice Garden Restaurant",
-      location: "Mumbai",
+      location: "Borivali, Mumbai",
       rating: 5,
       text: "Tap2Orders transformed our restaurant completely! Orders increased by 40% and customer wait time reduced dramatically. The QR system is so simple that even elderly customers love it.",
       avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
@@ -16,7 +16,7 @@ export default function Testimonials() {
     {
       name: "Priya Sharma",
       role: "Manager, Cafe Delight",
-      location: "Delhi",
+      location: "Thane",
       rating: 5,
       text: "Best investment we made! Staff productivity improved significantly, and customers appreciate the contactless ordering. The real-time analytics help us make better business decisions.",
       avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
@@ -24,7 +24,7 @@ export default function Testimonials() {
     {
       name: "Amit Patel",
       role: "Chef & Owner, Gujarati Thali House",
-      location: "Ahmedabad",
+      location: "Pune",
       rating: 5,
       text: "Kitchen operations became so smooth! Orders come directly to our system, no more confusion or mistakes. Customer satisfaction scores went through the roof!",
       avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
@@ -32,7 +32,7 @@ export default function Testimonials() {
     {
       name: "Sneha Reddy",
       role: "Co-owner, South Indian Express",
-      location: "Bangalore",
+      location: "Surat,Gujarat",
       rating: 5,
       text: "The multi-language support and mobile-first design made it perfect for our diverse customer base. Revenue increased by 35% in just 3 months!",
       avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face"
@@ -40,7 +40,7 @@ export default function Testimonials() {
     {
       name: "Vikram Singh",
       role: "Owner, Punjab Dhaba Chain",
-      location: "Chandigarh",
+      location: "Andheri,Mumbai",
       rating: 5,
       text: "Managing multiple locations became effortless with Tap2Orders. The centralized dashboard and real-time reporting save us hours every day. Highly recommended!",
       avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face"
@@ -48,7 +48,7 @@ export default function Testimonials() {
     {
       name: "Meera Joshi",
       role: "Manager, Coastal Kitchen",
-      location: "Goa",
+      location: "Bandra,Mumbai",
       rating: 5,
       text: "Tourist season became our best season ever! International customers love the easy QR ordering, and we can handle 3x more orders with the same staff size.",
       avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face"
