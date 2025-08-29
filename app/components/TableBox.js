@@ -2,7 +2,7 @@
 import { FaTimesCircle } from "react-icons/fa";
 
 const TableBox = ({ tableNumber, totalAmount, hasOrders, hasPaid, onView, onCancel, onMarkPaid, gstDetails }) => (
-  <div className="flex flex-col items-center md:p-2 p-4 ">
+  <div className="flex flex-col items-center sm:p-6 lg:p-2 md:p-2 px-6 ">
     <div
       onClick={hasOrders ? onView : undefined}
       className={`relative w-32 h-32 rounded-2xl border-2 flex flex-col items-center justify-center p-3 transition-all duration-300 transform hover:scale-105 ${
