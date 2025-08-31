@@ -78,11 +78,11 @@ export async function GET(request) {
       statusCounts[order.status] = (statusCounts[order.status] || 0) + 1;
 
       if (order.status === "completed") {
-        // Use totalAmount if available, otherwise fallback to item calculation
-        if (order.totalAmount) {
-          dailyRevenue += order.totalAmount;
+        // Use subtotal if available, otherwise fallback to item calculation
+        if (order.subtotal) {
+          dailyRevenue += order.subtotal;
         } else {
-          // Fallback to item-based calculation if totalAmount is not available
+          // Fallback to item-based calculation if subtotal is not available
           const orderTotal = order.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
           dailyRevenue += orderTotal;
         }
@@ -104,9 +104,9 @@ export async function GET(request) {
     // Monthly revenue
     monthlyOrders.forEach(order => {
       if (order.status === "completed") {
-        // Use totalAmount if available, otherwise fallback to item calculation
-        if (order.totalAmount) {
-          monthlyRevenue += order.totalAmount;
+        // Use subtotal if available, otherwise fallback to item calculation
+        if (order.subtotal) {
+          monthlyRevenue += order.subtotal;
         } else {
           monthlyRevenue += order.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
         }
@@ -116,9 +116,9 @@ export async function GET(request) {
     // Yearly revenue
     yearlyOrders.forEach(order => {
       if (order.status === "completed") {
-        // Use totalAmount if available, otherwise fallback to item calculation
-        if (order.totalAmount) {
-          yearlyRevenue += order.totalAmount;
+        // Use subtotal if available, otherwise fallback to item calculation
+        if (order.subtotal) {
+          yearlyRevenue += order.subtotal;
         } else {
           yearlyRevenue += order.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
         }
@@ -129,7 +129,7 @@ export async function GET(request) {
     const response = {
       dailyOrders: dailyOrders.map(order => ({
         ...order.toObject(),
-        total: order.totalAmount || order.items.reduce((sum, item) => sum + (item.quantity * item.price), 0)
+        total: order.subtotal || order.items.reduce((sum, item) => sum + (item.quantity * item.price), 0)
       })),
       itemSales,
       dailyRevenue,

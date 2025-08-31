@@ -370,7 +370,7 @@ export default function ProfilePage() {
                         <div className="md:col-span-2">
                           <label className="block text-sm font-medium text-gray-300 mb-2">Tax Rate (%)</label>
                           <div className="flex items-center space-x-4">
-                            <input type="number" value={profile.gstDetails.taxRate} onChange={(e) => handleInputChange('gstDetails', 'taxRate', e.target.value)} disabled={!editing} className="w-1/3 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:bg-gray-600/50" placeholder="e.g., 18" />
+                            <input type="number" value={profile.gstDetails.taxRate || ''} onChange={(e) => handleInputChange('gstDetails', 'taxRate', e.target.value)} disabled={!editing} className="w-1/3 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:bg-gray-600/50" placeholder="e.g., 18" />
                             <div className="flex-grow p-2 bg-gray-700/50 rounded-lg border border-gray-600 text-sm">
                               <span className="font-medium">CGST:</span> <span className="text-gray-300">{cgst.toFixed(2)}%</span>
                               <span className="mx-2">|</span>

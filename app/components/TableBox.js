@@ -6,7 +6,7 @@ const TableBox = ({ tableNumber, totalAmount, hasOrders, hasPaid, onView, onCanc
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleCancelClick = (e) => {
-    e.stopPropagation(); // Prevent onView from being called
+    e.stopPropagation(); 
     setShowConfirm(true);
   };
 
