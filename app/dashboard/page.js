@@ -33,7 +33,6 @@ import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
 import TableDetailsModal from "@/app/components/TableDetailsModal";
 import LoadingSpinner from "../components/LoadingSpinner";
-import AlertPing from "../components/AlertPing";
 import Header from "../components/Header";
 import NavButton from "../components/NavButton";
 import LogoutButton from "../components/Logout";
@@ -927,17 +926,7 @@ export default function Dashboard() {
             )}
           </div>
           
-          {/* New Order Alert */}
-          {hasNewOrder && (
-            <div className="flex items-center bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 
-                          px-4 sm:px-6 py-3 rounded-2xl border-2 border-green-200 shadow-2xl animate-pulse">
-              <AlertPing className="mr-3" />
-              <div>
-                <span className="font-bold text-sm sm:text-base">New Orders!</span>
-                <p className="text-xs sm:text-sm opacity-80">Fresh orders received</p>
-              </div>
-            </div>
-          )}
+          
         </div>
 
         {/* Enhanced Quick Actions Panel */}

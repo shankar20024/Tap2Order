@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export default function CustomerInfoModal({ isOpen, onSubmit, onClose }) {
+export default function CustomerInfoModal({ isOpen, onSubmit, onClose, errorMessage }) {
   const [customerName, setCustomerName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [errors, setErrors] = useState({});
@@ -63,6 +63,14 @@ export default function CustomerInfoModal({ isOpen, onSubmit, onClose }) {
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Our Restaurant!</h2>
             <p className="text-gray-600">Help us serve you better by sharing your details</p>
           </div>
+
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded-md" role="alert">
+              <p className="font-bold">Access Denied</p>
+              <p>{errorMessage}</p>
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">

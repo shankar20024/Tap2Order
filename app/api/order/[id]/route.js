@@ -38,8 +38,11 @@ export async function PATCH(req, { params }) {
     if (status === "completed" || status === "cancelled") {
       try {
         await setTableFree(order.userId, order.tableNumber);
+        // Publish reload event to QR page
+        const reloadChannel = ably.channels.get(`table-reload:${order.userId}:${order.tableNumber}`);
+        await reloadChannel.publish('reload', {});
       } catch (error) {
-        // Don't fail the order update if table status update fails
+        // Don't fail the order update if table status update or reload fails
       }
     }
 
@@ -109,6 +112,14 @@ export async function PUT(req, { params }) {
 
     await setTableFree(order.userId, order.tableNumber);
 
+    // Publish reload event to QR page
+    try {
+        const reloadChannel = ably.channels.get(`table-reload:${order.userId}:${order.tableNumber}`);
+        await reloadChannel.publish('reload', {});
+    } catch (error) {
+        // Don't fail if reload publish fails
+    }
+
     // Publish real-time event to waiter dashboard
     try {
       const channel = ably.channels.get(`orders:${updatedOrder.userId}`);
@@ -150,6 +161,14 @@ export async function DELETE(req, { params }) {
 
     await Order.findByIdAndDelete(id);
     await setTableFree(order.userId, order.tableNumber);
+
+    // Publish reload event to QR page
+    try {
+        const reloadChannel = ably.channels.get(`table-reload:${order.userId}:${order.tableNumber}`);
+        await reloadChannel.publish('reload', {});
+    } catch (error) {
+        // Don't fail if reload publish fails
+    }
 
     // Publish delete event so all clients remove this order
     try {

@@ -3,6 +3,7 @@
 import { use, useState, useEffect, useCallback } from "react";
 import LoadingSpinner from "@/app/components/LoadingSpinner";
 import OrderViewer from "@/app/components/OrderViewer";
+import { getAbly } from "@/lib/ably";
 
 // QR Components
 import QRHeader from "@/app/components/qr/QRHeader";
@@ -37,6 +38,27 @@ export default function QRMenu(paramsPromise) {
   const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '' });
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [customerInfoSubmitted, setCustomerInfoSubmitted] = useState(false);
+  const [isTableLocked, setTableLocked] = useState(false);
+  const [originalCustomer, setOriginalCustomer] = useState(null);
+  const [accessDeniedMessage, setAccessDeniedMessage] = useState('');
+
+  // Ably real-time subscription for page reload
+  useEffect(() => {
+    if (!userId || !tableNumber) return;
+
+    const ably = getAbly();
+    const channel = ably.channels.get(`table-reload:${userId}:${tableNumber}`);
+
+    const handleReload = () => {
+      window.location.reload();
+    };
+
+    channel.subscribe('reload', handleReload);
+
+    return () => {
+      channel.unsubscribe('reload', handleReload);
+    };
+  }, [userId, tableNumber]);
 
   // GST Calculation Function
   const calculateGST = useCallback((subtotal) => {
@@ -164,52 +186,97 @@ export default function QRMenu(paramsPromise) {
     }
   }, [userId]);
 
-  // Check table existence
-  const checkTableExistence = async () => {
-    try {
-      const res = await fetch(`/api/table/check?userId=${userId}&tableNumber=${tableNumber}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (!data.exists) {
+  // Check table existence and status
+  useEffect(() => {
+    const checkTable = async () => {
+      setLoading(true);
+      try {
+        // First, check if the table is occupied
+        const statusRes = await fetch(`/api/table-status/${userId}/${tableNumber}`);
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          if (statusData.isOccupied) {
+            setTableLocked(true);
+            setOriginalCustomer(statusData.customerInfo);
+          }
+        } else {
+          // If status check fails, proceed but maybe log an error
+          console.error('Could not verify table status.');
+        }
+
+        // Then, check if the table physically exists
+        const existenceRes = await fetch(`/api/table/check?userId=${userId}&tableNumber=${tableNumber}`);
+        if (existenceRes.ok) {
+          const existenceData = await existenceRes.json();
+          if (!existenceData.exists) {
+            setTableExists(false);
+          }
+        } else {
           setTableExists(false);
         }
-      } else {
-        setTableExists(false);
+      } catch (err) {
+        setTableExists(false); // Assume table doesn't exist on error
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setTableExists(false);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  useEffect(() => {
-    checkTableExistence();
+    if (userId && tableNumber) {
+        checkTable();
+    }
   }, [userId, tableNumber]);
 
   // Customer Info Management
   useEffect(() => {
-    const savedCustomerInfo = localStorage.getItem(`customerInfo_${userId}_${tableNumber}`);
-    if (savedCustomerInfo) {
-      const parsedInfo = JSON.parse(savedCustomerInfo);
-      setCustomerInfo(parsedInfo);
-      setCustomerInfoSubmitted(true);
-    } else {
-      // Show modal after 500ms if no customer info exists
+    if (!customerInfoSubmitted) {
+      // Show modal after 500ms if customer info hasn't been submitted in the current session
       const timer = setTimeout(() => {
         setShowCustomerModal(true);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [userId, tableNumber]);
+  }, [customerInfoSubmitted]);
 
   // Handle customer info submission
-  const handleCustomerInfoSubmit = (info) => {
-    setCustomerInfo(info);
-    setCustomerInfoSubmitted(true);
-    setOrderCustomerInfo(info); // Update useOrder hook's customerInfo
-    localStorage.setItem(`customerInfo_${userId}_${tableNumber}`, JSON.stringify(info));
-    setShowCustomerModal(false);
+  const handleCustomerInfoSubmit = async (info) => {
+    setLoading(true);
+    setAccessDeniedMessage('');
+
+    try {
+      // Re-check table status right before submission
+      const statusRes = await fetch(`/api/table-status/${userId}/${tableNumber}`);
+      const statusData = await statusRes.json();
+
+      if (statusRes.ok && statusData.isOccupied) {
+        // Table is locked, validate customer
+        const normalize = (str) => (str || '').trim().toLowerCase();
+        const isSameCustomer = 
+          normalize(info.name) === normalize(statusData.customerInfo.name) &&
+          normalize(info.phone) === normalize(statusData.customerInfo.phone);
+
+        if (isSameCustomer) {
+          // Correct customer, grant access
+          setCustomerInfo(info);
+          setCustomerInfoSubmitted(true);
+          setOrderCustomerInfo(info);
+          setShowCustomerModal(false);
+        } else {
+          // Wrong customer, deny access
+          setAccessDeniedMessage('Access Denied. The customer details do not match the ongoing order. Please try again or contact staff.');
+        }
+      } else {
+        // Table is not locked, proceed with new customer
+        setCustomerInfo(info);
+        setCustomerInfoSubmitted(true);
+        setOrderCustomerInfo(info);
+        setShowCustomerModal(false);
+      }
+    } catch (error) {
+      console.error('Failed to verify table status on submit:', error);
+      setAccessDeniedMessage('Could not verify table status. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle add to cart with quantity reset
@@ -366,6 +433,7 @@ export default function QRMenu(paramsPromise) {
         customerInfoSubmitted={customerInfoSubmitted}
         setCustomerInfoSubmitted={setCustomerInfoSubmitted}
         onSubmit={handleCustomerInfoSubmit}
+        errorMessage={accessDeniedMessage}
       />
     </div>
   );

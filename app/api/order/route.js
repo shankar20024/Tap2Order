@@ -47,6 +47,7 @@ export async function POST(req) {
     }).sort({ createdAt: -1 });
 
     let savedOrder;
+    let eventName; // To hold the event name dynamically
 
     // Check if order contains only beverages
     const isOnlyBeverages = processedCart.every(item => 
@@ -106,6 +107,7 @@ export async function POST(req) {
       }
 
       savedOrder = await existingOrder.save();
+      eventName = 'order.updated'; // It's an update to an existing order
     } else {
       // Create new order
       const totalAmount = frontendTotalAmount || processedCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -128,6 +130,7 @@ export async function POST(req) {
       });
       
       savedOrder = await newOrder.save();
+      eventName = 'order.created'; // It's a new order
     }
     
     // Check if table exists
@@ -153,7 +156,7 @@ export async function POST(req) {
     // Publish real-time event to waiter dashboard
     try {
       const channel = ably.channels.get(`orders:${userId}`);
-      await channel.publish('order.created', savedOrder);
+      await channel.publish(eventName, savedOrder);
     } catch (error) {
       // Don't fail the order creation if real-time publishing fails
     }
