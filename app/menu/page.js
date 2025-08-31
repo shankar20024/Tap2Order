@@ -705,7 +705,7 @@ export default function MenuPage() {
                   {/* Category Selection */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">Category</h3>
-                    <div className="flex items-center justify-center space-x-6 bg-gray-50 rounded-xl p-4">
+                    <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 bg-gray-50 rounded-xl p-4">
                       {/* Vegetarian */}
                       <label className="flex items-center space-x-3 cursor-pointer">
                         <input

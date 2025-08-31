@@ -114,7 +114,7 @@ const userSchema = new mongoose.Schema({
     },
     taxRate: {
       type: Number,
-      default: 5,
+      default: "",
       min: 0,
       max: 28,
     },
