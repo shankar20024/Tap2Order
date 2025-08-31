@@ -437,7 +437,6 @@ export default function Dashboard() {
   const [selectedPrinter, setSelectedPrinter] = useState('');
   const { data: session, status } = useSession();
   const router = useRouter();
-  const refreshTimerRef = useRef(null);
 
   // Enhanced Stats calculation with trends - Updated to count items instead of orders
   const stats = {
@@ -470,39 +469,30 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!session?.user?.id) return;
+
+    // Initial fetch of orders
+    fetchOrders();
+
     const client = getAbly();
     if (!client) return;
 
-    // Subscribe to both specific and global channels (QR page may publish to either)
-    const channels = [
-      client.channels.get(`orders:${session.user.id}`),
-      client.channels.get('orders')
-    ];
-    const events = ['order:created','order:updated','order:paid','order:cancelled','order:deleted'];
-    const onMsg = () => scheduleRefresh();
-    channels.forEach(ch => events.forEach(evt => ch.subscribe(evt, onMsg)));
+    const channel = client.channels.get(`orders:${session.user.id}`);
+    const events = ['order.created', 'order.updated', 'order.deleted', 'order-created', 'order-updated'];
 
-    // Immediate fetch to sync
-    fetchOrders();
+    const handleMessage = (message) => {
+        handleRealtimeOrderUpdate(message.name, message.data);
+    };
+
+    events.forEach(event => {
+        channel.subscribe(event, handleMessage);
+    });
 
     return () => {
-      channels.forEach(ch => events.forEach(evt => ch.unsubscribe(evt, onMsg)));
+        events.forEach(event => {
+            channel.unsubscribe(event, handleMessage);
+        });
     };
-  }, [session?.user?.id]);
-
-  // Refresh when tab becomes visible + 12s polling fallback
-  useEffect(() => {
-    if (!session?.user?.id) return;
-    const onVis = () => {
-      if (document.visibilityState === 'visible') scheduleRefresh(0);
-    };
-    document.addEventListener('visibilitychange', onVis);
-    const poll = setInterval(() => scheduleRefresh(0), 12000);
-    return () => {
-      document.removeEventListener('visibilitychange', onVis);
-      clearInterval(poll);
-    };
-  }, [session?.user?.id]);
+}, [session?.user?.id]);
 
   const handleRealtimeOrderUpdate = (eventType, data) => {
     if (!data) return;
@@ -851,16 +841,9 @@ export default function Dashboard() {
     toast.success(`Printer selected: ${printerName}`);
   };
 
-  const scheduleRefresh = (delay = 400) => {
-    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
-    refreshTimerRef.current = setTimeout(() => {
-      fetchOrders();
-    }, delay);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 overflow-x-hidden">
-      <Header onRefresh={scheduleRefresh} onSettingsClick={() => setShowPrinterSettings(true)} />
+      <Header onRefresh={fetchOrders} onSettingsClick={() => setShowPrinterSettings(true)} />
 
       {/* Main Content Container */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-26 sm:pt-24 pb-8">
@@ -960,7 +943,7 @@ export default function Dashboard() {
         {/* Enhanced Quick Actions Panel */}
         <div className="mb-6">
           <QuickActions
-            onRefresh={() => window.location.reload()}
+            onRefresh={fetchOrders}
             onViewHistory={() => router.push('/order-history')}
             onManageTables={() => router.push('/table')}
             onViewAnalytics={() => router.push('/analytics')}
