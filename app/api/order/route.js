@@ -193,6 +193,21 @@ export async function GET(req) {
       userId = session.user.id;
     }
     
+    const { searchParams } = new URL(req.url);
+    const status = searchParams.get('status');
+
+    const query = {
+      userId: userId,
+    };
+
+    if (status && status !== 'all') {
+      // Assumes status is a single string like 'pending', 'preparing', etc.
+      query.status = status;
+    } else {
+      // Default behavior: fetch all non-completed/cancelled orders
+      query.status = { $nin: ["completed", "cancelled"] };
+    }
+
     // Fetch user's business profile for GST details
     let user, taxRate = 0, hasGstNumber = false;
     try {
@@ -204,10 +219,7 @@ export async function GET(req) {
     }
     
     // Only fetch orders for this specific userId that are not completed or cancelled
-    const orders = await Order.find({ 
-      userId: userId, 
-      status: { $nin: ["completed", "cancelled"] } 
-    });
+    const orders = await Order.find(query);
     
     // Calculate grand total with GST for each order
     const ordersWithGST = orders.map(order => {

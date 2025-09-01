@@ -3,27 +3,45 @@ import { useState, useEffect } from 'react';
 import { FaPrint, FaTimes, FaCog, FaCheck, FaExclamationTriangle } from 'react-icons/fa';
 import thermalPrinter from '@/lib/thermalPrinter';
 import toast from 'react-hot-toast';
+import { useSession } from 'next-auth/react';
+
 
 const PrinterSettingsModal = ({ isOpen, onClose, onSave }) => {
+  const { data: session } = useSession();
   const [printers, setPrinters] = useState([]);
   const [selectedPrinter, setSelectedPrinter] = useState('');
   const [paperWidth, setPaperWidth] = useState(80);
   const [copies, setCopies] = useState(1);
   const [businessInfo, setBusinessInfo] = useState({
-    name: 'Tap2Order Restaurant',
-    address: 'Your Restaurant Address',
-    phone: '+91 XXXXX XXXXX',
-    email: 'info@tap2order.com',
-    gst: 'GST No: XXXXXXXXX'
+    name: session?.user?.restaurant?.name,
+    address: session?.user?.restaurant?.address,
+    phone: session?.user?.restaurant?.phone,
+    email: session?.user?.restaurant?.email,
+    gst: session?.user?.restaurant?.gst
   });
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  
+  
+
+  const fetchBusinessInfo = async () => {
+    try {
+      const res = await fetch('/api/me/user?userId=' + session.user.id);
+      if (res.ok) {
+        const data = await res.json();
+        setBusinessInfo(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch business name", err);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
       loadPrinters();
       loadSettings();
+      fetchBusinessInfo();
     }
   }, [isOpen]);
 
@@ -56,6 +74,8 @@ const PrinterSettingsModal = ({ isOpen, onClose, onSave }) => {
   };
 
   const loadSettings = () => {
+    
+    
     // Load settings from localStorage
     const savedSettings = localStorage.getItem('printerSettings');
     if (savedSettings) {

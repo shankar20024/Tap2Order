@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Logo from "@/app/components/Logo";
 
-export default function QRHeader({ username, tableNumber, apiStatus, hotelName, customerInfo }) {
+export default function QRHeader({ username, tableNumber, apiStatus, hotelName, customerInfo, businessInfo }) {
   return (
     <header className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-200 shadow-lg backdrop-blur-sm">
       <div className="px-4 py-4">
@@ -21,7 +21,7 @@ export default function QRHeader({ username, tableNumber, apiStatus, hotelName, 
                 {hotelName || username || 'Loading...'}
               </p>
               <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
-                Restaurant
+                {businessInfo?.businessType || ''}
               </p>
             </div>
           </div>

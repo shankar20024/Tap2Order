@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getAbly } from "@/lib/ably";
 import { 
@@ -31,15 +31,13 @@ import {
 } from "react-icons/fa";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
-import TableDetailsModal from "@/app/components/TableDetailsModal";
-import LoadingSpinner from "../components/LoadingSpinner";
+import TableDetailsModal from "@/app/components/dashboard/TableDetailsModal";
 import Header from "../components/Header";
-import NavButton from "../components/NavButton";
-import LogoutButton from "../components/Logout";
-import PrinterSettingsModal from '../components/PrinterSettingsModal';
+import PrinterSettingsModal from '../components/dashboard/PrinterSettingsModal';
 import thermalPrinter from "@/lib/thermalPrinter";
-import TableBox from "../components/TableBox";
-import DashboardStats from "../components/DashboardStats";
+import TableBox from "../components/dashboard/TableBox";
+import DashboardStats from "../components/dashboard/DashboardStats";
+
 
 // Enhanced Quick Actions with Stunning Effects
 const QuickActions = ({ onRefresh, onViewHistory, onManageTables, onViewAnalytics, onViewWaiter, className = "" }) => (
@@ -141,276 +139,8 @@ const QuickActions = ({ onRefresh, onViewHistory, onManageTables, onViewAnalytic
   </div>
 );
 
-
-// Modern Minimal Order Card Component
-const OrderCard = ({ order, onComplete, onCancel, onPrint }) => {
-  const items = order.items || order.cart || [];
-  const specialInstructions = order.message || order.msg || order.specialInstructions;
-  const totalAmount = order.totalAmount || items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-  const statusConfig = {
-    pending: {
-      color: "bg-amber-50 border-amber-200 text-amber-800",
-      badge: "bg-amber-100 text-amber-700 border-amber-200",
-      icon: FaClock,
-      iconColor: "text-amber-600"
-    },
-    preparing: {
-      color: "bg-blue-50 border-blue-200 text-blue-800", 
-      badge: "bg-blue-100 text-blue-700 border-blue-200",
-      icon: FaUtensils,
-      iconColor: "text-blue-600"
-    },
-    ready: {
-      color: "bg-emerald-50 border-emerald-200 text-emerald-800",
-      badge: "bg-emerald-100 text-emerald-700 border-emerald-200", 
-      icon: FaCheckCircle,
-      iconColor: "text-emerald-600"
-    },
-    served: {
-      color: "bg-purple-50 border-purple-200 text-purple-800",
-      badge: "bg-purple-100 text-purple-700 border-purple-200",
-      icon: FaBell,
-      iconColor: "text-purple-600"
-    }
-  };
-
-  const config = statusConfig[order.status] || statusConfig.pending;
-  const StatusIcon = config.icon;
-
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
-      {/* Clean Header */}
-      <div className={`${config.color} px-4 py-3 border-b border-gray-100`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <span className="bg-white px-3 py-1 rounded-lg text-sm font-semibold text-gray-700 shadow-sm">
-              #{order._id?.slice(-6) || 'N/A'}
-            </span>
-            <div className="flex items-center space-x-1 text-sm font-medium">
-              <FaTable className={`${config.iconColor} text-xs`} />
-              <span>Table {order.tableNumber}</span>
-            </div>
-          </div>
-          <div className={`${config.badge} px-3 py-1 rounded-full text-xs font-medium border-2`}>
-            <StatusIcon className="text-xs" />
-            <span className="capitalize">{order.status}</span>
-          </div>
-        </div>
-        <div className="mt-2 text-xs opacity-75">
-          {new Date(order.createdAt || Date.now()).toLocaleTimeString('en-IN', {
-            hour: '2-digit',
-            minute: '2-digit'
-          })} • {new Date(order.createdAt || Date.now()).toLocaleDateString('en-IN')}
-        </div>
-      </div>
-
-      {/* Special Instructions */}
-      {specialInstructions && (
-        <div className="px-4 py-3 bg-yellow-50 border-b border-yellow-100">
-          <div className="flex items-start space-x-2">
-            <FaBell className="text-yellow-600 text-sm mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-xs font-medium text-yellow-800 mb-1">Special Instructions</p>
-              <p className="text-sm text-yellow-700 leading-relaxed">{specialInstructions}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Items List */}
-      <div className="px-4 py-3">
-        <div className="space-y-2">
-          {items.length > 0 ? (
-            items.slice(0, 3).map((item, idx) => (
-              <div key={idx} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-b-0">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-800 truncate">{item.name}</p>
-                  <div className="flex items-center space-x-2">
-                    <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
-                    {/* Individual item status */}
-                    <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      (item.status || order.status) === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                      (item.status || order.status) === 'preparing' ? 'bg-blue-100 text-blue-700' :
-                      (item.status || order.status) === 'ready' ? 'bg-green-100 text-green-700' : 
-                      'bg-purple-100 text-purple-700'
-                    }`}>
-                      {item.status || order.status}
-                    </div>
-                  </div>
-                </div>
-                <span className="text-sm font-medium text-gray-700 ml-3">
-                  ₹{(item.price * item.quantity).toLocaleString('en-IN')}
-                </span>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-gray-500 text-center py-4">No items in this order</p>
-          )}
-          {items.length > 3 && (
-            <div className="text-center py-2 border-t border-gray-100">
-              <span className="text-xs text-gray-500">+{items.length - 3} more items</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Clean Footer */}
-      <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-lg font-bold text-gray-900">
-            ₹{totalAmount.toLocaleString('en-IN')}
-          </div>
-          <button
-            onClick={() => onPrint(order)}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors duration-200"
-            title="Print Order"
-          >
-            <FaPrint className="text-sm" />
-          </button>
-        </div>
-        
-        <div className="flex space-x-2">
-          {order.status === 'ready' && (
-            <button
-              onClick={() => onComplete(order._id)}
-              className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center space-x-1"
-            >
-              <FaCheckCircle className="text-xs" />
-              <span>Complete</span>
-            </button>
-          )}
-          {(order.status === 'pending' || order.status === 'preparing') && (
-            <button
-              onClick={() => onCancel(order._id)}
-              className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center space-x-1"
-            >
-              <FaTimesCircle className="text-xs" />
-              <span>Cancel</span>
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Professional Bill Card Component
-const BillCard = ({ tableNumber, orders, onPrintBill, onCompleteBill }) => {
-  const items = orders.flatMap(o => (o.items || o.cart || []));
-  const total = items.reduce((sum, it) => sum + (it.price * it.quantity), 0);
-
-  return (
-    <div className="bg-white rounded-3xl shadow-2xl border-0 hover:shadow-3xl transition-all duration-500 hover:scale-105 hover:-translate-y-1 overflow-hidden backdrop-blur-lg">
-      <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-amber-50 to-orange-50 relative overflow-hidden">
-        <div className="relative flex items-center justify-between mb-3">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-amber-200 rounded-lg mr-3">
-              <FaTable className="text-amber-700" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold">Table {tableNumber}</h2>
-              <p className="text-xs text-gray-600">Ready for billing</p>
-            </div>
-          </div>
-          <span className="bg-amber-200 text-amber-800 px-3 py-1 rounded-full text-xs font-bold">
-            {orders.length} served
-          </span>
-        </div>
-      </div>
-      
-      <div className="p-6 bg-gradient-to-br from-white to-gray-50">
-        <div className="space-y-2 max-h-32 overflow-y-auto">
-          {items.slice(0, 5).map((item, idx) => (
-            <div key={idx} className="flex justify-between items-center p-2 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-lg transition-colors duration-200 hover:scale-105">
-              <span className="text-sm text-gray-700 truncate flex-1 mr-2">
-                {item.name} × {item.quantity}
-              </span>
-              <span className="text-sm font-medium text-gray-900">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
-            </div>
-          ))}
-          {items.length > 5 && (
-            <div className="text-xs text-gray-500 text-center py-2 border-t border-gray-200 bg-gray-50 rounded-lg">
-              <FaPlus className="inline mr-1" />
-              {items.length - 5} more items
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="p-6 bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white rounded-b-3xl">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-2xl font-black flex items-center bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
-            <FaRupeeSign className="text-xl mr-2 text-green-400 animate-pulse" />
-            {total}
-          </span>
-          <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">
-            Total Amount
-          </span>
-        </div>
-        <div className="flex space-x-4">
-          <button
-            onClick={() => onPrintBill(tableNumber, items, total)}
-            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 
-                     text-white py-4 px-6 rounded-2xl text-sm font-black transition-all duration-500 
-                     flex items-center justify-center shadow-2xl hover:shadow-blue-500/50 hover:scale-105"
-          >
-            <FaPrint className="mr-2" />
-            Print Bill
-          </button>
-          <button
-            onClick={() => onCompleteBill(orders)}
-            className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 
-                     text-white py-4 px-6 rounded-2xl text-sm font-black transition-all duration-500 
-                     flex items-center justify-center shadow-2xl hover:shadow-green-500/50 hover:scale-105"
-          >
-            <FaCheckCircle className="mr-2" />
-            Complete
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Advanced Filter and Search Component
-const FilterSearchBar = ({ searchTerm, setSearchTerm, filterStatus, setFilterStatus, orderCount }) => (
-  <div className="bg-white rounded-3xl shadow-2xl border-0 p-6 mb-6 backdrop-blur-lg">
-    <div className="flex flex-col sm:flex-row gap-4">
-      {/* Search Input */}
-      <div className="flex-1 relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <FaSearch className="text-gray-400" />
-        </div>
-        <input
-          type="text"
-          placeholder="Search by table, order ID, or item name..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-        />
-      </div>
-      
-      {/* Status Filter */}
-      <div className="relative">
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="appearance-none bg-white border border-gray-300 rounded-2xl px-4 py-3 pr-8 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 font-medium"
-        >
-          <option value="all">All Status ({orderCount})</option>
-          <option value="pending">Pending</option>
-          <option value="preparing">Preparing</option>
-          <option value="ready">Ready</option>
-          <option value="served">Served</option>
-        </select>
-        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-          <FaFilter className="text-gray-400" />
-        </div>
-      </div>
-    </div>
-  </div>
-);
+
 
 // Utility function to group orders by table number
 function groupOrdersByTable(orders) {
@@ -434,11 +164,12 @@ export default function Dashboard() {
   const [showPrinterSettings, setShowPrinterSettings] = useState(false);
   const [availablePrinters, setAvailablePrinters] = useState([]);
   const [selectedPrinter, setSelectedPrinter] = useState('');
+  const [businessName, setBusinessName] = useState('');
   const { data: session, status } = useSession();
   const router = useRouter();
 
   // Enhanced Stats calculation with trends - Updated to count items instead of orders
-  const stats = {
+  const stats = useMemo(() => ({
     totalItems: [...orders, ...billOrders].reduce((sum, o) => sum + (o.items || o.cart || []).length, 0),
     pendingItems: orders.reduce((sum, o) => {
       if (o.status === 'pending') return sum + (o.items || o.cart || []).length;
@@ -464,12 +195,24 @@ export default function Dashboard() {
       return sum + (o.totalAmount || items.reduce((itemSum, item) => itemSum + (item.price * item.quantity), 0));
     }, 0),
     activeTables: new Set([...orders.map(o => o.tableNumber), ...billOrders.map(o => o.tableNumber)]).size
-  };
+  }), [orders, billOrders]);
 
   useEffect(() => {
     if (!session?.user?.id) return;
 
-    // Initial fetch of orders
+    const fetchBusinessInfo = async () => {
+      try {
+        const res = await fetch('/api/me/user?userId=' + session.user.id);
+        if (res.ok) {
+          const data = await res.json();
+          setBusinessName(data.name);
+        }
+      } catch (err) {
+        console.error("Failed to fetch business name", err);
+      }
+    };
+
+    fetchBusinessInfo();
     fetchOrders();
 
     const client = getAbly();
@@ -493,6 +236,7 @@ export default function Dashboard() {
     };
 }, [session?.user?.id]);
 
+  // Enhanced Realtime Order Update Handling
   const handleRealtimeOrderUpdate = (eventType, data) => {
     if (!data) return;
 
@@ -854,10 +598,11 @@ export default function Dashboard() {
               <FaUtensils className="text-white text-xl sm:text-3xl" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-2">
-                Restaurant Dashboard
+              <p className="text-xl sm:text-2xl text-gray-600">Welcome back,</p>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 -mt-1">
+                {businessName}
               </h1>
-              <p className="text-gray-600 text-base sm:text-lg">
+              <p className="text-gray-600 text-base sm:text-lg mt-2">
                 Manage your orders and operations efficiently
               </p>
               <div className="flex items-center mt-2 text-sm text-gray-500">

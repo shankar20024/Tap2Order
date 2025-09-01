@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect, useCallback } from "react";
+import { use, useState, useEffect, useCallback, useMemo } from "react";
 import LoadingSpinner from "@/app/components/LoadingSpinner";
 import OrderViewer from "@/app/components/OrderViewer";
 import { getAbly } from "@/lib/ably";
@@ -60,40 +60,6 @@ export default function QRMenu(paramsPromise) {
     };
   }, [userId, tableNumber]);
 
-  // GST Calculation Function
-  const calculateGST = useCallback((subtotal) => {
-    const taxRate = businessInfo?.gstDetails?.taxRate || 0;
-    const hasGstNumber = businessInfo?.gstDetails?.gstNumber && businessInfo.gstDetails.gstNumber.trim() !== '';
-    
-    let gstDetails = {
-      subtotal: subtotal,
-      cgstAmount: 0,
-      sgstAmount: 0,
-      totalGst: 0,
-      grandTotal: subtotal,
-      isGstApplicable: false,
-      taxRate: taxRate
-    };
-
-    // Apply GST only if user has GST number and tax rate > 0
-    if (hasGstNumber && taxRate > 0) {
-      const totalTax = subtotal * (taxRate / 100);
-      const cgst = totalTax / 2;
-      const sgst = totalTax / 2;
-      gstDetails = {
-        subtotal: subtotal,
-        cgstAmount: cgst,
-        sgstAmount: sgst,
-        totalGst: totalTax,
-        grandTotal: subtotal + totalTax,
-        isGstApplicable: true,
-        taxRate: taxRate
-      };
-    }
-
-    return gstDetails;
-  }, [businessInfo]);
-
   // Custom Hooks
   const {
     menu,
@@ -118,6 +84,41 @@ export default function QRMenu(paramsPromise) {
     resetCart
   } = useCart(apiStatus, false);
 
+  const subtotal = getTotalPrice();
+
+  const gstDetails = useMemo(() => {
+    const taxRate = businessInfo?.gstDetails?.taxRate || 0;
+    const hasGstNumber = businessInfo?.gstDetails?.gstNumber && businessInfo.gstDetails.gstNumber.trim() !== '';
+    
+    let details = {
+      subtotal: subtotal,
+      cgstAmount: 0,
+      sgstAmount: 0,
+      totalGst: 0,
+      grandTotal: subtotal,
+      isGstApplicable: false,
+      taxRate: taxRate
+    };
+
+    // Apply GST only if user has GST number and tax rate > 0
+    if (hasGstNumber && taxRate > 0) {
+      const totalTax = subtotal * (taxRate / 100);
+      const cgst = totalTax / 2;
+      const sgst = totalTax / 2;
+      details = {
+        subtotal: subtotal,
+        cgstAmount: cgst,
+        sgstAmount: sgst,
+        totalGst: totalTax,
+        grandTotal: subtotal + totalTax,
+        isGstApplicable: true,
+        taxRate: taxRate
+      };
+    }
+
+    return details;
+  }, [subtotal, businessInfo]);
+
   const {
     itemQuantities,
     selectedSizes,
@@ -140,7 +141,7 @@ export default function QRMenu(paramsPromise) {
     customerInfo: orderCustomerInfo,
     setCustomerInfo: setOrderCustomerInfo,
     resetOrderState
-  } = useOrder(userId, tableNumber, cart, getTotalPrice, resetCart, calculateGST(getTotalPrice()));
+  } = useOrder(userId, tableNumber, cart, getTotalPrice, resetCart, gstDetails);
 
   // Fetch user data
   useEffect(() => {
@@ -354,6 +355,7 @@ export default function QRMenu(paramsPromise) {
         tableNumber={tableNumber}
         apiStatus={apiStatus}
         customerInfo={customerInfoSubmitted ? customerInfo : null}
+        businessInfo={businessInfo}
       />
 
       {/* Search & Filters */}
@@ -403,7 +405,7 @@ export default function QRMenu(paramsPromise) {
         orderPlaced={orderPlaced}
         placingOrder={placingOrder}
         errorMessage={errorMessage}
-        gstDetails={calculateGST(getTotalPrice())}
+        gstDetails={gstDetails}
       />
 
       {/* My Orders Button */}

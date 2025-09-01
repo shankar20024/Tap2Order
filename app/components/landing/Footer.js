@@ -33,10 +33,10 @@ export default function Footer() {
       { name: "Community", href: "/community" }
     ],
     legal: [
-      { name: "Privacy Policy", href: "/privacy" },
-      { name: "Terms of Service", href: "/terms" },
-      { name: "Cookie Policy", href: "/cookies" },
-      { name: "GDPR", href: "/gdpr" }
+      { name: "Privacy Policy", href: "/legal/privacy" },
+      { name: "Terms of Service", href: "/legal/terms" },
+      { name: "Cookie Policy", href: "/legal/cookies" },
+      
     ]
   };
 
@@ -257,7 +257,7 @@ export default function Footer() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.6 }}
             >
-              © 2024 Tap2Orders. All rights reserved. Made with ❤️ in India.
+              2024 Tap2Orders. All rights reserved. Made with in India.
             </motion.p>
 
             {/* Social Links */}
