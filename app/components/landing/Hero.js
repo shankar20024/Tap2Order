@@ -90,7 +90,7 @@ export default function Hero() {
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 bg-clip-text text-transparent leading-tight"
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, delay: 0.2 }}
+            transition={{ duration: 0.8, delay: 0.1 }}
           >
             Tap2Orders
           </motion.h1>
@@ -99,7 +99,7 @@ export default function Hero() {
             className="text-base sm:text-lg md:text-xl font-semibold text-amber-700 mt-2 mb-4 sm:mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
           >
             "Order Smart, Serve Faster, Grow Better"
           </motion.div>
@@ -108,7 +108,7 @@ export default function Hero() {
             className="text-lg sm:text-xl md:text-2xl text-gray-700 mt-4 sm:mt-6 max-w-3xl mx-auto leading-relaxed px-4"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
           >
             Transform your restaurant with QR-based ordering, real-time management, 
             and seamless customer experience. The future of dining is here.
@@ -120,7 +120,7 @@ export default function Hero() {
           className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-8 sm:mb-12 px-4"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
         >
           <motion.button
             className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-6 sm:px-8 md:px-10 py-4 sm:py-5 rounded-xl font-bold text-lg sm:text-xl shadow-xl hover:shadow-2xl transition-all duration-300 min-w-[200px] sm:min-w-[250px]"
@@ -145,7 +145,7 @@ export default function Hero() {
           className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 md:gap-8 max-w-4xl mx-auto px-4"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
         >
           {[
             { number: "500+", label: "Restaurants" },
@@ -163,7 +163,7 @@ export default function Hero() {
                 className="text-2xl sm:text-3xl md:text-4xl font-bold text-amber-600 mb-2"
                 initial={{ opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 1 + index * 0.1 }}
+                transition={{ duration: 0.5, delay: 0.6 + index * 0.1 }}
               >
                 {stat.number}
               </motion.div>
