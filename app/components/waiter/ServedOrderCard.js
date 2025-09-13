@@ -41,7 +41,7 @@ const ServedOrderCard = ({ order, expandedOrderId, toggleExpand, handlePrintOrde
         onClick={() => toggleExpand(order._id)}
       >
         <div className="flex items-center gap-4">
-          <div className="text-xl font-bold text-gray-800">T-{tableNumber}</div>
+          <div className="text-lg font-bold text-gray-800">T-{tableNumber}</div>
           <div className="text-sm text-gray-600">{servedItems.length} Items</div>
           {orderType === 'beverages' && <span className="text-xs font-semibold bg-blue-200 text-blue-800 px-2 py-1 rounded-full">Beverages</span>}
         </div>

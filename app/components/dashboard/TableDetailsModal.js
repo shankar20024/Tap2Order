@@ -11,6 +11,7 @@ import {
   FaCrown,
   FaCheckCircle
 } from "react-icons/fa";
+import { getBusinessInfo } from "@/lib/businessInfoCache";
 
 const TableDetailsModal = ({ tableNumber, orders, onClose, onPrint, onMarkPaid, userProfile }) => {
   const { data: session } = useSession();
@@ -20,15 +21,9 @@ const TableDetailsModal = ({ tableNumber, orders, onClose, onPrint, onMarkPaid, 
     const fetchBusinessInfo = async () => {
       if (session?.user?.id) {
         try {
-          const response = await fetch('/api/profile', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            setBusinessInfo(data);
+          const cachedBusinessInfo = await getBusinessInfo(session.user.id);
+          if (cachedBusinessInfo) {
+            setBusinessInfo(cachedBusinessInfo);
           } else {
             setBusinessInfo(userProfile);
           }

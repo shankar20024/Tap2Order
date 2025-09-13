@@ -9,23 +9,71 @@ export default function SupportPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('contact');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [supportForm, setSupportForm] = useState({
     name: session?.user?.name || '',
     email: session?.user?.email || '',
+    phone: session?.user?.phone || '',
     subject: '',
     message: '',
-    priority: 'medium'
+    priority: 'medium',
+    issueType: 'technical'
   });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Here you would typically send the support request to your backend
-    toast.success('Support request submitted successfully!');
-    setSupportForm({
-      ...supportForm,
-      subject: '',
-      message: ''
-    });
+    setIsSubmitting(true);
+
+    try {
+      // Validate required fields
+      if (!supportForm.name || !supportForm.email || !supportForm.subject || !supportForm.message) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+
+      // Prepare data for CustomerSupport collection
+      const supportData = {
+        customerName: supportForm.name,
+        customerEmail: supportForm.email,
+        customerPhone: supportForm.phone || 'Not provided',
+        hotelOwner: session?.user?.id || session?.user?._id,
+        subject: supportForm.subject,
+        description: supportForm.message,
+        issueType: supportForm.issueType,
+        priority: supportForm.priority === 'critical' ? 'urgent' : supportForm.priority
+      };
+
+      // Submit to CustomerSupport API
+      const response = await fetch('/api/customer-support', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(supportData)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to submit support request');
+      }
+
+      toast.success('Support request submitted successfully! We will get back to you soon.');
+      
+      // Reset form
+      setSupportForm({
+        ...supportForm,
+        subject: '',
+        message: '',
+        issueType: 'technical',
+        priority: 'medium'
+      });
+
+    } catch (error) {
+      toast.error(error.message || 'Failed to submit support request. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const faqItems = [
@@ -186,6 +234,18 @@ export default function SupportPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={supportForm.phone}
+                      onChange={(e) => setSupportForm({...supportForm, phone: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Priority
                     </label>
                     <select
@@ -197,6 +257,21 @@ export default function SupportPage() {
                       <option value="medium">Medium - Issue affecting work</option>
                       <option value="high">High - Urgent issue</option>
                       <option value="critical">Critical - System down</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Issue Type
+                    </label>
+                    <select
+                      value={supportForm.issueType}
+                      onChange={(e) => setSupportForm({...supportForm, issueType: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="technical">Technical Issue</option>
+                      <option value="billing">Billing Issue</option>
+                      <option value="general">General Inquiry</option>
                     </select>
                   </div>
 
@@ -230,10 +305,20 @@ export default function SupportPage() {
 
                   <button
                     type="submit"
+                    disabled={isSubmitting}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
                   >
-                    <FiSend className="w-4 h-4" />
-                    Submit Support Request
+                    {isSubmitting ? (
+                      <div className="flex items-center gap-2">
+                        <FiSend className="w-4 h-4 animate-spin" />
+                        Submitting...
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <FiSend className="w-4 h-4" />
+                        Submit Support Request
+                      </div>
+                    )}
                   </button>
                 </form>
               </div>

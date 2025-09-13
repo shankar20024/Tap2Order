@@ -622,7 +622,7 @@ export default function AdminPanel() {
             </header>
 
             {/* Add User Button */}
-            <div className="flex justify-center mb-8">
+            <div className="flex justify-center mb-8 gap-4">
                 <button
                     onClick={openModal}
                     className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition-colors duration-200 flex items-center gap-2"
@@ -631,6 +631,16 @@ export default function AdminPanel() {
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
                     </svg>
                     Add New User
+                </button>
+                
+                <button
+                    onClick={() => window.location.href = '/customer-support'}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition-colors duration-200 flex items-center gap-2"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                    </svg>
+                    Customer Support
                 </button>
             </div>
 

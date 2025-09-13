@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { XMarkIcon, ClockIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { getBusinessInfo } from "@/lib/businessInfoCache";
 
 export default function OrderViewer({ userId, tableNumber, isOpen, onClose }) {
     const [orders, setOrders] = useState([]);
@@ -11,12 +12,23 @@ export default function OrderViewer({ userId, tableNumber, isOpen, onClose }) {
     const [orderPlaced, setOrderPlaced] = useState(false);
     const [cartOpen, setCartOpen] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [businessInfo, setBusinessInfo] = useState(null);
 
     useEffect(() => {
         if (isOpen) {
             loadCart();
+            fetchBusinessInfo();
         }
     }, [isOpen]);
+
+    const fetchBusinessInfo = async () => {
+        try {
+            const cachedBusinessInfo = await getBusinessInfo(userId);
+            setBusinessInfo(cachedBusinessInfo);
+        } catch (error) {
+            console.error('Error fetching business info:', error);
+        }
+    };
 
     const loadCart = async () => {
         try {
@@ -131,7 +143,7 @@ export default function OrderViewer({ userId, tableNumber, isOpen, onClose }) {
                     </div>
 
                     {/* Content */}
-                    <div className="p-6">
+                    <div className="">
                         {loading ? (
                             <div className="flex flex-col justify-center items-center h-64">
                                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-amber-200 border-t-amber-500 mb-4"></div>
@@ -150,9 +162,9 @@ export default function OrderViewer({ userId, tableNumber, isOpen, onClose }) {
                             </div>
                         ) : (
                             <>
-                                <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 mb-4">
+                                <div className="space-y-4 max-h-[50vh] overflow-y-auto  mb-2">
                                     {orders.map((order, orderIndex) => (
-                                        <div key={order._id || order.id || `order-${orderIndex}`} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow duration-200">
+                                        <div key={order._id || order.id || `order-${orderIndex}`} className=" p-4 hover:shadow-md transition-shadow duration-200">
                                             {/* Order Header */}
                                             <div className="flex justify-between items-start mb-3">
                                                 <div>
@@ -181,13 +193,12 @@ export default function OrderViewer({ userId, tableNumber, isOpen, onClose }) {
                                                         <div className="flex-1">
                                                             <span className="font-medium text-gray-800">{item.name}</span>
                                                             <div className="text-sm text-gray-500 flex items-center gap-2">
-                                                                <span>Qty: {item.quantity}</span>
-                                                                {item.size && <span>• Size: {item.size}</span>}
-                                                                {item.notes && <span>• Note: {item.notes}</span>}
+                                                            <div className="text-sm text-gray-600">₹{item.price} x {item.quantity}</div>
+                                                                {item.size && <span>• Size: {item.size}</span>}                                        
                                                             </div>
                                                         </div>
                                                         <div className="text-right ml-4">
-                                                            <div className="text-sm text-gray-600">₹{item.price} × {item.quantity}</div>
+                                                            
                                                             <div className="font-semibold text-amber-600">₹{(item.price * item.quantity).toFixed(2)}</div>
                                                         </div>
                                                     </div>
@@ -208,14 +219,41 @@ export default function OrderViewer({ userId, tableNumber, isOpen, onClose }) {
                                 {/* Fixed Grand Total */}
                                 {orders.length > 0 && (
                                     <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 sticky bottom-0">
-                                        <div className="flex justify-between items-center">
-                                            <span className="font-bold text-lg text-gray-800">Grand Total:</span>
-                                            <span className="font-bold text-xl text-amber-600">
-                                                ₹{orders.reduce((sum, order) =>
-                                                    sum + order.items.reduce((sub, item) => sub + item.price * item.quantity, 0)
-                                                    , 0).toFixed(2)}
-                                            </span>
-                                        </div>
+                                        {(() => {
+                                            const subtotal = orders.reduce((sum, order) =>
+                                                sum + order.items.reduce((sub, item) => sub + item.price * item.quantity, 0), 0);
+                                            
+                                            // Use actual tax rate from business info
+                                            const taxRate = businessInfo?.gstDetails?.taxRate || 0;
+                                            
+                                            const totalTax = subtotal * (taxRate / 100);
+                                            const cgst = totalTax / 2;
+                                            const sgst = totalTax / 2;
+                                            const grandTotal = subtotal + totalTax;
+                                            
+                                            return (
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between items-center text-sm text-gray-600">
+                                                        <span>Subtotal:</span>
+                                                        <span>₹{subtotal.toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-sm text-gray-600">
+                                                        <span>CGST ({(taxRate/2).toFixed(1)}%):</span>
+                                                        <span>₹{cgst.toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-sm text-gray-600">
+                                                        <span>SGST ({(taxRate/2).toFixed(1)}%):</span>
+                                                        <span>₹{sgst.toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="border-t border-amber-300 pt-2">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="font-bold text-lg text-gray-800">Grand Total:</span>
+                                                            <span className="font-bold text-xl text-amber-600">₹{grandTotal.toFixed(2)}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 )}
                             </>

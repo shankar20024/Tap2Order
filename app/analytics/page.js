@@ -563,8 +563,8 @@ export default function Analytics() {
                 <p className="text-2xl sm:text-3xl font-bold">{analytics.kpis.completionRate}%</p>
                 <p className="text-orange-200 text-sm mt-2">Success rate</p>
               </div>
-              <div className="text-2xl">
-                {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '⭐'}
+              <div className="bg-white/20 p-4 rounded-xl">
+                <FaCheckCircle className="w-8 h-8" />
               </div>
             </div>
           </div>

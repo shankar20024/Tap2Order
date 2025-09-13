@@ -3,6 +3,7 @@
 import { PlusIcon } from "@heroicons/react/24/outline";
 import SizeSelector from "./SizeSelector";
 import QuantitySelector from "./QuantitySelector";
+import { toast } from 'react-hot-toast';
 
 export default function MenuCard({ 
   item, 
@@ -17,6 +18,21 @@ export default function MenuCard({
 }) {
   const currentPrice = getPriceForSize(item, selectedSizeIndex);
   const isAvailable = item.available;
+
+  // Handle disabled button click
+  const handleDisabledClick = () => {
+    if (quantity <= 0) {
+      toast.error('Please increase quantity first', {
+        duration: 1500,
+        position: 'bottom-center',
+        style: {
+          background: '#ef4444',
+          color: 'white',
+          fontWeight: '500',
+        },
+      });
+    }
+  };
 
   return (
     <div className={`bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden 
@@ -127,8 +143,8 @@ export default function MenuCard({
 
             {/* Add to Cart Button */}
             <button
-              onClick={() => onAddToCart(item)}
-              disabled={quantity <= 0 || orderPlaced}
+              onClick={quantity > 0 && !orderPlaced ? () => onAddToCart(item) : handleDisabledClick}
+              disabled={false} 
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold 
                        text-sm transition-all duration-200 min-h-[44px] ${
                 quantity > 0 && !orderPlaced

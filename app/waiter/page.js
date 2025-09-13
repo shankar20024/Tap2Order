@@ -5,7 +5,6 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { toast } from 'react-toastify';
-import OrderCard from '../components/waiter/OrderCard';
 import ServedOrderCard from '../components/waiter/ServedOrderCard';
 import TableCard from '../components/waiter/TableCard';
 import { FiClock, FiCheck, FiAlertCircle, FiUsers, FiRefreshCw, FiCheckCircle, FiUser, FiX, FiHelpCircle, FiPlus, FiMinus, FiShoppingCart, FiList } from 'react-icons/fi';
@@ -621,17 +620,25 @@ export default function WaiterDashboard() {
           </div>
         </div>
 
+        {order.specialRequests && (
+          <div className="px-3 sm:px-4 lg:px-5 py-2 bg-yellow-50 border-l-4 border-yellow-400 mx-3 sm:mx-4 lg:mx-5 rounded-r-lg">
+            <div className="text-yellow-800 text-xs sm:text-sm">
+              <strong>Special Notes:</strong> {order.specialRequests}
+            </div>
+          </div>
+        )}
+
         {/* Simple Items List */}
         <div className="px-3 sm:px-4 lg:px-5 py-2">
           <div className="space-y-1">
             {visibleItems.map((item, index) => (
-              <div key={item._id || index} className="flex items-center justify-between py-1.5 text-xs border-b border-gray-100 last:border-b-0 min-h-[28px]">
+              <div key={item._id || index} className="flex flex-col sm:flex-row sm:items-center justify-between py-1.5 text-xs border-b border-gray-100 last:border-b-0 min-h-[28px] gap-1 sm:gap-0">
                 <div className="flex items-center gap-2 flex-1 min-w-0 pr-2">
                   <span className="w-5 h-5 bg-gray-100 rounded flex items-center justify-center text-xs font-medium text-gray-700 flex-shrink-0">
                     {item.quantity}
                   </span>
                   <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <span className="text-gray-900 truncate max-w-[120px] sm:max-w-[160px] lg:max-w-[200px]" title={item.name}>
+                    <span className="text-gray-900 truncate max-w-[200px] sm:max-w-[160px] lg:max-w-[200px]" title={item.name}>
                       {item.name}
                     </span>
                     {item.size && (
@@ -640,71 +647,73 @@ export default function WaiterDashboard() {
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-1.5 flex-shrink-0">
+                <div className="flex items-center justify-between sm:justify-end gap-1.5 flex-shrink-0 w-full sm:w-auto">
                   <span className="text-gray-600 font-medium text-xs whitespace-nowrap">₹{(item.price * item.quantity)}</span>
                   
-                  <span className={`px-1.5 py-0.5 text-xs rounded whitespace-nowrap ${
-                    item.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                    item.status === 'preparing' ? 'bg-blue-100 text-blue-700' :
-                    item.status === 'ready' ? 'bg-green-100 text-green-700' :
-                    item.status === 'served' ? 'bg-purple-100 text-purple-700' :
-                    item.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                    'bg-gray-100 text-gray-700'
-                  }`}>
-                    {item.status || 'pending'}
-                  </span>
-                  
-                  {item.status === 'pending' && (
-                    <div className="flex items-center gap-1">
-                      {item.category === 'beverages' || item.subcategory === 'beverages' ? (
-                        <>
-                          <button
-                            onClick={() => updateItemStatus(order._id, item._id, 'served')}
-                            className="px-2 py-0.5 bg-purple-600 text-white text-xs rounded whitespace-nowrap hover:bg-purple-700 transition-colors"
-                          >
-                            Mark Served
-                          </button>
-                          <button
-                            onClick={() => updateItemStatus(order._id, item._id, 'cancelled')}
-                            className="px-2 py-0.5 bg-red-600 text-white text-xs rounded whitespace-nowrap hover:bg-red-700 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => updateItemStatus(order._id, item._id, 'preparing')}
-                            className="px-2 py-0.5 bg-blue-600 text-white text-xs rounded whitespace-nowrap hover:bg-blue-700 transition-colors"
-                          >
-                            Start
-                          </button>
-                          <button
-                            onClick={() => updateItemStatus(order._id, item._id, 'cancelled')}
-                            className="px-2 py-0.5 bg-red-600 text-white text-xs rounded whitespace-nowrap hover:bg-red-700 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  )}
-                  {item.status === 'preparing' && (
-                    <button
-                      onClick={() => updateItemStatus(order._id, item._id, 'ready')}
-                      className="px-2 py-0.5 bg-green-600 text-white text-xs rounded whitespace-nowrap hover:bg-green-700 transition-colors"
-                    >
-                      Ready
-                    </button>
-                  )}
-                  {item.status === 'ready' && (
-                    <button
-                      onClick={() => updateItemStatus(order._id, item._id, 'served')}
-                      className="px-2 py-0.5 bg-purple-600 text-white text-xs rounded whitespace-nowrap hover:bg-purple-700 transition-colors"
-                    >
-                      Serve
-                    </button>
-                  )}
+                  <div className="flex items-center gap-1">
+                    <span className={`px-1.5 py-0.5 text-xs rounded whitespace-nowrap ${
+                      item.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                      item.status === 'preparing' ? 'bg-blue-100 text-blue-700' :
+                      item.status === 'ready' ? 'bg-green-100 text-green-700' :
+                      item.status === 'served' ? 'bg-purple-100 text-purple-700' :
+                      item.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {item.status || 'pending'}
+                    </span>
+                    
+                    {item.status === 'pending' && (
+                      <div className="flex items-center gap-1">
+                        {item.category === 'beverages' || item.subcategory === 'beverages' ? (
+                          <>
+                            <button
+                              onClick={() => updateItemStatus(order._id, item._id, 'served')}
+                              className="px-2 py-0.5 bg-purple-600 text-white text-xs rounded whitespace-nowrap hover:bg-purple-700 transition-colors"
+                            >
+                              Mark Served
+                            </button>
+                            <button
+                              onClick={() => updateItemStatus(order._id, item._id, 'cancelled')}
+                              className="px-2 py-0.5 bg-red-600 text-white text-xs rounded whitespace-nowrap hover:bg-red-700 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => updateItemStatus(order._id, item._id, 'preparing')}
+                              className="px-2 py-0.5 bg-blue-600 text-white text-xs rounded whitespace-nowrap hover:bg-blue-700 transition-colors"
+                            >
+                              Start
+                            </button>
+                            <button
+                              onClick={() => updateItemStatus(order._id, item._id, 'cancelled')}
+                              className="px-2 py-0.5 bg-red-600 text-white text-xs rounded whitespace-nowrap hover:bg-red-700 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                    {item.status === 'preparing' && (
+                      <button
+                        onClick={() => updateItemStatus(order._id, item._id, 'ready')}
+                        className="px-2 py-0.5 bg-green-600 text-white text-xs rounded whitespace-nowrap hover:bg-green-700 transition-colors"
+                      >
+                        Ready
+                      </button>
+                    )}
+                    {item.status === 'ready' && (
+                      <button
+                        onClick={() => updateItemStatus(order._id, item._id, 'served')}
+                        className="px-2 py-0.5 bg-purple-600 text-white text-xs rounded whitespace-nowrap hover:bg-purple-700 transition-colors"
+                      >
+                        Serve
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -872,7 +881,7 @@ export default function WaiterDashboard() {
                       <span className="text-blue-100">Welcome back, <span className="font-semibold text-white">{session?.user?.name || 'User'}</span></span>
                       {hotelName && (
                         <span className="bg-white/20 backdrop-blur-sm px-2 py-1 sm:px-3 rounded-full text-white text-xs sm:text-sm font-medium w-fit">
-                          {hotelName}cance
+                          {hotelName}
                         </span>
                       )}
                       {tenantUserId && (
