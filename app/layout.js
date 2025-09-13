@@ -18,19 +18,61 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
+  metadataBase: new URL('https://tap2orders.com'), 
   title: {
-    template: '%s | Tap2Order',
-    default: 'Tap2Order - Your digital menu and ordering solution',
+    template: '%s | Tap2Orders',
+    default: 'Tap2Orders - Your digital menu and ordering solution',
   },
-  description: 'Tap2Order is a modern solution for restaurants to manage menus, orders, and tables efficiently.',
-  keywords: ['restaurant', 'menu', 'ordering', 'digital menu', 'restaurant management', 'restaurant ordering'],
+  description: 'Tap2Orders is a modern solution for restaurants to manage menus, orders, and tables efficiently.',
+  keywords: [
+    'restaurant', 'menu', 'ordering', 'digital menu', 
+    'restaurant management', 'restaurant ordering', 'restaurant inventory', 
+    'restaurant billing', 'restaurant analytics',
+    'restaurant software', 'restaurant pos', 'restaurant pos system',
+    'online food ordering system', 'digital restaurant solutions',
+    'contactless menu', 'qr code menu', 'qr code ordering system',
+    'smart restaurant management', 'cloud restaurant management',
+    'restaurant automation', 'table ordering system', 'self-ordering kiosk',
+    'digital dining experience', 'food ordering platform',
+    'inventory management for restaurants', 'restaurant sales tracking',
+    'restaurant reporting system', 'mobile restaurant app',
+    'restaurant kitchen management', 'restaurant invoice system',
+    'digital menu app', 'restaurant dashboard', 'tap to order', 'food tech solutions',
+    'restaurant qr code ordering app', 'digital menu for cafes and bars',
+    'multi-branch restaurant management system', 'restaurant billing and inventory software',
+    'cloud restaurant pos with analytics'
+  ],
   icons: {
-    icon: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E
-      %3Ccircle cx='16' cy='16' r='10' fill='%23f59e0b' /%3E
-      %3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%23f59e0b' stroke-width='2' /%3E
-    %3C/svg%3E`,
+    icon: '/T2O.png',
+  },
+  openGraph: {
+    title: 'Tap2Orders - Your digital menu and ordering solution',
+    description: 'Modern solution for restaurants to manage menus, orders, and tables efficiently.',
+    url: 'https://tap2orders.com',
+    siteName: 'Tap2Orders',
+    images: [
+      {
+        url: '/T2O.png', // metadataBase ke saath full URL ban jaayega
+        width: 800,
+        height: 600,
+        alt: 'Tap2Orders Logo',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Tap2Orders - Digital Menu & Ordering Solution',
+    description: 'Easiest way for restaurants to manage menus, orders, and tables.',
+    images: ['/T2O.png'],
+  },
+  alternates: {
+    canonical: 'https://tap2orders.com',
   },
 };
+
+
 
 export default function RootLayout({ children }) {
   return (
