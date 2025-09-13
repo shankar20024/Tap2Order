@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export default function CustomerInfoModal({ isOpen, onSubmit, onClose, errorMessage }) {
+export default function CustomerInfoModal({ isOpen, onSubmit, onClose, errorMessage, businessType }) {
   const [customerName, setCustomerName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [errors, setErrors] = useState({});
@@ -60,7 +60,7 @@ export default function CustomerInfoModal({ isOpen, onSubmit, onClose, errorMess
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Our Restaurant!</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Our {businessType}!</h2>
             <p className="text-gray-600">Help us serve you better by sharing your details</p>
           </div>
 

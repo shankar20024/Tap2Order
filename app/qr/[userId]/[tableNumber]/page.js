@@ -33,6 +33,7 @@ export default function QRMenu(paramsPromise) {
   const [arrowPosition, setArrowPosition] = useState({ x: 0, y: 0 });
   const [viewOrderModalOpen, setViewOrderModalOpen] = useState(false);
   const [businessInfo, setBusinessInfo] = useState(null);
+  const [businessType, setBusinessType] = useState('');
 
   // Customer Info State
   const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '' });
@@ -153,6 +154,7 @@ export default function QRMenu(paramsPromise) {
           const userData = await userResponse.json();
           setUsername(userData.username);
           setHotelName(userData.hotelName || userData.username);
+          
           setApiStatus(true);
         } else {
           setApiStatus(false);
@@ -175,6 +177,7 @@ export default function QRMenu(paramsPromise) {
 
         if (businessResponse.ok) {
           const businessData = await businessResponse.json();
+          setBusinessType(businessData.businessType.slice(0, 1).toUpperCase() + businessData.businessType.slice(1));
           setBusinessInfo(businessData);
         }
       } catch (error) {
@@ -436,6 +439,7 @@ export default function QRMenu(paramsPromise) {
         setCustomerInfoSubmitted={setCustomerInfoSubmitted}
         onSubmit={handleCustomerInfoSubmit}
         errorMessage={accessDeniedMessage}
+        businessType={businessType}
       />
     </div>
   );
