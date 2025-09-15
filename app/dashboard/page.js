@@ -13,7 +13,6 @@ import {
   FaHistory, 
   FaTable, 
   FaSync,
-  FaPrint,
   FaChartLine,
   FaUsers,
   FaCog,
@@ -33,8 +32,6 @@ import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
 import TableDetailsModal from "@/app/components/dashboard/TableDetailsModal";
 import Header from "../components/Header";
-import PrinterSettingsModal from '../components/dashboard/PrinterSettingsModal';
-import thermalPrinter from "@/lib/thermalPrinter";
 import TableBox from "../components/dashboard/TableBox";
 import DashboardStats from "../components/dashboard/DashboardStats";
 
@@ -139,9 +136,6 @@ const QuickActions = ({ onRefresh, onViewHistory, onManageTables, onViewAnalytic
   </div>
 );
 
-// Advanced Filter and Search Component
-
-
 // Utility function to group orders by table number
 function groupOrdersByTable(orders) {
   return orders.reduce((acc, order) => {
@@ -150,27 +144,22 @@ function groupOrdersByTable(orders) {
     return acc;
   }, {});
 }
+
 // Main Dashboard Component
 export default function Dashboard() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [newOrderTables, setNewOrderTables] = useState([]);
-  const [hasNewOrder, setHasNewOrder] = useState(false);
-  const [billOrders, setBillOrders] = useState([]);
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [tableModal, setTableModal] = useState(null);
-  const [showPrinterSettings, setShowPrinterSettings] = useState(false);
-  const [availablePrinters, setAvailablePrinters] = useState([]);
-  const [selectedPrinter, setSelectedPrinter] = useState('');
   const [businessName, setBusinessName] = useState('');
   const { data: session, status } = useSession();
   const router = useRouter();
 
   // Enhanced Stats calculation with trends - Updated to count items instead of orders
   const stats = useMemo(() => ({
-    totalItems: [...orders, ...billOrders].reduce((sum, o) => sum + (o.items || o.cart || []).length, 0),
+    totalItems: [...orders].reduce((sum, o) => sum + (o.items || o.cart || []).length, 0),
     pendingItems: orders.reduce((sum, o) => {
       if (o.status === 'pending') return sum + (o.items || o.cart || []).length;
       return sum + (o.items || o.cart || []).filter(item => item.status === 'pending').length;
@@ -183,19 +172,19 @@ export default function Dashboard() {
       if (o.status === 'ready') return sum + (o.items || o.cart || []).length;
       return sum + (o.items || o.cart || []).filter(item => item.status === 'ready').length;
     }, 0),
-    servedItems: [...orders, ...billOrders].reduce((sum, o) => {
+    servedItems: [...orders].reduce((sum, o) => {
       if (o.status === 'served') return sum + (o.items || o.cart || []).length;
       return sum + (o.items || o.cart || []).filter(item => item.status === 'served').length;
     }, 0),
-    totalRevenue: [...orders, ...billOrders].reduce((sum, o) => {
+    totalRevenue: [...orders].reduce((sum, o) => {
       // Use GST grandTotal if available, otherwise fall back to totalAmount
       
       // Fallback to calculating from items if no totalAmount
       const items = o.items || o.cart || [];
       return sum + (o.totalAmount || items.reduce((itemSum, item) => itemSum + (item.price * item.quantity), 0));
     }, 0),
-    activeTables: new Set([...orders.map(o => o.tableNumber), ...billOrders.map(o => o.tableNumber)]).size
-  }), [orders, billOrders]);
+    activeTables: new Set([...orders.map(o => o.tableNumber)]).size
+  }), [orders]);
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -255,16 +244,6 @@ export default function Dashboard() {
       setOrders(prev => {
         const exists = prev.some(o => o._id === normalized._id);
         if (exists) return prev;
-        
-        setNewOrderTables(prevTables => {
-          if (!prevTables.includes(normalized.tableNumber)) {
-            setHasNewOrder(true);
-            setTimeout(() => setHasNewOrder(false), 5000);
-            return [...prevTables, normalized.tableNumber];
-          }
-          return prevTables;
-        });
-        
         return [normalized, ...prev];
       });
       return;
@@ -273,15 +252,10 @@ export default function Dashboard() {
     if (eventType === 'order.updated' || eventType === 'order-updated') {
       if (normalized.status === 'served' && normalized.paymentStatus !== 'paid') {
         setOrders(prev => prev.filter(o => o._id !== normalized._id));
-        setBillOrders(prev => {
-          const exists = prev.some(o => o._id === normalized._id);
-          return exists ? prev.map(o => (o._id === normalized._id ? normalized : o)) : [...prev, normalized];
-        });
         return;
       }
       if (normalized.status === 'completed' || normalized.status === 'cancelled') {
         setOrders(prev => prev.filter(o => o._id !== normalized._id));
-        setBillOrders(prev => prev.filter(o => o._id !== normalized._id));
         return;
       }
       setOrders(prev => prev.map(o => (o._id === normalized._id ? { ...o, ...normalized } : o)));
@@ -290,7 +264,6 @@ export default function Dashboard() {
 
     if (eventType === 'order.deleted') {
       setOrders(prev => prev.filter(o => o._id !== normalized._id));
-      setBillOrders(prev => prev.filter(o => o._id !== normalized._id));
       return;
     }
   };
@@ -406,111 +379,18 @@ export default function Dashboard() {
     }
   };
 
-  const thermalPrintBill = async (tableNumber, items, total, orderIds, orders) => {
-    try {
-      // Quick check for printer availability without triggering permissions
-      const isAvailable = await thermalPrinter.checkPrinterAvailability();
-      
-      if (isAvailable) {
-        // Try to connect (will use cached permission if already granted)
-        await thermalPrinter.connect();
-        const printers = await thermalPrinter.getPrinters();
-        
-        if (printers.length > 0) {
-          // Direct thermal printing - skip preview
-          
-          // Get customer name from orders
-          const customerName = orders && orders.length > 0 && orders[0].customerInfo?.name 
-            ? orders[0].customerInfo.name 
-            : 'Walk-in Customer';
-
-          // Generate bill number
-          const billNumberResponse = await fetch('/api/bill-number', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${session?.accessToken}`,
-              'Content-Type': 'application/json',
-            },
-          });
-          
-          let billNumber = 1;
-          if (billNumberResponse.ok) {
-            const billData = await billNumberResponse.json();
-            billNumber = billData.billNumber;
-          }
-
-          // Fetch business info for receipt
-          const profileResponse = await fetch('/api/profile', {
-            headers: {
-              'Authorization': `Bearer ${session?.accessToken}`,
-            },
-          });
-          
-          let businessInfo = null;
-          if (profileResponse.ok) {
-            businessInfo = await profileResponse.json();
-          }
-
-          // Prepare receipt data with same format as preview
-          const receiptData = {
-            tableNumber: parseInt(tableNumber),
-            orderIds: orderIds || [],
-            items: items,
-            total: parseFloat(total),
-            itemsTotal: items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-            customerName: customerName,
-            timestamp: Date.now(),
-            billNumber: billNumber,
-            businessInfo: businessInfo
-          };
-
-          // Print directly using thermal printer
-          await thermalPrinter.printReceipt(receiptData);
-          toast.success('Bill printed successfully!');
-          return;
-        }
-      }
-    } catch (error) {
-      // Don't show error toast, just fall back to preview silently
-    }
-
-    // Fallback to preview if thermal printing fails or not available
-    const itemsParam = encodeURIComponent(JSON.stringify(items));
-    const ordersParam = (orderIds || []).join(',');
-    
-    // Get customer name from orders
-    const customerName = orders && orders.length > 0 && orders[0].customerInfo?.name 
-      ? orders[0].customerInfo.name 
-      : 'Walk-in Customer';
-    
-    const url = `/bill-preview?table=${tableNumber}&items=${itemsParam}&total=${total}&orders=${ordersParam}&customer=${encodeURIComponent(customerName)}`;
-    router.push(url);
-  };
-
-  const fallbackBrowserPrint = (tableNumber, items, total, orderIds, orders) => {
-    // Also redirect to bill preview for consistency
-    const itemsParam = encodeURIComponent(JSON.stringify(items));
-    const ordersParam = (orderIds || []).join(',');
-    
-    // Get customer name from orders
-    const customerName = orders && orders.length > 0 && orders[0].customerInfo?.name 
-      ? orders[0].customerInfo.name 
-      : 'Walk-in Customer';
-    
-    const url = `/bill-preview?table=${tableNumber}&items=${itemsParam}&total=${total}&orders=${ordersParam}&customer=${encodeURIComponent(customerName)}`;
-    router.push(url);
-  };
-
   const markOrderPaid = async (orderId, gstDetails) => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     const res = await fetch(`/api/order/${orderId}`, {
       method: 'PUT',
       headers: {
+        'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {})
       },
       body: JSON.stringify({
         paymentStatus: 'paid',
-        gstDetails: gstDetails
+        gstDetails: gstDetails,
+        triggerPaymentEvent: true // Flag to trigger Ably payment event
       })
     });
     if (!res.ok) {
@@ -569,24 +449,9 @@ export default function Dashboard() {
     return o?.status === 'completed' && o?.paymentStatus === 'paid';
   };
 
-  const refreshPrinters = async () => {
-    try {
-      const printers = await thermalPrinter.getAvailablePrinters();
-      setAvailablePrinters(printers);
-    } catch (error) {
-      // Don't show error toast, just fall back to preview silently
-    }
-  };
-
-  const handlePrinterChange = (printerName) => {
-    setSelectedPrinter(printerName);
-    thermalPrinter.setPrinter(printerName);
-    toast.success(`Printer selected: ${printerName}`);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 overflow-x-hidden">
-      <Header onRefresh={fetchOrders} onSettingsClick={() => setShowPrinterSettings(true)} />
+      <Header onRefresh={fetchOrders} />
 
       {/* Main Content Container */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-26 sm:pt-24 pb-8">
@@ -610,65 +475,6 @@ export default function Dashboard() {
                 <span>Real-time updates enabled</span>
               </div>
             </div>
-          </div>
-          
-          {/* Printer Selection Section */}
-          <div className="hidden md:block bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                <FaPrint className="text-blue-600 mr-3 text-xl" />
-                <h3 className="text-lg font-semibold text-gray-800">Thermal Printer</h3>
-              </div>
-              <button
-                onClick={refreshPrinters}
-                className="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition-colors"
-                title="Refresh Printers"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              </button>
-            </div>
-            
-            {availablePrinters.length > 0 ? (
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  Select Printer:
-                </label>
-                <select
-                  value={selectedPrinter || ''}
-                  onChange={(e) => handlePrinterChange(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 font-medium"
-                >
-                  <option value="">Choose a printer...</option>
-                  {availablePrinters.map((printer, index) => (
-                    <option key={index} value={printer.name}>
-                      {printer.name} {printer.name === selectedPrinter ? '(Selected)' : ''}
-                    </option>
-                  ))}
-                </select>
-                
-                {selectedPrinter && (
-                  <div className="flex items-center text-green-600 text-sm">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Ready to print to: {selectedPrinter}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <FaPrint className="mx-auto text-gray-400 text-3xl mb-2" />
-                <p className="text-gray-500 text-sm">No printers found</p>
-                <button
-                  onClick={() => setShowPrinterSettings(true)}
-                  className="mt-2 text-blue-600 hover:text-blue-800 text-sm underline"
-                >
-                  Configure Printer Settings
-                </button>
-              </div>
-            )}
           </div>
           
           
@@ -736,7 +542,6 @@ export default function Dashboard() {
                   hasOrders={hasOrders}
                   hasPaid={hasPaid}
                   onView={() => setTableModal({ tableNumber: tn, orders: activeOrders })}
-                  onPrint={() => thermalPrintBill(tn, activeOrders.flatMap(order => order.items || order.cart || []), total, activeOrders.map(o => o._id), activeOrders)}
                   onCancel={() => cancelTableOrders(tn, activeOrders)}
                   onMarkPaid={() => markTablePaid(tn, activeOrders, activeOrders, ordersForTable[0]?.gstDetails)}
                   gstDetails={ordersForTable[0]?.gstDetails}
@@ -757,22 +562,11 @@ export default function Dashboard() {
             tableNumber={tableModal.tableNumber} 
             orders={tableModal.orders} 
             onClose={() => setTableModal(null)} 
-            onPrint={() => thermalPrintBill(tableModal.tableNumber, tableModal.orders.flatMap(order => order.items || order.cart || []), tableModal.orders.reduce((sum, o) => sum + (o.totalAmount || (o.items||o.cart||[]).reduce((s,i)=>s+i.price*i.quantity,0)), 0), tableModal.orders.map(o => o._id), tableModal.orders)}
             onMarkPaid={(gstDetails) => {
               markTablePaid(tableModal.tableNumber, tableModal.orders, tableModal.orders, gstDetails);
               setTableModal(null);
             }}
             userProfile={session?.user}
-          />
-        )}
-        {showPrinterSettings && (
-          <PrinterSettingsModal
-            isOpen={showPrinterSettings}
-            onClose={() => setShowPrinterSettings(false)}
-            onSave={(settings) => {
-              // Reinitialize printer with new settings
-              initializePrinter();
-            }}
           />
         )}
       </div>

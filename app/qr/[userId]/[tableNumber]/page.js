@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import LoadingSpinner from "@/app/components/LoadingSpinner";
 import OrderViewer from "@/app/components/OrderViewer";
 import { getAbly } from "@/lib/ably";
@@ -21,6 +22,7 @@ import useOrder from "@/app/hooks/useOrder";
 
 export default function QRMenu(paramsPromise) {
   const { userId, tableNumber } = use(paramsPromise.params);
+  const router = useRouter();
   
   // State
   const [username, setUsername] = useState('Restaurant');
@@ -43,23 +45,57 @@ export default function QRMenu(paramsPromise) {
   const [originalCustomer, setOriginalCustomer] = useState(null);
   const [accessDeniedMessage, setAccessDeniedMessage] = useState('');
 
-  // Ably real-time subscription for page reload
+  // Ably real-time subscription for redirect command
   useEffect(() => {
-    if (!userId || !tableNumber) return;
+    if (!userId || !tableNumber || !customerInfoSubmitted) {
+      console.log('Redirect listener not active:', { userId, tableNumber, customerInfoSubmitted });
+      return;
+    }
+
+    console.log('Setting up redirect listener for table:', { userId, tableNumber });
 
     const ably = getAbly();
-    const channel = ably.channels.get(`table-reload:${userId}:${tableNumber}`);
+    const tableChannel = ably.channels.get(`table:${userId}:${tableNumber}`);
 
-    const handleReload = () => {
-      window.location.reload();
+    // Log connection status
+    ably.connection.on('connected', () => {
+      console.log('Ably connected successfully');
+    });
+
+    ably.connection.on('failed', (error) => {
+      console.error('Ably connection failed:', error);
+    });
+
+    const handleRedirectToBill = (message) => {
+      console.log('🔔 Received redirect command:', message.data);
+      const { orderId, tableNumber: eventTableNumber } = message.data;
+      
+      // Simple validation - check table number (convert both to strings for comparison)
+      if (String(eventTableNumber) === String(tableNumber)) {
+        console.log('✅ Table matches - redirecting to bill page');
+        console.log('🚀 Executing redirect to:', `/customer-bill/${orderId}`);
+        
+        // Immediate redirect
+        router.push(`/customer-bill/${orderId}`);
+      } else {
+        console.log('❌ Table number mismatch:', {
+          eventTable: eventTableNumber,
+          currentTable: tableNumber,
+          eventTableType: typeof eventTableNumber,
+          currentTableType: typeof tableNumber
+        });
+      }
     };
 
-    channel.subscribe('reload', handleReload);
+    console.log('📡 Subscribing to table channel:', `table:${userId}:${tableNumber}`);
+    // Subscribe to redirect command
+    tableChannel.subscribe('redirect-to-bill', handleRedirectToBill);
 
     return () => {
-      channel.unsubscribe('reload', handleReload);
+      console.log('🔌 Unsubscribing from table channel');
+      tableChannel.unsubscribe('redirect-to-bill', handleRedirectToBill);
     };
-  }, [userId, tableNumber]);
+  }, [userId, tableNumber, customerInfoSubmitted, router]);
 
   // Custom Hooks
   const {

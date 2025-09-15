@@ -239,17 +239,17 @@ const TableDetailsModal = ({ tableNumber, orders, onClose, onPrint, onMarkPaid, 
             </div>
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
-              <button 
+              {/* <button 
                 onClick={onPrint} 
                 className="bg-green-500 hover:bg-green-600 text-white px-5 py-3 rounded-xl shadow-md flex items-center gap-2 justify-center"
               >
                 <FaPrint /> Print Bill
-              </button>
+              </button> */}
               <button 
                 onClick={() => onMarkPaid(gstDetails)} 
                 className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-3 rounded-xl shadow-md flex items-center gap-2 justify-center"
               >
-                <FaRupeeSign /> Mark Paid
+                <FaRupeeSign />Paid
               </button>
               <button 
                 onClick={onClose} 
