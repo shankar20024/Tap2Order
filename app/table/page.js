@@ -6,11 +6,16 @@ import RefreshButton from "../components/RefreshButton";
 import LoadingSpinner from "@/app/components/LoadingSpinner";
 import QRCodePreview from "../components/QRCodePreview";
 import { motion } from "framer-motion";
-import { FaChevronDown, FaTable, FaSearch, FaDownload} from "react-icons/fa";
+import { FaChevronDown, FaTable, FaSearch, FaDownload } from "react-icons/fa";
 import Header from "@/app/components/Header";
-import { saveAs } from 'file-saver';
 import JSZip from 'jszip';
 import QRCode from 'qrcode';
+import { saveAs } from 'file-saver';
+import { Poppins, Dancing_Script } from 'next/font/google';
+
+// Initialize fonts at the top level for reliability
+const poppins = Poppins({ subsets: ['latin'], weight: '600' });
+const dancingScript = Dancing_Script({ subsets: ['latin'] });
 
 export default function TablePage() {
   const { data: session, status } = useSession();
@@ -26,12 +31,12 @@ export default function TablePage() {
   const [hasTables, setHasTables] = useState(true);
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [analysisData, setAnalysisData] = useState({
     totalTables: 0,
     freeTables: 0,
     occupiedTables: 0
   });
-  const [isDownloading, setIsDownloading] = useState(false);
 
   // Debounced search effect: fetch from backend when searchTerm changes
   useEffect(() => {
@@ -198,80 +203,100 @@ export default function TablePage() {
   };
 
   const downloadAllQRCodes = async () => {
-    if (!tables.length) {
-      toast.error('No tables available to download');
+    if (!tables || tables.length === 0) {
+      toast.error('No tables available to download.');
       return;
     }
 
     setIsDownloading(true);
-    const toastId = toast.loading('Preparing QR codes for download...');
-    
+    const toastId = toast.loading('Preparing all QR codes... Please wait.');
+
     try {
+      // Ensure fonts are loaded and ready before generating QR codes
+      await document.fonts.ready;
+
       const zip = new JSZip();
-      const qrPromises = [];
+      const size = 500;
 
-      // Create a canvas element for QR code generation
-      const canvas = document.createElement('canvas');
-      const size = 500; // High resolution for better quality
-      canvas.width = size;
-      canvas.height = size + 100; // Extra space for text
-      const ctx = canvas.getContext('2d');
-
-      // Generate each QR code and add to zip
       for (const table of tables) {
-        const qrDataUrl = await QRCode.toDataURL(
-          `${window.location.origin}/qr/${session.user.id}/${table.tableNumber}`,
-          {
-            errorCorrectionLevel: 'H',
-            width: size,
-            margin: 1,
-          }
-        );
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size + 80; // Adjusted height for footer
+        const ctx = canvas.getContext('2d');
 
-        // Create a new canvas for each QR code to add text
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = size;
-        tempCanvas.height = size + 100;
-        const tempCtx = tempCanvas.getContext('2d');
+        const url = `${window.location.origin}/qr/${session.user.id}/${table.tableNumber}`;
+        const qrDataUrl = await QRCode.toDataURL(url, {
+          errorCorrectionLevel: 'H',
+          width: size,
+          margin: 1,
+        });
 
-        // Draw background
-        tempCtx.fillStyle = '#fef3c7';
-        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-        // Draw QR code
         const qrImage = new Image();
-        await new Promise((resolve) => {
+        await new Promise((resolve, reject) => {
           qrImage.onload = () => {
-            tempCtx.drawImage(qrImage, 0, 0, size, size);
-            
-            // Add table number text
-            tempCtx.fillStyle = '#000';
-            tempCtx.font = 'bold 40px Arial';
-            tempCtx.textAlign = 'center';
-            tempCtx.fillText(`Table ${table.tableNumber}`, size/2, size + 40);
-            
-            // Add restaurant name (optional)
-            tempCtx.font = '20px Arial';
-            tempCtx.fillText(session.user.name || 'Tap2Order', size/2, size + 80);
-            
-            resolve();
+            try {
+              // Draw background
+              ctx.fillStyle = '#fef3c7'; // light amber background
+              ctx.beginPath();
+              ctx.roundRect(0, 0, canvas.width, canvas.height, 30);
+              ctx.fill();
+
+              // Draw QR code image
+              ctx.drawImage(qrImage, 0, 0, size, size);
+
+              // Brand Text
+              const brand = "Tap2Orders";
+              ctx.font = `bold ${Math.floor(size * 0.08)}px ${dancingScript.style.fontFamily}`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              const centerX = size / 2;
+              const centerY = size / 2;
+
+              const textWidth = ctx.measureText(brand).width;
+              const boxPadding = size * 0.03;
+              ctx.fillStyle = "white";
+              ctx.fillRect(centerX - textWidth / 2 - boxPadding, centerY - size * 0.06, textWidth + boxPadding * 2, size * 0.12);
+
+              ctx.fillStyle = "#92400e";
+              ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+              ctx.shadowBlur = 6;
+              ctx.shadowOffsetX = 1;
+              ctx.shadowOffsetY = 1;
+              ctx.fillText(brand, centerX, centerY + 1);
+              ctx.shadowColor = 'transparent';
+
+              // Table Number Text
+              ctx.font = `600 ${Math.floor(size * 0.065)}px ${poppins.style.fontFamily}`;
+              ctx.fillStyle = "#d97706";
+              ctx.textAlign = "center";
+              ctx.textBaseline = "top";
+              ctx.fillText(`Table No: ${table.tableNumber}`, canvas.width / 2, size + 15);
+
+              // "Scan to Order" text - smaller and centered
+              ctx.font = `400 ${Math.floor(size * 0.045)}px ${poppins.style.fontFamily}`;
+              ctx.fillStyle = "#a16207"; // Darker amber for readability
+              ctx.fillText('Scan to Order', canvas.width / 2, size + 55);
+
+              resolve();
+            } catch (e) {
+              reject(e);
+            }
           };
+          qrImage.onerror = (err) => reject(new Error('Failed to load QR image.'));
           qrImage.src = qrDataUrl;
         });
 
-        // Convert canvas to blob and add to zip
-        const blob = await new Promise(resolve => tempCanvas.toBlob(resolve, 'image/png'));
-        zip.file(`table-${table.tableNumber}.png`, blob);
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        zip.file(`Table-${table.tableNumber}.png`, blob);
       }
 
-      // Generate zip file
       const content = await zip.generateAsync({ type: 'blob' });
-      saveAs(content, `table-qr-codes-${new Date().toISOString().split('T')[0]}.zip`);
-      
-      toast.success('QR codes downloaded successfully!', { id: toastId });
+      saveAs(content, `All-Table-QRs-${new Date().toISOString().slice(0, 10)}.zip`);
+      toast.success('All QR codes have been downloaded!', { id: toastId });
+
     } catch (error) {
       console.error('Error generating QR codes:', error);
-      toast.error('Failed to generate QR codes', { id: toastId });
+      toast.error(`Error: ${error.message}`, { id: toastId });
     } finally {
       setIsDownloading(false);
     }
@@ -469,30 +494,27 @@ export default function TablePage() {
           </div>
         </div>
 
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Table Management</h1>
-          <div className="flex space-x-2">
-            <button
-              onClick={downloadAllQRCodes}
-              disabled={isDownloading || !tables.length}
-              className={`flex items-center px-4 py-2 rounded-md text-white ${isDownloading || !tables.length ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
-            >
-              {isDownloading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Preparing...
-                </>
-              ) : (
-                <>
-                  <FaDownload className="mr-2" />
-                  Download All QR Codes
-                </>
-              )}
-            </button>
-          </div>
+        <div className="mb-4 border-t border-gray-200 pt-4">
+          <button
+            onClick={downloadAllQRCodes}
+            disabled={isDownloading || !tables.length}
+            className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg shadow-md hover:bg-amber-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            {isDownloading ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <FaDownload />
+                <span>Download All QR Codes</span>
+              </>
+            )}
+          </button>
         </div>
 
         {/* Scrollable Table Container */}
