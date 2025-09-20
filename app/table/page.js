@@ -6,8 +6,11 @@ import RefreshButton from "../components/RefreshButton";
 import LoadingSpinner from "@/app/components/LoadingSpinner";
 import QRCodePreview from "../components/QRCodePreview";
 import { motion } from "framer-motion";
-import { FaChevronDown, FaTable, FaSearch } from "react-icons/fa";
+import { FaChevronDown, FaTable, FaSearch, FaDownload} from "react-icons/fa";
 import Header from "@/app/components/Header";
+import { saveAs } from 'file-saver';
+import JSZip from 'jszip';
+import QRCode from 'qrcode';
 
 export default function TablePage() {
   const { data: session, status } = useSession();
@@ -28,6 +31,7 @@ export default function TablePage() {
     freeTables: 0,
     occupiedTables: 0
   });
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Debounced search effect: fetch from backend when searchTerm changes
   useEffect(() => {
@@ -191,6 +195,86 @@ export default function TablePage() {
   const handleRefresh = () => {
     fetchTables();
     fetchAnalysisData();
+  };
+
+  const downloadAllQRCodes = async () => {
+    if (!tables.length) {
+      toast.error('No tables available to download');
+      return;
+    }
+
+    setIsDownloading(true);
+    const toastId = toast.loading('Preparing QR codes for download...');
+    
+    try {
+      const zip = new JSZip();
+      const qrPromises = [];
+
+      // Create a canvas element for QR code generation
+      const canvas = document.createElement('canvas');
+      const size = 500; // High resolution for better quality
+      canvas.width = size;
+      canvas.height = size + 100; // Extra space for text
+      const ctx = canvas.getContext('2d');
+
+      // Generate each QR code and add to zip
+      for (const table of tables) {
+        const qrDataUrl = await QRCode.toDataURL(
+          `${window.location.origin}/qr/${session.user.id}/${table.tableNumber}`,
+          {
+            errorCorrectionLevel: 'H',
+            width: size,
+            margin: 1,
+          }
+        );
+
+        // Create a new canvas for each QR code to add text
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = size;
+        tempCanvas.height = size + 100;
+        const tempCtx = tempCanvas.getContext('2d');
+
+        // Draw background
+        tempCtx.fillStyle = '#fef3c7';
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+        // Draw QR code
+        const qrImage = new Image();
+        await new Promise((resolve) => {
+          qrImage.onload = () => {
+            tempCtx.drawImage(qrImage, 0, 0, size, size);
+            
+            // Add table number text
+            tempCtx.fillStyle = '#000';
+            tempCtx.font = 'bold 40px Arial';
+            tempCtx.textAlign = 'center';
+            tempCtx.fillText(`Table ${table.tableNumber}`, size/2, size + 40);
+            
+            // Add restaurant name (optional)
+            tempCtx.font = '20px Arial';
+            tempCtx.fillText(session.user.name || 'Tap2Order', size/2, size + 80);
+            
+            resolve();
+          };
+          qrImage.src = qrDataUrl;
+        });
+
+        // Convert canvas to blob and add to zip
+        const blob = await new Promise(resolve => tempCanvas.toBlob(resolve, 'image/png'));
+        zip.file(`table-${table.tableNumber}.png`, blob);
+      }
+
+      // Generate zip file
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, `table-qr-codes-${new Date().toISOString().split('T')[0]}.zip`);
+      
+      toast.success('QR codes downloaded successfully!', { id: toastId });
+    } catch (error) {
+      console.error('Error generating QR codes:', error);
+      toast.error('Failed to generate QR codes', { id: toastId });
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   if (status === "loading") return (
@@ -385,7 +469,31 @@ export default function TablePage() {
           </div>
         </div>
 
-       
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Table Management</h1>
+          <div className="flex space-x-2">
+            <button
+              onClick={downloadAllQRCodes}
+              disabled={isDownloading || !tables.length}
+              className={`flex items-center px-4 py-2 rounded-md text-white ${isDownloading || !tables.length ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+            >
+              {isDownloading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Preparing...
+                </>
+              ) : (
+                <>
+                  <FaDownload className="mr-2" />
+                  Download All QR Codes
+                </>
+              )}
+            </button>
+          </div>
+        </div>
 
         {/* Scrollable Table Container */}
         <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
