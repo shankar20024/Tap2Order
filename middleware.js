@@ -9,6 +9,9 @@ export async function middleware(req) {
   // Public paths that don't require authentication
   if (
     path.startsWith("/qr") ||
+    path.startsWith("/customer-bill") ||
+    path.startsWith("/api/order/") ||
+    path.startsWith("/api/business/info") ||
     path === "/login" ||
     path === "/" ||
     path === "/favicon.ico" ||
