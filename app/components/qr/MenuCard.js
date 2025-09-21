@@ -35,7 +35,7 @@ export default function MenuCard({
   };
 
   return (
-    <div className={`bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden 
+    <div className={` bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden 
                    transition-all duration-300 hover:shadow-lg hover:shadow-gray-200/50 
                    ${!isAvailable ? 'opacity-60' : ''}`}>
       
@@ -43,7 +43,7 @@ export default function MenuCard({
       <div className="p-4 pb-3">
         <div className="flex items-start justify-between gap-3 mb-3">
           {/* Veg/Non-veg Badge & Name */}
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="flex items-start gap-2 flex-1 min-w-0">
             {/* Category Badge */}
             {item.category === "veg" ? (
               <div className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-green-600 
@@ -69,14 +69,14 @@ export default function MenuCard({
             )}
             
             {/* Item Name */}
-            <h3 className="font-semibold text-lg text-gray-800 truncate">
+            <h3 className="font-semibold text-lg text-gray-800 break-words whitespace-normal flex-1 min-w-0">
               {item.name}
             </h3>
           </div>
 
           {/* Price */}
-          <div className="flex-shrink-0 text-right">
-            <div className="text-xl font-bold text-amber-600">
+          <div className="flex-shrink-0 text-right ml-2">
+            <div className="text-xl font-bold text-amber-600 whitespace-nowrap">
               ₹{currentPrice.toFixed(0)}
             </div>
           </div>
@@ -90,6 +90,7 @@ export default function MenuCard({
         )}
 
         {/* Subcategory Badge */}
+       
         {item.subcategory && (
           <div className="mb-3">
             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
@@ -158,6 +159,7 @@ export default function MenuCard({
               <span>Add{quantity > 0 ? ` (${quantity})` : ''}</span>
             </button>
           </div>
+        
         ) : (
           <button
             disabled
