@@ -157,53 +157,170 @@ export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  // Enhanced Stats calculation with trends - Updated to count items instead of orders
-  const stats = useMemo(() => ({
-    totalItems: [...orders].reduce((sum, o) => sum + (o.items || o.cart || []).length, 0),
-    pendingItems: orders.reduce((sum, o) => {
-      if (o.status === 'pending') return sum + (o.items || o.cart || []).length;
-      return sum + (o.items || o.cart || []).filter(item => item.status === 'pending').length;
-    }, 0),
-    preparingItems: orders.reduce((sum, o) => {
-      if (o.status === 'preparing') return sum + (o.items || o.cart || []).length;
-      return sum + (o.items || o.cart || []).filter(item => item.status === 'preparing').length;
-    }, 0),
-    readyItems: orders.reduce((sum, o) => {
-      if (o.status === 'ready') return sum + (o.items || o.cart || []).length;
-      return sum + (o.items || o.cart || []).filter(item => item.status === 'ready').length;
-    }, 0),
-    servedItems: [...orders].reduce((sum, o) => {
-      if (o.status === 'served') return sum + (o.items || o.cart || []).length;
-      return sum + (o.items || o.cart || []).filter(item => item.status === 'served').length;
-    }, 0),
-    totalRevenue: [...orders].reduce((sum, o) => {
-      // Use GST grandTotal if available, otherwise fall back to totalAmount
+  // Add this helper function to handle localStorage operations
+  const getCachedOrders = () => {
+    if (typeof window === 'undefined') return null;
+    const cached = localStorage.getItem(`cached_orders_${session?.user?.id}`);
+    if (!cached) return null;
+    try {
+      const { data, timestamp } = JSON.parse(cached);
+      // Check if data is older than 5 minutes (300000 ms)
+      if (Date.now() - timestamp < 300000) {
+        return data;
+      }
+    } catch (e) {
+      console.error('Error parsing cached orders:', e);
+    }
+    return null;
+  };
+
+  const cacheOrders = (orders) => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(
+        `cached_orders_${session?.user?.id}`, 
+        JSON.stringify({
+          data: orders,
+          timestamp: Date.now()
+        })
+      );
+    } catch (e) {
+      console.error('Error caching orders:', e);
+    }
+  };
+
+  // Add this helper function to handle business info caching
+  const getCachedBusinessInfo = () => {
+    if (typeof window === 'undefined' || !session?.user?.id) return null;
+    const cached = localStorage.getItem(`business_info_${session.user.id}`);
+    if (!cached) return null;
+    try {
+      const { data, timestamp } = JSON.parse(cached);
+      // Cache for 1 hour (3600000 ms)
+      if (Date.now() - timestamp < 3600000) {
+        return data;
+      }
+    } catch (e) {
+      console.error('Error parsing cached business info:', e);
+    }
+    return null;
+  };
+
+  const cacheBusinessInfo = (data) => {
+    if (typeof window === 'undefined' || !session?.user?.id) return;
+    try {
+      localStorage.setItem(
+        `business_info_${session.user.id}`,
+        JSON.stringify({
+          data,
+          timestamp: Date.now()
+        })
+      );
+    } catch (e) {
+      console.error('Error caching business info:', e);
+    }
+  };
+
+  // Enhanced Stats calculation with proper item status tracking
+  const stats = useMemo(() => {
+    let pending = 0;
+    let preparing = 0;
+    let ready = 0;
+    let served = 0;
+    let totalItems = 0;
+    let totalRevenue = 0;
+    const tableNumbers = new Set();
+
+    // Process each order
+    orders.forEach(order => {
+      const items = order.items || order.cart || [];
+      totalItems += items.length;
       
-      // Fallback to calculating from items if no totalAmount
-      const items = o.items || o.cart || [];
-      return sum + (o.totalAmount || items.reduce((itemSum, item) => itemSum + (item.price * item.quantity), 0));
-    }, 0),
-    activeTables: new Set([...orders.map(o => o.tableNumber)]).size
-  }), [orders]);
+      // Add table number to set if it exists
+      if (order.tableNumber) {
+        tableNumbers.add(order.tableNumber);
+      }
+
+      // Calculate revenue
+      totalRevenue += order.totalAmount || 
+                     items.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
+
+      // Count items by status
+      items.forEach(item => {
+        // If item has status, use it. Otherwise, use order status
+        const status = item.status || order.status || 'pending';
+        
+        switch (status) {
+          case 'pending':
+            pending++;
+            break;
+          case 'preparing':
+            preparing++;
+            break;
+          case 'ready':
+            ready++;
+            break;
+          case 'served':
+            served++;
+            break;
+          default:
+            // If status is unknown, count as pending
+            pending++;
+        }
+      });
+    });
+
+    return {
+      totalItems,
+      pendingItems: pending,
+      preparingItems: preparing,
+      readyItems: ready,
+      servedItems: served,
+      totalRevenue,
+      activeTables: tableNumbers.size
+    };
+  }, [orders]);
 
   useEffect(() => {
     if (!session?.user?.id) return;
+    
+    // Try to get from cache first
+    const cachedInfo = getCachedBusinessInfo();
+    if (cachedInfo?.name) {
+      setBusinessName(cachedInfo.name);
+    }
 
+    // Fetch fresh data
     const fetchBusinessInfo = async () => {
       try {
-        const res = await fetch('/api/me/user?userId=' + session.user.id);
+        const res = await fetch('/api/me/user?userId=' + session.user.id, {
+          // Prevent caching to ensure fresh data
+          cache: 'no-store',
+          next: { revalidate: 0 }
+        });
+        
         if (res.ok) {
           const data = await res.json();
-          setBusinessName(data.name);
+          // Update cache with fresh data
+          cacheBusinessInfo(data);
+          // Only update state if different from current
+          if (data.name !== businessName) {
+            setBusinessName(data.name);
+          }
         }
       } catch (err) {
         console.error("Failed to fetch business name", err);
+        // If we don't have any name yet, show error
+        if (!businessName) {
+          toast.error('Failed to load business information');
+        }
       }
     };
-
+    
     fetchBusinessInfo();
     fetchOrders();
-
+    
+    // Set up real-time updates
     const client = getAbly();
     if (!client) return;
 
@@ -211,19 +328,79 @@ export default function Dashboard() {
     const events = ['order.created', 'order.updated', 'order.deleted', 'order-created', 'order-updated'];
 
     const handleMessage = (message) => {
-        handleRealtimeOrderUpdate(message.name, message.data);
+      handleRealtimeOrderUpdate(message.name, message.data);
     };
 
     events.forEach(event => {
-        channel.subscribe(event, handleMessage);
+      channel.subscribe(event, handleMessage);
     });
 
     return () => {
-        events.forEach(event => {
-            channel.unsubscribe(event, handleMessage);
-        });
+      events.forEach(event => {
+        channel.unsubscribe(event, handleMessage);
+      });
     };
-}, [session?.user?.id]);
+  }, [session?.user?.id]);
+
+  const fetchOrders = async () => {
+    try {
+      if (!session?.user?.id) {
+        return;
+      }
+
+      setLoading(true);
+      
+      let authHeaders = {};
+      const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+      if (token) authHeaders['Authorization'] = `Bearer ${token}`;
+      
+      const response = await fetch(`/api/order?userId=${session.user.id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
+        // Prevent browser cache
+        cache: 'no-store',
+        // Add timestamp to prevent any intermediate caching
+        next: { revalidate: 0 }
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast.error('Session expired. Please login again.');
+          router.push('/login');
+          return;
+        }
+        throw new Error('Failed to fetch orders');
+      }
+      
+      const data = await response.json();
+      // Filter out cancelled orders at fetch level - don't fetch them at all
+      const filteredData = data.filter(o => o.status !== 'cancelled');
+      
+      // Only update state if data has actually changed
+      setOrders(prev => {
+        const prevString = JSON.stringify(prev);
+        const newString = JSON.stringify(filteredData);
+        
+        if (prevString !== newString) {
+          // Update cache with fresh data
+          cacheOrders(filteredData);
+          return filteredData;
+        }
+        return prev;
+      });
+      
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      // Only show error if we don't have any cached data
+      if (!getCachedOrders()) {
+        toast.error('Failed to load orders. Please try refreshing the page.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Enhanced Realtime Order Update Handling
   const handleRealtimeOrderUpdate = (eventType, data) => {
@@ -240,68 +417,34 @@ export default function Dashboard() {
       message: data.message || data.msg
     };
 
-    if (eventType === 'order.created' || eventType === 'order-created') {
-      setOrders(prev => {
+    setOrders(prev => {
+      let updatedOrders;
+      
+      if (eventType === 'order.created' || eventType === 'order-created') {
         const exists = prev.some(o => o._id === normalized._id);
         if (exists) return prev;
-        return [normalized, ...prev];
-      });
-      return;
-    }
-
-    if (eventType === 'order.updated' || eventType === 'order-updated') {
-      if (normalized.status === 'served' && normalized.paymentStatus !== 'paid') {
-        setOrders(prev => prev.filter(o => o._id !== normalized._id));
-        return;
-      }
-      if (normalized.status === 'completed' || normalized.status === 'cancelled') {
-        setOrders(prev => prev.filter(o => o._id !== normalized._id));
-        return;
-      }
-      setOrders(prev => prev.map(o => (o._id === normalized._id ? { ...o, ...normalized } : o)));
-      return;
-    }
-
-    if (eventType === 'order.deleted') {
-      setOrders(prev => prev.filter(o => o._id !== normalized._id));
-      return;
-    }
-  };
-
-  const fetchOrders = async () => {
-    try {
-      if (!session?.user?.id) {
-        return;
-      }
-
-      let authHeaders = {};
-      const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-      if (token) authHeaders['Authorization'] = `Bearer ${token}`;
-      
-      const response = await fetch(`/api/order?userId=${session.user.id}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders,
+        updatedOrders = [normalized, ...prev];
+      } 
+      else if (eventType === 'order.updated' || eventType === 'order-updated') {
+        if (normalized.status === 'completed' || normalized.status === 'cancelled') {
+          updatedOrders = prev.filter(o => o._id !== normalized._id);
+        } else {
+          updatedOrders = prev.map(o => (o._id === normalized._id ? { ...o, ...normalized } : o));
         }
-      });
-      
-      if (!response.ok) {
-        if (response.status === 401) {
-          toast.error('Session expired. Please login again.');
-          router.push('/login');
-          return;
-        }
-        throw new Error('Failed to fetch orders');
       }
-      const data = await response.json();
-      // Filter out cancelled orders at fetch level - don't fetch them at all
-      const filteredData = data.filter(o => o.status !== 'cancelled');
-      setOrders(filteredData);
-      setLoading(false);
-    } catch (error) {
-      setError(error);
-      setLoading(false);
-    }
+      else if (eventType === 'order.deleted') {
+        updatedOrders = prev.filter(o => o._id !== normalized._id);
+      } else {
+        return prev; // No changes
+      }
+
+      // Update cache whenever orders change
+      if (updatedOrders) {
+        cacheOrders(updatedOrders);
+        return updatedOrders;
+      }
+      return prev;
+    });
   };
 
   const completeOrder = async (orderId) => {
