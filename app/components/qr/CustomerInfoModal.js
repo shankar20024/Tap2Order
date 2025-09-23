@@ -14,9 +14,8 @@ export default function CustomerInfoModal({ isOpen, onSubmit, onClose, errorMess
       newErrors.name = "Name is required";
     }
     
-    if (!phoneNumber.trim()) {
-      newErrors.phone = "Phone number is required";
-    } else if (!/^[6-9]\d{9}$/.test(phoneNumber.trim())) {
+    // Only validate phone number if it's not empty
+    if (phoneNumber.trim() && !/^[6-9]\d{9}$/.test(phoneNumber.trim())) {
       newErrors.phone = "Please enter a valid 10-digit phone number";
     }
     
@@ -98,7 +97,7 @@ export default function CustomerInfoModal({ isOpen, onSubmit, onClose, errorMess
             {/* Phone Field */}
             <div>
               <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                Mobile Number *
+                Mobile Number
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
