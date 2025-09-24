@@ -16,6 +16,7 @@ import {
   FaUserCog,
   FaChartLine,
   FaPrint,
+  FaShoppingBag,
 } from 'react-icons/fa';
 import { HiUserCircle } from 'react-icons/hi';
 import LogoutButton from './Logout';
@@ -25,6 +26,7 @@ const navItems = [
   { name: 'Orders', path: '/order-history', icon: <FaHistory /> },
   { name: 'Menu', path: '/menu', icon: <FaListAlt /> },
   { name: 'Tables', path: '/table', icon: <FaClipboardList /> },
+  { name: 'Takeaway', path: '/takeaway', icon: <FaShoppingBag /> },
   { name: 'Customers', path: '/customers', icon: <FaUsers /> },
   { name: 'Analytics', path: '/analytics', icon: <FaChartLine /> },
   { name: 'Staff', path: '/staff-management', icon: <FaUserCog /> },

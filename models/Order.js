@@ -4,7 +4,10 @@ const OrderSchema = new mongoose.Schema(
   {
     tableNumber: {
       type: String,
-      required: true,
+      required: function() {
+        return this.orderType !== 'takeaway';
+      },
+      default: 'Takeaway'
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -109,8 +112,9 @@ const OrderSchema = new mongoose.Schema(
     },
     orderType: {
       type: String,
-      enum: ["food", "beverages"],
+      enum: ["food", "beverages", "takeaway"],
       default: "food",
+      required: true
     },
     paymentStatus: {
       type: String,
@@ -223,6 +227,14 @@ try {
 } catch (error) {
   // Model cache clear attempt failed
 }
+
+// Pre-save hook to handle takeaway orders
+OrderSchema.pre('save', function(next) {
+  if (this.orderType === 'takeaway') {
+    this.tableNumber = 'Takeaway';
+  }
+  next();
+});
 
 // Add pre-save middleware to handle beverages item status
 OrderSchema.pre('save', function(next) {

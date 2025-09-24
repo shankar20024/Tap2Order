@@ -15,7 +15,9 @@ export default function LayoutContent({ children }) {
     '/order-history',
     '/order-control',
     '/customers',
-    '/analytics'
+    '/analytics',
+    '/takeaway',
+    '/support'
 
   ].some(route => pathname.startsWith(route));
 

@@ -241,7 +241,7 @@ const TableDetailsModal = ({ tableNumber, orders, onClose, onPrint, onMarkPaid, 
             <div className="flex flex-col sm:flex-row gap-3">
               <button 
                 onClick={onPrint} 
-                className="bg-green-500 hover:bg-green-600 text-white px-5 py-3 rounded-xl shadow-md flex items-center gap-2 justify-center"
+                className=" hidden  bg-green-500 hover:bg-green-600 text-white px-5 py-3 rounded-xl shadow-md sm:flex items-center gap-2 justify-center"
               >
                 <FaPrint /> Print Bill
               </button>

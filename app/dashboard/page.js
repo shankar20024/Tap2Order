@@ -34,7 +34,7 @@ import TableDetailsModal from "@/app/components/dashboard/TableDetailsModal";
 import Header from "../components/Header";
 import TableBox from "../components/dashboard/TableBox";
 import DashboardStats from "../components/dashboard/DashboardStats";
-
+import { printBill } from "../components/bill/PrintBill";
 
 // Enhanced Quick Actions with Stunning Effects
 const QuickActions = ({ onRefresh, onViewHistory, onManageTables, onViewAnalytics, onViewWaiter, className = "" }) => (
@@ -622,137 +622,16 @@ export default function Dashboard() {
     });
   };
 
-  const handlePrintBill = async (tableNumber, orders) => {
-    try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      if (!session?.user?.id) {
-        toast.error("User not authenticated. Cannot print bill.");
-        return;
-      }
-
-      const response = await fetch(`/api/business/info?userId=${session.user.id}`, { headers, cache: 'no-store' });
-      if (!response.ok) {
-        throw new Error(`Failed to fetch business info: ${response.status} ${response.statusText}`);
-      }
-      const businessInfo = await response.json();
-
-      const printWindow = window.open('', '_blank');
-      
-      const firstOrder = orders[0] || {};
-      const items = orders.flatMap(o => o.items || o.cart || []);
-      const subtotal = items.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
-      const gstRate = parseFloat(businessInfo?.gstDetails?.taxRate) || 0;
-      const gstAmount = subtotal * (gstRate / 100);
-      const total = subtotal + gstAmount;
-
-      const printContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Bill - Table ${tableNumber}</title>
-          <style>
-            @page { size: 80mm auto; margin: 0; }
-            body { 
-              font-family: 'Courier New', monospace; font-size: 12px; font-weight: bold;
-              width: 80mm; margin: 0; padding: 0 5mm; box-sizing: border-box;
-              background: white; color: black; line-height: 1.4;
-            }
-            .text-center { text-align: center; }
-            .text-right { text-align: right; }
-            .border-b { border-bottom: 1px dashed #000; padding-bottom: 5px; margin-bottom: 5px; }
-            .border-t { border-top: 1px dashed #000; padding-top: 5px; margin-top: 5px; }
-            .font-bold { font-weight: bold; }
-            .text-lg { font-size: 14px; }
-            .flex { display: flex; }
-            .justify-between { justify-content: space-between; }
-            .mb-1 { margin-bottom: 2px; }
-            .mt-2 { margin-top: 8px; }
-            h1, p { margin: 0; }
-          </style>
-        </head>
-        <body>
-          <div>
-            <!-- Header -->
-            <div class="text-center border-b">
-              <h1 class="text-lg font-bold mb-1">${businessInfo?.businessName || 'Restaurant'}</h1>
-              ${businessInfo?.phone ? `<p class="mb-1">${businessInfo.phone}</p>` : ''}
-              ${businessInfo?.address ? `<p class="mb-1">${formatAddress(businessInfo.address)}</p>` : ''}
-              ${businessInfo?.gstDetails?.gstNumber ? `<p class="mb-1">GST: ${businessInfo.gstDetails.gstNumber}</p>` : ''}
-              ${businessInfo?.fssaiDetails?.fssaiNumber ? `<p>FSSAI: ${businessInfo.fssaiDetails.fssaiNumber}</p>` : ''}
-            </div>
-
-            <!-- Bill Details -->
-            <div class="border-b">
-              <div class="flex justify-between"><p>Bill No:</p><p>#${firstOrder._id ? firstOrder._id.slice(-6).toUpperCase() : 'N/A'}</p></div>
-              <div class="flex justify-between"><p>Date:</p><p>${formatDate(firstOrder.createdAt)}</p></div>
-              <div class="flex justify-between"><p>Table:</p><p>${tableNumber}</p></div>
-              <div class="flex justify-between"><p>Customer:</p><p>${firstOrder.customerInfo?.name || 'Walk-in'}</p></div>
-            </div>
-
-            <!-- Items List -->
-            <div class="border-b">
-              <div class="flex justify-between font-bold">
-                <p style="flex: 3;">Item</p>
-                <p style="flex: 1; text-align: center;">Qty</p>
-                <p style="flex: 1; text-align: right;">Amt</p>
-              </div>
-              ${items.map(item => `
-                <div class="flex justify-between">
-                  <p style="flex: 3;">${item.name}${item.size ? ` (${item.size})` : ''}</p>
-                  <p style="flex: 1; text-align: center;">${item.quantity || 1}</p>
-                  <p style="flex: 1; text-align: right;">${(item.price * (item.quantity || 1)).toFixed(2)}</p>
-                </div>
-              `).join('')}
-            </div>
-
-            <!-- Totals -->
-            <div>
-              <div class="flex justify-between"><p>Subtotal:</p><p>₹${subtotal.toFixed(2)}</p></div>
-              ${gstRate > 0 ? `
-                <div class="flex justify-between"><p>CGST (${(gstRate/2).toFixed(1)}%):</p><p>₹${(gstAmount/2).toFixed(2)}</p></div>
-                <div class="flex justify-between"><p>SGST (${(gstRate/2).toFixed(1)}%):</p><p>₹${(gstAmount/2).toFixed(2)}</p></div>
-              ` : ''}
-              <div class="flex justify-between font-bold text-lg border-t">
-                <p>Total:</p><p>₹${total.toFixed(2)}</p>
-              </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="text-center border-t mt-2">
-              <p>Thank you for your visit!</p>
-            </div>
-          </div>
-          <script>
-            window.onload = () => { setTimeout(() => { window.print(); setTimeout(window.close, 100); }, 500); };
-          </script>
-        </body>
-        </html>
-      `;
-
-      printWindow.document.open();
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      
-    } catch (error) {
-      console.error('Error printing bill:', error);
-      toast.error('Could not print bill. Check console for details.');
-    }
+  const handlePrintBill = (tableNumber, orders) => {
+    printBill(tableNumber, orders, session);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 overflow-x-hidden">
-      <Header onRefresh={fetchOrders} />
-
-      {/* Main Content Container */}
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-26 sm:pt-24 pb-8">
-        
+    <div className="min-h-screen bg-gray-50">
+      <Header title="Dashboard" />
+      <main className="p-4 sm:p-6 lg:p-8">
         {/* Modern Dashboard Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 sm:mb-12">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 sm:mb-12 mt-20 sm:mt-15 lg:mt-15 xl:mt-15 md:mt-15">
           <div className="flex flex-row items-center gap-4">
             <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-orange-600 p-4 rounded-3xl mr-0 sm:mr-6 mb-4 sm:mb-0 self-start">
               <FaUtensils className="text-white text-xl sm:text-3xl" />
@@ -797,7 +676,7 @@ export default function Dashboard() {
             <h2 className="text-lg font-bold text-gray-800 flex items-center"><FaTable className="mr-2 text-blue-600"/>Tables</h2>
             <div className="text-xs text-gray-500">{Object.keys(groupOrdersByTable(orders)).length} active</div>
           </div>
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6 min-h-[300px] h-auto overflow-hidden">
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8 sm:p-6 lg:p-6 md:p-6 min-h-[300px] h-auto overflow-hidden">
             {Object.keys(groupOrdersByTable(orders)).length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full min-h-[250px] text-center">
                 <div className="bg-gradient-to-br from-blue-100 to-indigo-100 p-6 rounded-full mb-4">
@@ -865,7 +744,7 @@ export default function Dashboard() {
             userProfile={session?.user}
           />
         )}
-      </div>
+      </main>
     </div>
   );
 }

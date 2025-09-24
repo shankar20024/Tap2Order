@@ -12,7 +12,7 @@ import ably from "@/lib/ably";
 export async function POST(req) {
   try {
     await connectDB();
-    const { tableNumber, cart, userId, orderMessage, status, customerId, customerInfo, totalAmount: frontendTotalAmount, gstDetails } = await req.json();
+    const { tableNumber, cart, userId, orderMessage, status, customerId, customerInfo, totalAmount: frontendTotalAmount, gstDetails, orderType = 'dine-in' } = await req.json();
 
     // Validate cart items
     if (!Array.isArray(cart) || cart.length === 0) {
@@ -38,12 +38,16 @@ export async function POST(req) {
       status: 'pending', // All new items start as pending
     }));
 
+    // For takeaway orders, set tableNumber to 'Takeaway' if not provided
+    const effectiveTableNumber = orderType === 'takeaway' ? 'Takeaway' : tableNumber;
+
     // Check for existing active order for this table (not served/completed)
-    const existingOrder = await Order.findOne({
+    const existingOrder = orderType === 'takeaway' ? null : await Order.findOne({
       userId: String(userId || ''),
-      tableNumber: String(tableNumber || ''),
+      tableNumber: String(effectiveTableNumber || ''),
       paymentStatus: "unpaid",
-      status: { $nin: [ "completed", "cancelled"] } // Only merge with active orders, not served ones
+      status: { $nin: [ "completed", "cancelled"] },
+      orderType: { $ne: 'takeaway' } // Don't merge with takeaway orders
     }).sort({ createdAt: -1 });
 
     let savedOrder;
@@ -110,22 +114,27 @@ export async function POST(req) {
       eventName = 'order.updated'; // It's an update to an existing order
     } else {
       // Create new order
-      const totalAmount = frontendTotalAmount || processedCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const cartTotal = frontendTotalAmount || processedCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const newOrder = new Order({
-        tableNumber: String(tableNumber || ''),
-        items: processedCart,
+        tableNumber: effectiveTableNumber,
         userId: String(userId || ''),
-        specialRequests: String(orderMessage || ''),
+        customerId: customerId ? String(customerId) : null,
+        customerInfo: customerInfo || {},
+        items: processedCart,
         status: initialStatus,
-        orderType: isOnlyBeverages ? 'beverages' : 'food',
-        totalAmount: totalAmount,
-        gstDetails: gstDetails, // Save the provided GST details
         paymentStatus: "unpaid",
-        customerId: customerId || null,
-        customerInfo: {
-          name: customerInfo?.name || 'Guest',
-          phone: customerInfo?.phone || '',
-          ip: customerInfo?.ip || ''
+        orderType: orderType,
+        totalAmount: cartTotal,
+        specialRequests: orderMessage || "",
+        gstDetails: gstDetails || {
+          subtotal: cartTotal,
+          cgstRate: 9,
+          sgstRate: 9,
+          cgstAmount: (cartTotal * 0.09).toFixed(2),
+          sgstAmount: (cartTotal * 0.09).toFixed(2),
+          totalGst: (cartTotal * 0.18).toFixed(2),
+          grandTotal: (cartTotal * 1.18).toFixed(2),
+          isGstApplicable: true
         }
       });
       
@@ -134,23 +143,25 @@ export async function POST(req) {
     }
     
     // Check if table exists
-    const table = await Table.findOne({ userId, tableNumber });
-    if (!table) {
-      return NextResponse.json({
-        error: "Table not found",
-        code: "TABLE_NOT_FOUND"
-      }, { status: 404 });
-    }
+    if (orderType !== 'takeaway') {
+      const table = await Table.findOne({ userId, tableNumber });
+      if (!table) {
+        return NextResponse.json({
+          error: "Table not found",
+          code: "TABLE_NOT_FOUND"
+        }, { status: 404 });
+      }
 
-    // Set table as occupied
-    try {
-      await setTableOccupied(userId, tableNumber);
-    } catch (error) {
-      return NextResponse.json({
-        error: "Failed to set table status",
-        details: error.message,
-        code: "TABLE_STATUS_ERROR"
-      }, { status: 500 });
+      // Set table as occupied
+      try {
+        await setTableOccupied(userId, tableNumber);
+      } catch (error) {
+        return NextResponse.json({
+          error: "Failed to set table status",
+          details: error.message,
+          code: "TABLE_STATUS_ERROR"
+        }, { status: 500 });
+      }
     }
 
     // Publish real-time event to waiter dashboard
