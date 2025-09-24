@@ -37,7 +37,7 @@ import DashboardStats from "../components/dashboard/DashboardStats";
 import { printBill } from "../components/bill/PrintBill";
 
 // Enhanced Quick Actions with Stunning Effects
-const QuickActions = ({ onRefresh, onViewHistory, onManageTables, onViewAnalytics, onViewWaiter, className = "" }) => (
+const QuickActions = ({ onRefresh, onViewHistory, onManageTables, onViewAnalytics, onViewWaiter, onTakeaway, className = "" }) => (
   <div className={`bg-white rounded-3xl shadow-2xl border-0 overflow-hidden ${className} backdrop-blur-lg scale-90`}>
     <div className="bg-gradient-to-r from-slate-800 via-gray-900 to-black px-4 sm:px-6 py-4 border-b-0">
       <h3 className="text-lg sm:text-xl font-black text-white flex items-center">
@@ -101,7 +101,7 @@ const QuickActions = ({ onRefresh, onViewHistory, onManageTables, onViewAnalytic
         </button>
         
         <button
-          onClick={onViewAnalytics}
+          onClick={onTakeaway}
           className="group flex flex-col items-center p-4 sm:p-5 rounded-2xl border-0 
                    bg-gradient-to-br from-purple-500 to-pink-600 text-white
                    hover:from-purple-600 hover:to-pink-700 transition-all duration-500 
@@ -112,7 +112,7 @@ const QuickActions = ({ onRefresh, onViewHistory, onManageTables, onViewAnalytic
             <FaChartLine className="text-lg sm:text-xl" />
           </div>
           <span className="text-xs sm:text-sm font-bold text-center">
-            Analytics
+            Takeaway
           </span>
         </button>
         
@@ -662,6 +662,7 @@ export default function Dashboard() {
             onManageTables={() => router.push('/table')}
             onViewAnalytics={() => router.push('/analytics')}
             onViewWaiter={() => window.open('/waiter', '_blank', 'noopener,noreferrer')}
+            onTakeaway={() => router.push('/takeaway')}
           />
         </div>
 
