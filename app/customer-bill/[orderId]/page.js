@@ -56,6 +56,12 @@ export default function CustomerBillPage() {
     });
   };
 
+  const formatAddress = (address) => {
+    if (!address) return '';
+    const { street, city, state, zipCode,  } = address;
+    return [street, city, state, zipCode, ].filter(Boolean).join(', ');
+  };
+
   const calculateGST = () => {
     if (!billData?.gstDetails?.isGstApplicable) return null;
     
@@ -140,12 +146,8 @@ export default function CustomerBillPage() {
             <h1 className="text-2xl font-bold text-gray-800 mb-2">
               {businessInfo?.businessName || 'Restaurant'}
             </h1>
-            {businessInfo?.address && (
-              <p className="text-gray-600 mb-1">{businessInfo.address}</p>
-            )}
-            {businessInfo?.phone && (
-              <p className="text-gray-600 mb-1">Phone: {businessInfo.phone}</p>
-            )}
+            <p className="text-gray-600 mb-1">{businessInfo?.phone}</p>
+            <p className="text-gray-600 mb-1">{formatAddress(businessInfo?.address)}</p>
             {businessInfo?.email && (
               <p className="text-gray-600 mb-1">Email: {businessInfo.email}</p>
             )}

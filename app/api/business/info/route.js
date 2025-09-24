@@ -17,7 +17,7 @@ export async function GET(req) {
     }
 
     // Find user by ID and return business info including GST details
-    const user = await User.findById(userId).select('businessName gstDetails fssaiDetails businessDetails businessType');
+    const user = await User.findById(userId).select('businessName gstDetails fssaiDetails businessDetails businessType phone address');
     
     if (!user) {
       return NextResponse.json({
@@ -28,6 +28,8 @@ export async function GET(req) {
 
     const businessInfo = {
       businessName: user.businessName,
+      phone: user.phone,
+      address: user.address,
       gstDetails: user.gstDetails || {},
       fssaiDetails: user.fssaiDetails || {},
       businessDetails: user.businessDetails || {},
