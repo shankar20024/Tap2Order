@@ -121,7 +121,8 @@ export default function useOrder(userId, tableNumber, cart, getTotalPrice, reset
           ip: clientIP
         },
         totalAmount: totalAmount,
-        gstDetails: gstDetails
+        gstDetails: gstDetails,
+        orderType: 'dine-in'
       };
 
       const response = await fetch('/api/order', {
@@ -156,7 +157,7 @@ export default function useOrder(userId, tableNumber, cart, getTotalPrice, reset
         }
         
         // Publish to Ably channel for each order
-        const channel = ably.channels.get(`orders:${userId}`);
+        const channel = ably.channels.get(`orders/${userId}`);
         
         await channel.publish("new-order", {
           _id: result.order._id,

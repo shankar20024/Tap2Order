@@ -12,7 +12,7 @@ import ably from "@/lib/ably";
 export async function POST(req) {
   try {
     await connectDB();
-    const { tableNumber, cart, userId, orderMessage, status, customerId, customerInfo, totalAmount: frontendTotalAmount, gstDetails, orderType = 'dine-in' } = await req.json();
+    const { tableNumber, cart, userId, orderMessage, status, customerId, customerInfo, totalAmount: frontendTotalAmount, gstDetails, orderType, paymentStatus } = await req.json();
 
     // Validate cart items
     if (!Array.isArray(cart) || cart.length === 0) {
@@ -22,6 +22,32 @@ export async function POST(req) {
         code: "INVALID_CART"
       }, { status: 400 });
     }
+
+    // Check if this is a takeaway order
+    const isTakeawayOrder = orderType === 'takeaway' || String(tableNumber || '').toLowerCase() === 'takeaway';
+
+    // Helper function to normalize category for schema validation
+    const normalizeCategory = (item) => {
+      const validCategories = ["veg", "non-veg", "jain", "beverages", "none"];
+      const category = String(item.category || '').toLowerCase();
+      
+      if (validCategories.includes(category)) {
+        return category;
+      }
+      
+      // Check subcategory for beverages
+      if (String(item.subcategory || '').toLowerCase() === 'beverages') {
+        return 'beverages';
+      }
+      
+      // Fallback to veg boolean if available
+      if (typeof item.veg === 'boolean') {
+        return item.veg ? 'veg' : 'non-veg';
+      }
+      
+      // Default fallback
+      return 'veg';
+    };
 
     // Process cart items and calculate total
     const processedCart = cart.map(item => ({
@@ -34,24 +60,20 @@ export async function POST(req) {
       notes: String(item.notes || ''),
       size: String(item.size || ''),
       subcategory: String(item.subcategory || ''),
-      category: String(item.category || 'veg'), // Add category field
+      category: normalizeCategory(item), // Use normalized category for schema validation
       status: 'pending', // All new items start as pending
     }));
 
-    // For takeaway orders, set tableNumber to 'Takeaway' if not provided
-    const effectiveTableNumber = orderType === 'takeaway' ? 'Takeaway' : tableNumber;
-
     // Check for existing active order for this table (not served/completed)
-    const existingOrder = orderType === 'takeaway' ? null : await Order.findOne({
+    // Skip order merging for takeaway orders
+    const existingOrder = !isTakeawayOrder ? await Order.findOne({
       userId: String(userId || ''),
-      tableNumber: String(effectiveTableNumber || ''),
+      tableNumber: String(tableNumber || ''),
       paymentStatus: "unpaid",
-      status: { $nin: [ "completed", "cancelled"] },
-      orderType: { $ne: 'takeaway' } // Don't merge with takeaway orders
-    }).sort({ createdAt: -1 });
+      status: { $nin: [ "completed", "cancelled"] } // Only merge with active orders, not served ones
+    }).sort({ createdAt: -1 }) : null;
 
     let savedOrder;
-    let eventName; // To hold the event name dynamically
 
     // Check if order contains only beverages
     const isOnlyBeverages = processedCart.every(item => 
@@ -59,7 +81,7 @@ export async function POST(req) {
     );
 
     // Set initial status based on order type
-    const initialStatus = status || 'pending';
+    const initialStatus = isTakeawayOrder ? (status || 'completed') : (status || 'pending');
 
     if (existingOrder) {
       // Add new items to existing order
@@ -111,39 +133,34 @@ export async function POST(req) {
       }
 
       savedOrder = await existingOrder.save();
-      eventName = 'order.updated'; // It's an update to an existing order
     } else {
       // Create new order
-      const cartTotal = frontendTotalAmount || processedCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const totalAmount = frontendTotalAmount || processedCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const newOrder = new Order({
-        tableNumber: effectiveTableNumber,
-        userId: String(userId || ''),
-        customerId: customerId ? String(customerId) : null,
-        customerInfo: customerInfo || {},
+        tableNumber: isTakeawayOrder ? 'Takeaway' : String(tableNumber || ''),
         items: processedCart,
+        userId: String(userId || ''),
+        specialRequests: String(orderMessage || ''),
         status: initialStatus,
-        paymentStatus: "unpaid",
-        orderType: orderType,
-        totalAmount: cartTotal,
-        specialRequests: orderMessage || "",
-        gstDetails: gstDetails || {
-          subtotal: cartTotal,
-          cgstRate: 9,
-          sgstRate: 9,
-          cgstAmount: (cartTotal * 0.09).toFixed(2),
-          sgstAmount: (cartTotal * 0.09).toFixed(2),
-          totalGst: (cartTotal * 0.18).toFixed(2),
-          grandTotal: (cartTotal * 1.18).toFixed(2),
-          isGstApplicable: true
+        orderType: isTakeawayOrder ? 'takeaway' : (isOnlyBeverages ? 'beverages' : 'food'),
+        totalAmount: totalAmount,
+        gstDetails: gstDetails, // Save the provided GST details
+        paymentStatus: isTakeawayOrder ? (paymentStatus || 'paid') : "unpaid",
+        isTakeAway: isTakeawayOrder, // Set isTakeAway flag for takeaway orders
+        customerId: customerId || null,
+        customerInfo: {
+          name: customerInfo?.name || 'Guest',
+          phone: customerInfo?.phone || '',
+          ip: customerInfo?.ip || ''
         }
       });
       
       savedOrder = await newOrder.save();
-      eventName = 'order.created'; // It's a new order
     }
     
-    // Check if table exists
-    if (orderType !== 'takeaway') {
+    // For non-takeaway orders, check table exists and set occupied
+    if (!isTakeawayOrder) {
+      // Check if table exists
       const table = await Table.findOne({ userId, tableNumber });
       if (!table) {
         return NextResponse.json({
@@ -167,7 +184,7 @@ export async function POST(req) {
     // Publish real-time event to waiter dashboard
     try {
       const channel = ably.channels.get(`orders:${userId}`);
-      await channel.publish(eventName, savedOrder);
+      await channel.publish('order.created', savedOrder);
     } catch (error) {
       // Don't fail the order creation if real-time publishing fails
     }
@@ -204,21 +221,6 @@ export async function GET(req) {
       userId = session.user.id;
     }
     
-    const { searchParams } = new URL(req.url);
-    const status = searchParams.get('status');
-
-    const query = {
-      userId: userId,
-    };
-
-    if (status && status !== 'all') {
-      // Assumes status is a single string like 'pending', 'preparing', etc.
-      query.status = status;
-    } else {
-      // Default behavior: fetch all non-completed/cancelled orders
-      query.status = { $nin: ["completed", "cancelled"] };
-    }
-
     // Fetch user's business profile for GST details
     let user, taxRate = 0, hasGstNumber = false;
     try {
@@ -230,7 +232,10 @@ export async function GET(req) {
     }
     
     // Only fetch orders for this specific userId that are not completed or cancelled
-    const orders = await Order.find(query);
+    const orders = await Order.find({ 
+      userId: userId, 
+      status: { $nin: ["completed", "cancelled"] } 
+    });
     
     // Calculate grand total with GST for each order
     const ordersWithGST = orders.map(order => {

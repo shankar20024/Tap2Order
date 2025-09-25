@@ -7,7 +7,7 @@ const OrderSchema = new mongoose.Schema(
       required: function() {
         return this.orderType !== 'takeaway';
       },
-      default: 'Takeaway'
+      default:'food'
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
