@@ -1,18 +1,18 @@
 "use client";
 
-import { use, useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, use, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import LoadingSpinner from "@/app/components/LoadingSpinner";
 import OrderViewer from "@/app/components/OrderViewer";
 import { getAbly } from "@/lib/ably";
 
 // QR Components
-import QRHeader from "@/app/components/qr/QRHeader";
 import MenuSearch from "@/app/components/qr/MenuSearch";
 import MenuGrid from "@/app/components/qr/MenuGrid";
 import BottomCart from "@/app/components/qr/BottomCart";
 import CartPanel from "@/app/components/qr/CartPanel";
 import CustomerInfoModal from "@/app/components/qr/CustomerInfoModal";
+import SectionSidebar from "@/app/components/qr/CategorySidebar";
 
 // Custom Hooks
 import useCart from "@/app/hooks/useCart";
@@ -36,6 +36,8 @@ export default function QRMenu(paramsPromise) {
   const [viewOrderModalOpen, setViewOrderModalOpen] = useState(false);
   const [businessInfo, setBusinessInfo] = useState(null);
   const [businessType, setBusinessType] = useState('');
+  const [sections, setSections] = useState([]);
+  const [activeSection, setActiveSection] = useState('All');
 
   // Customer Info State
   const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '' });
@@ -48,66 +50,50 @@ export default function QRMenu(paramsPromise) {
   // Ably real-time subscription for redirect command
   useEffect(() => {
     if (!userId || !tableNumber || !customerInfoSubmitted) {
-      console.log('Redirect listener not active:', { userId, tableNumber, customerInfoSubmitted });
-      return;
+            return;
     }
 
-    console.log('Setting up redirect listener for table:', { userId, tableNumber });
-
+    
     const ably = getAbly();
     const tableChannel = ably.channels.get(`table:${userId}:${tableNumber}`);
 
     // Log connection status
     ably.connection.on('connected', () => {
-      console.log('Ably connected successfully');
-    });
+          });
 
     ably.connection.on('failed', (error) => {
-      console.error('Ably connection failed:', error);
-    });
+          });
 
     const handleRedirectToBill = (message) => {
-      console.log('🔔 Received redirect command:', message.data);
-      const { orderId, tableNumber: eventTableNumber } = message.data;
+            const { orderId, tableNumber: eventTableNumber } = message.data;
       
       // Simple validation - check table number (convert both to strings for comparison)
       if (String(eventTableNumber) === String(tableNumber)) {
-        console.log('✅ Table matches - redirecting to bill page');
-        console.log('🚀 Executing redirect to:', `/customer-bill/${orderId}`);
-        
+                        
         // Immediate redirect
         router.push(`/customer-bill/${orderId}`);
       } else {
-        console.log('❌ Table number mismatch:', {
-          eventTable: eventTableNumber,
-          currentTable: tableNumber,
-          eventTableType: typeof eventTableNumber,
-          currentTableType: typeof tableNumber
-        });
-      }
+              }
     };
 
-    console.log('📡 Subscribing to table channel:', `table:${userId}:${tableNumber}`);
-    // Subscribe to redirect command
+        // Subscribe to redirect command
     tableChannel.subscribe('redirect-to-bill', handleRedirectToBill);
 
     return () => {
-      console.log('🔌 Unsubscribing from table channel');
-      tableChannel.unsubscribe('redirect-to-bill', handleRedirectToBill);
+            tableChannel.unsubscribe('redirect-to-bill', handleRedirectToBill);
     };
   }, [userId, tableNumber, customerInfoSubmitted, router]);
 
   // Custom Hooks
   const {
     menu,
-    filteredMenu,
+    filteredMenu: originalFilteredMenu,
     categories,
     activeCategory,
     setActiveCategory,
     searchTerm,
     setSearchTerm,
-    loading: menuLoading,
-    getPriceForSize
+    loading: menuLoading
   } = useMenu(userId);
 
   const {
@@ -120,6 +106,17 @@ export default function QRMenu(paramsPromise) {
     getTotalItemsCount,
     resetCart
   } = useCart(apiStatus, false);
+
+  // Filter menu based on active section
+  const filteredMenu = useMemo(() => {
+    let filtered = originalFilteredMenu;
+    
+    if (activeSection !== 'All') {
+      filtered = filtered.filter(item => item.section === activeSection);
+    }
+    
+    return filtered;
+  }, [originalFilteredMenu, activeSection]);
 
   const subtotal = getTotalPrice();
 
@@ -157,17 +154,6 @@ export default function QRMenu(paramsPromise) {
   }, [subtotal, businessInfo]);
 
   const {
-    itemQuantities,
-    selectedSizes,
-    incrementQuantity,
-    decrementQuantity,
-    resetQuantity,
-    handleSizeSelection,
-    getQuantity,
-    getSelectedSize
-  } = useQuantity(apiStatus, false);
-
-  const {
     orderPlaced,
     placingOrder,
     errorMessage,
@@ -179,6 +165,19 @@ export default function QRMenu(paramsPromise) {
     setCustomerInfo: setOrderCustomerInfo,
     resetOrderState
   } = useOrder(userId, tableNumber, cart, getTotalPrice, resetCart, gstDetails);
+
+  const {
+    itemQuantities,
+    selectedSizes,
+    incrementQuantity,
+    decrementQuantity,
+    resetQuantity,
+    resetAllQuantities,
+    handleSizeSelection,
+    getQuantity,
+    getSelectedSize,
+    getPriceForSize
+  } = useQuantity(apiStatus, orderPlaced);
 
   // Fetch user data
   useEffect(() => {
@@ -204,27 +203,46 @@ export default function QRMenu(paramsPromise) {
       fetchUser();
     }
   }, [userId]);
-
   // Fetch business info
   useEffect(() => {
     const fetchBusinessInfo = async () => {
       try {
-        const businessResponse = await fetch(`/api/business/info?userId=${userId}`);
-
-        if (businessResponse.ok) {
-          const businessData = await businessResponse.json();
-          setBusinessType(businessData.businessType.slice(0, 1).toUpperCase() + businessData.businessType.slice(1));
-          setBusinessInfo(businessData);
+        const response = await fetch(`/api/business/info?userId=${userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setBusinessInfo(data);
+          setBusinessType(data.businessType || '');
         }
       } catch (error) {
-        // Error fetching business info, continue
-      }
+              }
     };
 
     if (userId) {
       fetchBusinessInfo();
     }
   }, [userId]);
+
+  // Fetch sections
+  useEffect(() => {
+    const fetchSections = async () => {
+      try {
+        console.log('Fetching sections...');
+        const response = await fetch('/api/sections');
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Sections fetched:', data.sections);
+          setSections(data.sections || []);
+        } else {
+          console.error('Failed to fetch sections:', response.status);
+        }
+      } catch (error) {
+        console.error('Error fetching sections:', error);
+        setSections([]);
+      }
+    };
+
+    fetchSections();
+  }, []);
 
   // Check table existence and status
   useEffect(() => {
@@ -356,10 +374,6 @@ export default function QRMenu(paramsPromise) {
     }
   }, [cartOpen]);
 
-  // Handle arrow position update
-  const handleArrowPositionUpdate = useCallback((position) => {
-    setArrowPosition(position);
-  }, []);
 
   // Loading state
   if (loading) {
@@ -384,42 +398,70 @@ export default function QRMenu(paramsPromise) {
   const totalItemsCount = getTotalItemsCount();
 
   return (
-    <div className="">
-      {/* Background Pattern */}
-      
-      {/* Header */}
-      <QRHeader 
-        username={username}
-        hotelName={hotelName}
-        tableNumber={tableNumber}
-        apiStatus={apiStatus}
-        customerInfo={customerInfoSubmitted ? customerInfo : null}
-        businessInfo={businessInfo}
-      />
+    <div className="h-[100vh] bg-gray-50 overflow-hidden">
+      {/* Professional Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center shadow-sm">
+                <span className="text-white text-lg">🥗</span>
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-gray-800">{hotelName}</h1>
+                <div className="flex items-center gap-2">
+                  <div className="px-2.5 py-1 bg-orange-100 rounded-lg border border-orange-200">
+                    <p className="text-xs font-medium text-orange-700">Table {tableNumber}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {customerInfoSubmitted && customerInfo && (
+              <div className="text-right">
+                <div className="px-3 py-1.5 bg-gray-100 rounded-lg border border-gray-200">
+                  <p className="text-sm font-medium text-gray-700">👤 {customerInfo.name}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
-      {/* Search & Filters */}
+      {/* Search Bar */}
       <MenuSearch
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
-        categories={categories}
-        activeCategory={activeCategory}
-        setActiveCategory={setActiveCategory}
         orderPlaced={orderPlaced}
       />
 
-      {/* Menu Grid */}
-      <MenuGrid
-        filteredMenu={filteredMenu}
-        loading={menuLoading}
-        itemQuantities={itemQuantities}
-        selectedSizes={selectedSizes}
-        onSizeSelect={handleSizeSelection}
-        onQuantityIncrement={incrementQuantity}
-        onQuantityDecrement={decrementQuantity}
-        onAddToCart={handleAddToCart}
-        orderPlaced={orderPlaced}
-        getPriceForSize={getPriceForSize}
-      />
+      {/* Main Layout with Sidebar */}
+      <div className="flex h-screen">
+        {/* Section Sidebar - Always Visible 20% width */}
+        <SectionSidebar
+          sections={sections}
+          activeSection={activeSection}
+          setActiveSection={setActiveSection}
+          orderPlaced={orderPlaced}
+          filteredMenu={originalFilteredMenu}
+        />
+
+        {/* Main Content Area - Scrollable */}
+        <div className="flex-1 overflow-y-auto">
+          <MenuGrid
+            filteredMenu={filteredMenu}
+            loading={menuLoading}
+            itemQuantities={itemQuantities}
+            selectedSizes={selectedSizes}
+            onSizeSelect={handleSizeSelection}
+            onQuantityIncrement={incrementQuantity}
+            onQuantityDecrement={decrementQuantity}
+            onAddToCart={handleAddToCart}
+            orderPlaced={orderPlaced}
+            getPriceForSize={getPriceForSize}
+            activeSection={activeSection}
+          />
+        </div>
+      </div>
 
       {/* Bottom Cart */}
       <BottomCart
@@ -435,7 +477,7 @@ export default function QRMenu(paramsPromise) {
         cart={cart}
         orderMessage={orderMessage}
         setOrderMessage={setOrderMessage}
-        onPlaceOrder={() => placeOrder(customerInfo)} // Update placeOrder call
+        onPlaceOrder={() => placeOrder(customerInfo)}
         onClearCart={clearCart}
         onQuantityDecrease={decreaseQuantity}
         onQuantityIncrease={addToCart}
@@ -450,11 +492,16 @@ export default function QRMenu(paramsPromise) {
       {/* My Orders Button */}
       <button
         onClick={() => setViewOrderModalOpen(true)}
-        className="fixed bottom-5 left-4 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 
-                 rounded-full shadow-lg transition-colors duration-200 z-30
-                 focus:outline-none focus:ring-4 focus:ring-amber-300"
+        className="fixed bottom-4 right-4 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 
+                 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 z-30
+                 focus:outline-none focus:ring-2 focus:ring-orange-300"
       >
-        My Orders
+        <div className="flex items-center gap-2">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          <span className="text-sm font-medium">My Orders</span>
+        </div>
       </button>
 
       {/* Order Viewer Modal */}

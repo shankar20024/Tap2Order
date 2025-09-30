@@ -17,7 +17,9 @@ export default function TakeawayPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedSection, setSelectedSection] = useState('all');
   const [categories, setCategories] = useState([]);
+  const [sections, setSections] = useState([]);
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [customerName, setCustomerName] = useState('');
@@ -37,6 +39,24 @@ export default function TakeawayPage() {
     }
   }, [session]);
 
+  // Fetch sections
+  useEffect(() => {
+    const fetchSections = async () => {
+      try {
+        const response = await fetch('/api/sections');
+        if (response.ok) {
+          const data = await response.json();
+          setSections(data.sections || []);
+        }
+      } catch (error) {
+              }
+    };
+
+    if (session) {
+      fetchSections();
+    }
+  }, [session]);
+
   // Fetch business info including GST details
   useEffect(() => {
     const fetchBusinessInfo = async () => {
@@ -46,14 +66,17 @@ export default function TakeawayPage() {
         const response = await fetch(`/api/business/info?userId=${session.user.id}`);
         if (response.ok) {
           const data = await response.json();
+                              
           // Set GST rate if available
           if (data.gstDetails?.taxRate) {
-            setGstRate(parseFloat(data.gstDetails.taxRate));
-          }
-        }
+            const rate = parseFloat(data.gstDetails.taxRate);
+            setGstRate(rate);
+                      } else {
+                      }
+        } else {
+                  }
       } catch (error) {
-        console.error('Error fetching business info:', error);
-      }
+              }
     };
 
     fetchBusinessInfo();
@@ -111,12 +134,10 @@ export default function TakeawayPage() {
             setSelectedCategory(uniqueCategories[0]);
           }
         } else {
-          console.error('Unexpected menu data format:', data);
-          toast.error('Invalid menu data format');
+                    toast.error('Invalid menu data format');
         }
       } catch (error) {
-        console.error('Error fetching menu:', error);
-        toast.error('Failed to load menu. Please try again.');
+                toast.error('Failed to load menu. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -128,7 +149,7 @@ export default function TakeawayPage() {
   // Filter out 'all' from categories for takeaway page to avoid duplicate All buttons
   const takeawayCategories = categories.filter(category => category !== 'all');
 
-  // Filter menu items based on search and category
+  // Filter menu items based on search, category, and section
   const filteredMenu = menu.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (item.description?.toLowerCase().includes(searchTerm.toLowerCase()) || '');
@@ -137,8 +158,23 @@ export default function TakeawayPage() {
                            selectedCategory === 'all' || 
                            item.category === selectedCategory;
     
-    return matchesSearch && matchesCategory;
+    const matchesSection = selectedSection === 'all' || item.section === selectedSection;
+    
+    return matchesSearch && matchesCategory && matchesSection;
   });
+
+  // Get sections with item counts for sidebar
+  const usedSections = sections.filter(section => 
+    menu.some(item => item.section === section.name)
+  );
+
+  const sectionsWithCounts = [
+    { name: "all", displayName: "All Items", count: menu.length },
+    ...usedSections.map(section => ({
+      ...section,
+      count: menu.filter(item => item.section === section.name).length
+    }))
+  ];
 
   // Add item to cart
   const addToCart = (item, selectedSizeIndex = 0) => {
@@ -259,8 +295,7 @@ export default function TakeawayPage() {
       // Get the user ID from the session
       const userId = session.user?.id;
       if (!userId) {
-        console.error('No user ID found in session');
-        throw new Error('Authentication failed. Please log in again.');
+                throw new Error('Authentication failed. Please log in again.');
       }
 
       // Add the user ID to the order data
@@ -296,8 +331,7 @@ export default function TakeawayPage() {
       localStorage.removeItem('pendingOrder');
       return await response.json();
     } catch (error) {
-      console.error('Error saving takeaway order:', error);
-      toast.error(error.message || 'Could not save order. Please try again.');
+            toast.error(error.message || 'Could not save order. Please try again.');
       throw error;
     }
   };
@@ -313,6 +347,7 @@ export default function TakeawayPage() {
       // Calculate GST details based on business settings
       const gstDetails = calculateGstDetails();
       
+                              
       // Build order items in the format expected by the API
       const orderItems = cart.map(item => ({
         menuItemId: item._id,
@@ -336,7 +371,7 @@ export default function TakeawayPage() {
         status: 'completed',
         paymentStatus: 'paid',
         orderType: 'takeaway',
-        totalAmount: gstDetails.subtotal,
+        totalAmount: gstDetails.grandTotal,
         gstDetails: {
           ...gstDetails,
           gstNumber: businessInfo?.gstDetails?.gstNumber || '',
@@ -355,6 +390,10 @@ export default function TakeawayPage() {
       // Save order to database
       const savedOrderResponse = await saveTakeawayOrder(orderData);
       const savedOrder = savedOrderResponse.order;
+      
+                        
+      if (!savedOrder?.billNumber) {
+                              }
 
       // Format the date and time for the bill
       const now = new Date();
@@ -369,9 +408,11 @@ export default function TakeawayPage() {
       };
       const formattedDate = now.toLocaleString('en-IN', options);
 
-      // Prepare data for printing
+      // Prepare data for printing with bill number from database
       const printData = {
-        orderNumber: savedOrder?.orderNumber || savedOrder?._id?.slice(-6).toUpperCase() || `TAKE-${Date.now()}`,
+        orderNumber: savedOrder?.billNumber || savedOrder?._id?.slice(-6).toUpperCase() || `TAKE-${Date.now()}`,
+        billNumber: savedOrder?.billNumber || 'N/A',
+        tokenNumber: savedOrder?.tokenNumber || 1,
         items: orderItems,
         date: formattedDate,
         total: gstDetails.subtotal,
@@ -408,10 +449,9 @@ export default function TakeawayPage() {
       setCustomerPhone('');
       setIsCartOpen(false);
       
-      toast.success('Order placed successfully!');
+      toast.success(`Order placed successfully! Bill #${savedOrder?.billNumber || 'Generated'}`);
     } catch (error) {
-      console.error('Error processing order:', error);
-      toast.error(error.message || 'Failed to process order. Please try again.');
+            toast.error(error.message || 'Failed to process order. Please try again.');
     }
   };
 
@@ -420,14 +460,51 @@ export default function TakeawayPage() {
       <Header />
       
       <main className="container mx-auto px-4 py-20">
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Menu Section */}
-          <div className="md:w-2/3">
-            <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-              <h1 className="text-2xl font-bold text-gray-800 mb-6">Takeaway Menu</h1>
-              
+        <div className="flex gap-6 h-[calc(100vh-6rem)]">
+          {/* Left Sidebar - Sections */}
+          <div className="w-64 flex-shrink-0">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 h-full overflow-y-auto">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <span>📂</span>
+                <span>Sections</span>
+              </h3>
+              <div className="space-y-2">
+                {sectionsWithCounts.map((section) => (
+                  <button
+                    key={section.name}
+                    onClick={() => setSelectedSection(section.name)}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center justify-between ${
+                      selectedSection === section.name
+                        ? "bg-orange-100 text-orange-800 border border-orange-200"
+                        : "hover:bg-gray-50 text-gray-700"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">
+                        {section.name === "all" ? "📋" : section.icon || "📂"}
+                      </span>
+                      <span className="font-medium text-sm">
+                        {section.displayName || section.name}
+                      </span>
+                    </div>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      selectedSection === section.name
+                        ? "bg-orange-200 text-orange-800"
+                        : "bg-gray-100 text-gray-600"
+                    }`}>
+                      {section.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Middle - Menu Section */}
+          <div className="flex-1">
+            <div className="bg-white rounded-xl shadow-sm p-4 h-full overflow-y-auto">
               {/* Search and Category Filter */}
-              <div className="mb-6">
+              <div className="mb-4">
                 <MenuSearch 
                   searchTerm={searchTerm}
                   setSearchTerm={setSearchTerm}
@@ -510,9 +587,9 @@ export default function TakeawayPage() {
             </div>
           </div>
           
-          {/* Cart Section */}
-          <div className="md:w-1/3">
-            <div className="bg-white rounded-xl shadow-sm p-6 sticky top-4">
+          {/* Right Sidebar - Cart/Billing Section */}
+          <div className="w-80 flex-shrink-0">
+            <div className="bg-white rounded-xl shadow-sm p-6 h-full overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-gray-800">Takeaway Order</h2>
                 <button 

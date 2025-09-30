@@ -2,10 +2,12 @@
 
 import { usePathname } from 'next/navigation';
 import Sidebar from './components/Sidebar';
+import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
 
-export default function LayoutContent({ children }) {
+function LayoutContentInner({ children }) {
   const pathname = usePathname();
   const isLoginPage = pathname === '/' || pathname === '/login';
+  const { isCollapsed } = useSidebar();
   
   // Define the routes where sidebar should be visible
   const showSidebar = [
@@ -17,6 +19,7 @@ export default function LayoutContent({ children }) {
     '/customers',
     '/analytics',
     '/takeaway',
+    '/billing',
     '/support'
 
   ].some(route => pathname.startsWith(route));
@@ -32,9 +35,23 @@ export default function LayoutContent({ children }) {
   return (
     <div className="flex h-screen bg-gray-100">
       {showSidebar && <Sidebar />}
-      <main className={`flex-1 overflow-y-auto ${showSidebar ? 'md:ml-64' : ''}`}>
+      <main className={`flex-1 overflow-y-auto transition-all duration-300 ${
+        showSidebar 
+          ? isCollapsed 
+            ? 'md:ml-16' 
+            : 'md:ml-64' 
+          : ''
+      }`}>
         {children}
       </main>
     </div>
+  );
+}
+
+export default function LayoutContent({ children }) {
+  return (
+    <SidebarProvider>
+      <LayoutContentInner>{children}</LayoutContentInner>
+    </SidebarProvider>
   );
 }

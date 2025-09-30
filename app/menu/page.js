@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { FaPlus, FaSearch, FaTimes, FaEdit, FaTrash, FaUtensils, FaChartLine, FaEye, FaClock } from "react-icons/fa";
+import { FaPlus, FaSearch, FaTimes, FaEdit, FaTrash, FaUtensils, FaChartLine, FaEye, FaClock, FaChevronDown, FaCheck } from "react-icons/fa";
 import { MdOutlineRestaurantMenu, MdTrendingUp, MdInventory } from "react-icons/md";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -19,6 +19,7 @@ export default function MenuPage() {
     available: true,
     unit: "piece",
     subcategory: "",
+    section: "",
     spicyLevel: "",
     preparationTime: "",
     pricing: [{ size: "", price: "", description: "" }],
@@ -30,10 +31,19 @@ export default function MenuPage() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [username, setUsername] = useState('');
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedSection, setSelectedSection] = useState("all");
   const [loading, setLoading] = useState(true);
   const { data: session, status } = useSession();
   const [isFixed, setIsFixed] = useState(false);
   const router = useRouter();
+  
+  // Section management states
+  const [sections, setSections] = useState([]);
+  const [isSectionDropdownOpen, setIsSectionDropdownOpen] = useState(false);
+  const [sectionSearchTerm, setSectionSearchTerm] = useState('');
+  const [sectionsLoaded, setSectionsLoaded] = useState(false);
+  const [customSizes, setCustomSizes] = useState({}); // Track custom sizes for each pricing option
+  const sectionDropdownRef = useRef(null);
 
   // Helper functions for pricing management
   const addPricingOption = () => {
@@ -59,26 +69,65 @@ export default function MenuPage() {
     }));
   };
 
-  // Get size options based on unit
+  // Handle custom size input
+  const handleCustomSizeChange = (index, customValue) => {
+    setCustomSizes(prev => ({
+      ...prev,
+      [index]: customValue
+    }));
+    
+    // Update the actual form with custom size
+    updatePricingOption(index, 'size', customValue);
+  };
+
+  // Handle size selection (including custom)
+  const handleSizeSelection = (index, selectedSize) => {
+    if (selectedSize === 'custom') {
+      // Don't update form yet, wait for custom input
+      setCustomSizes(prev => ({
+        ...prev,
+        [index]: ''
+      }));
+    } else {
+      // Clear custom size and update form with selected size
+      setCustomSizes(prev => {
+        const newCustomSizes = { ...prev };
+        delete newCustomSizes[index];
+        return newCustomSizes;
+      });
+      updatePricingOption(index, 'size', selectedSize);
+    }
+  };
+
+  // Get size options based on unit (including custom option)
   const getSizeOptions = (unit) => {
+    let baseOptions;
     switch (unit) {
       case "liter":
-        return ["0.5L", "1L", "2L"];
+        baseOptions = ["0.5L", "1L", "2L"];
+        break;
       case "ml":
-        return ["250ml", "500ml", "750ml", "1000ml"];
+        baseOptions = ["250ml", "500ml", "750ml", "1000ml"];
+        break;
       case "plate":
       case "bowl":
       case "serving":
-        return ["half", "full"];
+        baseOptions = ["half", "full"];
+        break;
       case "piece":
-        return ["small", "medium", "large"];
+        baseOptions = ["small", "medium", "large"];
+        break;
       case "kg":
-        return ["0.5kg", "1kg", "2kg"];
+        baseOptions = ["0.5kg", "1kg", "2kg"];
+        break;
       case "gram":
-        return ["250g", "500g", "1kg"];
+        baseOptions = ["250g", "500g", "1kg"];
+        break;
       default:
-        return ["small", "medium", "large"];
+        baseOptions = ["small", "medium", "large"];
     }
+    // Always add custom option at the end
+    return [...baseOptions, "custom"];
   };
 
   const resetForm = () => {
@@ -89,13 +138,113 @@ export default function MenuPage() {
       available: true,
       unit: "piece",
       subcategory: "",
+      section: "",
       spicyLevel: "",
       preparationTime: "",
       pricing: [{ size: "", price: "", description: "" }],
       useSinglePrice: true,
       singlePrice: "",
     });
+    setSectionSearchTerm("");
+    setCustomSizes({}); // Reset custom sizes
   };
+
+  // Section management functions with caching
+  const fetchSections = async () => {
+    // Only fetch if not already loaded
+    if (sectionsLoaded) return;
+    
+    try {
+      const response = await fetch('/api/sections');
+      if (response.ok) {
+        const data = await response.json();
+        setSections(data.sections || []);
+        setSectionsLoaded(true);
+      }
+    } catch (error) {
+      console.error('Error fetching sections:', error);
+    }
+  };
+
+  // Helper function to capitalize first letter
+  const capitalizeFirstLetter = (str) => {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
+
+  const handleAddNewSection = async (sectionName = null) => {
+    const nameToAdd = sectionName || sectionSearchTerm.trim();
+    
+    if (!nameToAdd) {
+      toast.error('Section name is required');
+      return;
+    }
+
+    // Capitalize first letter
+    const capitalizedName = capitalizeFirstLetter(nameToAdd);
+
+    // Check if section already exists
+    const existingSection = sections.find(section => 
+      section.name.toLowerCase() === capitalizedName.toLowerCase()
+    );
+
+    if (existingSection) {
+      toast.error('Section already exists');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/sections', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: capitalizedName,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Update local sections state without refetching
+        setSections(prev => [...prev, data.section]);
+        setForm({ ...form, section: data.section.name });
+        setSectionSearchTerm('');
+        setIsSectionDropdownOpen(false);
+        toast.success('Section added successfully!');
+      } else {
+        toast.error(data.error || 'Failed to create section');
+      }
+    } catch (error) {
+      toast.error('Failed to create section');
+    }
+  };
+
+  const handleSelectSection = (sectionName) => {
+    setForm({ ...form, section: sectionName });
+    setSectionSearchTerm(sectionName);
+    setIsSectionDropdownOpen(false);
+  };
+
+  const handleSectionInputChange = (value) => {
+    setSectionSearchTerm(value);
+    setForm({ ...form, section: value });
+    // Only fetch sections if not loaded and dropdown is opening
+    if (!isSectionDropdownOpen && !sectionsLoaded) {
+      fetchSections();
+    }
+    setIsSectionDropdownOpen(true);
+  };
+
+  // Filter sections based on search term
+  const filteredSections = sections.filter(section =>
+    section.name.toLowerCase().includes(sectionSearchTerm.toLowerCase())
+  );
+
+  // Check if current search term matches any existing section
+  const isExactMatch = sections.some(section => 
+    section.name.toLowerCase() === sectionSearchTerm.toLowerCase()
+  );
 
   useEffect(() => {
     const handleScroll = () => {
@@ -105,12 +254,6 @@ export default function MenuPage() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  useEffect(() => {
-    if (status === "authenticated") {
-      setUsername(session.user.name || "");
-    }
-  }, [status, session]);
 
   const fetchMenu = async () => {
     setLoading(true);
@@ -126,20 +269,86 @@ export default function MenuPage() {
   };
 
   useEffect(() => {
+    if (status === "loading") return;
+    if (!session) {
+      router.push("/login");
+      return;
+    }
     fetchMenu();
+    // Only fetch sections once
+    if (!sectionsLoaded) {
+      fetchSections();
+    }
+    setUsername(session.user?.businessName || session.user?.name || "User");
+  }, [session, status, router, sectionsLoaded]);
+
+  // Handle outside clicks for section dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sectionDropdownRef.current && !sectionDropdownRef.current.contains(event.target)) {
+        setIsSectionDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filter items based on search and category
+  // Filter items based on search, category, and section
   const filteredItems = items.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesSection = selectedSection === "all" || item.section === selectedSection;
+    return matchesSearch && matchesCategory && matchesSection;
   });
 
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
   };
+
+  const handleSectionChange = (section) => {
+    setSelectedSection(section);
+  };
+
+  // Get only used sections (sections that have items) with counts and smart ordering
+  const usedSections = sections.filter(section => 
+    items.some(item => item.section === section.name)
+  );
+
+  // Calculate usage-based display order
+  const sectionsWithUsageOrder = usedSections.map(section => {
+    const itemCount = items.filter(item => item.section === section.name).length;
+    const totalItems = items.length;
+    const usagePercentage = totalItems > 0 ? (itemCount / totalItems) * 100 : 0;
+    
+    return {
+      ...section,
+      count: itemCount,
+      usagePercentage,
+      // Calculate smart display order based on usage
+      smartDisplayOrder: usagePercentage * 10 + (section.displayOrder || 0)
+    };
+  });
+
+  // Sort sections by usage (most used first)
+  const sortedSections = sectionsWithUsageOrder.sort((a, b) => {
+    // Primary sort: by usage percentage (descending)
+    if (b.usagePercentage !== a.usagePercentage) {
+      return b.usagePercentage - a.usagePercentage;
+    }
+    // Secondary sort: by item count (descending)
+    if (b.count !== a.count) {
+      return b.count - a.count;
+    }
+    // Tertiary sort: by original display order (ascending)
+    return (a.displayOrder || 0) - (b.displayOrder || 0);
+  });
+
+  const sectionsWithCounts = [
+    { name: "all", displayName: "All Items", count: items.length },
+    ...sortedSections
+  ];
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -182,6 +391,7 @@ export default function MenuPage() {
     // Clean up empty optional fields to avoid validation errors
     if (!formData.spicyLevel) formData.spicyLevel = undefined;
     if (!formData.subcategory) formData.subcategory = undefined;
+    if (!formData.section) formData.section = undefined;
     if (!formData.preparationTime) formData.preparationTime = undefined;
 
     const method = editItem ? "PUT" : "POST";
@@ -213,12 +423,28 @@ export default function MenuPage() {
       available: item.available,
       unit: item.unit || "piece",
       subcategory: item.subcategory || "",
+      section: item.section || "",
       spicyLevel: item.spicyLevel || "",
       preparationTime: item.preparationTime || "",
       pricing: item.pricing && item.pricing.length > 0 ? item.pricing : [{ size: "", price: "", description: "" }],
       useSinglePrice: !item.pricing || item.pricing.length === 0,
       singlePrice: item.price || "",
     });
+    setSectionSearchTerm(item.section || "");
+    
+    // Check for custom sizes and set them up
+    const newCustomSizes = {};
+    if (item.pricing && item.pricing.length > 0) {
+      item.pricing.forEach((pricing, index) => {
+        const standardSizes = getSizeOptions(item.unit || "piece");
+        // If the size is not in standard options (excluding 'custom'), it's a custom size
+        if (pricing.size && !standardSizes.slice(0, -1).includes(pricing.size)) {
+          newCustomSizes[index] = pricing.size;
+        }
+      });
+    }
+    setCustomSizes(newCustomSizes);
+    
     setIsFormModalOpen(true);
   }
 
@@ -229,17 +455,45 @@ export default function MenuPage() {
 
   async function toggleAvailability(item) {
     const updatedItem = { ...item, available: !item.available };
-    const res = await fetch(`/api/menu/${item._id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedItem),
-    });
-    if (res.ok) {
-      fetchMenu();
-      if (editItem && editItem._id === item._id) {
-        setForm((f) => ({ ...f, available: updatedItem.available }));
-        setEditItem(updatedItem);
+    
+    // Update local state immediately for better UX
+    setItems(prevItems => 
+      prevItems.map(i => 
+        i._id === item._id ? updatedItem : i
+      )
+    );
+    
+    // Update edit form if this item is being edited
+    if (editItem && editItem._id === item._id) {
+      setForm((f) => ({ ...f, available: updatedItem.available }));
+      setEditItem(updatedItem);
+    }
+    
+    // Update server in background
+    try {
+      const res = await fetch(`/api/menu/${item._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedItem),
+      });
+      
+      if (!res.ok) {
+        // Revert local state if server update fails
+        setItems(prevItems => 
+          prevItems.map(i => 
+            i._id === item._id ? item : i
+          )
+        );
+        toast.error('Failed to update availability');
       }
+    } catch (error) {
+      // Revert local state if request fails
+      setItems(prevItems => 
+        prevItems.map(i => 
+          i._id === item._id ? item : i
+        )
+      );
+      toast.error('Failed to update availability');
     }
   }
 
@@ -287,10 +541,10 @@ export default function MenuPage() {
   };
 
   if (status === "loading") return (
-    <div className="fixed inset-0 bg-gradient-to-br from-amber-50 to-orange-100 flex items-center justify-center z-50 overflow-hidden">
-      <div className="flex flex-col items-center justify-center space-y-4">
+    <div className="fixed inset-0 bg-white flex items-center justify-center z-50 overflow-hidden">
+      <div className="flex flex-col items-center justify-center space-y-3">
         <LoadingSpinner size="40" />
-        <p className="text-amber-600 font-medium animate-pulse">Loading Menu...</p>
+        <p className="text-gray-600">Loading menu…</p>
       </div>
     </div>
   );
@@ -300,67 +554,60 @@ export default function MenuPage() {
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       <Header className=""/> 
 
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 relative w-full mt-21 sm:mt-18 md:mt-18">
-        {/* Professional Header Banner */}
-        <div className="bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-600 text-white py-8 px-6 shadow-2xl relative overflow-hidden">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
+      <div className="min-h-screen bg-gray-50 relative w-full mt-21 sm:mt-18 md:mt-18">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 py-6 px-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl p-3 bg-gray-100">
+                <MdOutlineRestaurantMenu className="text-2xl text-amber-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900">Menu Management</h1>
+                <p className="text-sm text-gray-500">Manage your restaurant's offerings</p>
+              </div>
+            </div>
           </div>
-          
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-4">
-                <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 shadow-lg">
-                  <MdOutlineRestaurantMenu className="text-4xl text-white" />
-                </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-4xl font-bold tracking-tight">Menu Management</h1>
-                  <p className="text-amber-100 text-lg mt-1">Manage your restaurant's delicious offerings</p>
+                  <p className="text-xs text-gray-500">Total Items</p>
+                  <p className="text-2xl font-semibold text-gray-900">{items.length}</p>
+                </div>
+                <FaUtensils className="text-xl text-gray-400" />
+              </div>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500">Available</p>
+                  <p className="text-2xl font-semibold text-gray-900">{items.filter(item => item.available).length}</p>
+                </div>
+                <MdInventory className="text-xl text-gray-400" />
+              </div>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500">Veg Items</p>
+                  <p className="text-2xl font-semibold text-gray-900">{items.filter(item => item.category === 'veg').length}</p>
+                </div>
+                <div className="w-6 h-6 rounded-full border-2 border-green-500/50 flex items-center justify-center">
+                  <div className="w-3 h-3 bg-green-500/50 rounded-full"></div>
                 </div>
               </div>
             </div>
-            
-            {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-amber-100 text-sm">Total Items</p>
-                    <p className="text-2xl font-bold">{items.length}</p>
-                  </div>
-                  <FaUtensils className="text-2xl text-amber-200" />
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500">Non-Veg</p>
+                  <p className="text-2xl font-semibold text-gray-900">{items.filter(item => item.category === 'non-veg').length}</p>
                 </div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-amber-100 text-sm">Available</p>
-                    <p className="text-2xl font-bold">{items.filter(item => item.available).length}</p>
-                  </div>
-                  <MdInventory className="text-2xl text-green-200" />
-                </div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-amber-100 text-sm">Veg Items</p>
-                    <p className="text-2xl font-bold">{items.filter(item => item.category === 'veg').length}</p>
-                  </div>
-                  <div className="w-6 h-6 rounded-full border-2 border-green-200 flex items-center justify-center">
-                    <div className="w-3 h-3 bg-green-200 rounded-full"></div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-amber-100 text-sm">Non-Veg</p>
-                    <p className="text-2xl font-bold">{items.filter(item => item.category === 'non-veg').length}</p>
-                  </div>
-                  <div className="w-6 h-6 border-2 border-red-200 flex items-center justify-center">
-                    <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-b-[6px] border-l-transparent border-r-transparent border-b-red-200"></div>
-                  </div>
+                <div className="w-6 h-6 border-2 border-red-500/50 flex items-center justify-center">
+                  <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-b-[6px] border-l-transparent border-r-transparent border-b-red-500/50"></div>
                 </div>
               </div>
             </div>
@@ -369,88 +616,88 @@ export default function MenuPage() {
 
         <div className="flex flex-col lg:flex-row lg:h-screen overflow-hidden">
           {/* Right: Enhanced Menu Section */}
-          <div className="flex-1 overflow-y-auto bg-white/70 backdrop-blur-sm shadow-inner">
-            {/* Enhanced Search and Filter Section */}
-            <div className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-amber-200/50 p-6 z-20">
+          <div className="flex-1 overflow-y-auto bg-white">
+            {/* Search and Filter Section */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-20">
               <div>
                 {/* Search Bar */}
                 <div className="relative mb-6">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <FaSearch className="text-amber-500" />
+                    <FaSearch className="text-gray-400" />
                   </div>
                   <input
                     type="text"
                     placeholder="Search delicious menu items..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-white/80 backdrop-blur-sm border-2 border-amber-200/50 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-300/30 focus:border-amber-400 transition-all duration-300 text-gray-700 placeholder-gray-400 shadow-lg"
+                    className="w-full pl-12 pr-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300 transition text-gray-800 placeholder-gray-400"
                   />
                 </div>
 
                 {/* Category Filters */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-                    <span className="text-gray-600 font-medium whitespace-nowrap">Filter by:</span>
+                    <span className="text-gray-600 text-sm whitespace-nowrap">Filter by:</span>
                     <div className="flex flex-wrap gap-2">
-                      <button 
-                        onClick={() => handleCategoryChange("all")} 
-                        className={`px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-300 whitespace-nowrap ${
-                          selectedCategory === "all" 
-                            ? "bg-amber-500 text-white shadow-lg" 
-                            : "bg-white/80 text-gray-600 hover:bg-amber-100"
+                      <button
+                        onClick={() => handleCategoryChange("all")}
+                        className={`px-3 sm:px-4 py-2 rounded-lg text-sm border transition-colors whitespace-nowrap ${
+                          selectedCategory === "all"
+                            ? "bg-amber-600 text-white border-amber-600"
+                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                         }`}
                       >
                         All Items
                       </button>
-                      <button 
-                        onClick={() => handleCategoryChange("veg")} 
-                        className={`px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${
-                          selectedCategory === "veg" 
-                            ? "bg-green-500 text-white shadow-lg" 
-                            : "bg-white/80 text-gray-600 hover:bg-green-100"
+                      <button
+                        onClick={() => handleCategoryChange("veg")}
+                        className={`px-3 sm:px-4 py-2 rounded-lg text-sm border transition-colors flex items-center gap-2 whitespace-nowrap ${
+                          selectedCategory === "veg"
+                            ? "bg-emerald-600 text-white border-emerald-600"
+                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                         }`}
                       >
-                        <div className="w-4 h-4 rounded-full border-2 border-green-200 flex-shrink-0">
-                          <div className="w-2 h-2 bg-green-200 rounded-full mx-auto mt-0.5"></div>
+                        <div className="w-4 h-4 rounded-full border-2 border-emerald-500/60 flex-shrink-0">
+                          <div className="w-2 h-2 bg-emerald-500/60 rounded-full mx-auto mt-0.5"></div>
                         </div>
                         <span>Veg</span>
                       </button>
-                      <button 
-                        onClick={() => handleCategoryChange("non-veg")} 
-                        className={`px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${
-                          selectedCategory === "non-veg" 
-                            ? "bg-red-500 text-white shadow-lg" 
-                            : "bg-white/80 text-gray-600 hover:bg-red-100"
+                      <button
+                        onClick={() => handleCategoryChange("non-veg")}
+                        className={`px-3 sm:px-4 py-2 rounded-lg text-sm border transition-colors flex items-center gap-2 whitespace-nowrap ${
+                          selectedCategory === "non-veg"
+                            ? "bg-rose-600 text-white border-rose-600"
+                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                         }`}
                       >
-                        <div className="w-4 h-4 border-2 border-red-200 flex-shrink-0 flex items-center justify-center">
-                          <div className="w-0 h-0 border-l-[3px] border-r-[3px] border-b-[5px] border-l-transparent border-r-transparent border-b-red-200"></div>
+                        <div className="w-4 h-4 border-2 border-rose-500/60 flex-shrink-0 flex items-center justify-center">
+                          <div className="w-0 h-0 border-l-[3px] border-r-[3px] border-b-[5px] border-l-transparent border-r-transparent border-b-rose-500/60"></div>
                         </div>
                         <span>Non-Veg</span>
                       </button>
-                      <button 
-                        onClick={() => handleCategoryChange("jain")} 
-                        className={`px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${
-                          selectedCategory === "jain" 
-                            ? "bg-orange-500 text-white shadow-lg" 
-                            : "bg-white/80 text-gray-600 hover:bg-orange-100"
+                      <button
+                        onClick={() => handleCategoryChange("jain")}
+                        className={`px-3 sm:px-4 py-2 rounded-lg text-sm border transition-colors flex items-center gap-2 whitespace-nowrap ${
+                          selectedCategory === "jain"
+                            ? "bg-amber-700 text-white border-amber-700"
+                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                         }`}
                       >
-                        <div className="w-4 h-4 rounded-full border-2 border-orange-200 flex-shrink-0">
-                          <div className="w-2 h-2 bg-orange-200 rounded-full mx-auto mt-0.5"></div>
+                        <div className="w-4 h-4 rounded-full border-2 border-amber-600/60 flex-shrink-0">
+                          <div className="w-2 h-2 bg-amber-600/60 rounded-full mx-auto mt-0.5"></div>
                         </div>
                         <span>Jain</span>
                       </button>
-                      <button 
-                        onClick={() => handleCategoryChange("beverages")} 
-                        className={`px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${
-                          selectedCategory === "beverages" 
-                            ? "bg-blue-500 text-white shadow-lg" 
-                            : "bg-white/80 text-gray-600 hover:bg-blue-100"
+                      <button
+                        onClick={() => handleCategoryChange("beverages")}
+                        className={`px-3 sm:px-4 py-2 rounded-lg text-sm border transition-colors flex items-center gap-2 whitespace-nowrap ${
+                          selectedCategory === "beverages"
+                            ? "bg-sky-600 text-white border-sky-600"
+                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                         }`}
                       >
-                        <div className="w-4 h-4 rounded-full border-2 border-blue-200 flex-shrink-0">
-                          <div className="w-2 h-2 bg-blue-200 rounded-full mx-auto mt-0.5"></div>
+                        <div className="w-4 h-4 rounded-full border-2 border-sky-600/60 flex-shrink-0">
+                          <div className="w-2 h-2 bg-sky-600/60 rounded-full mx-auto mt-0.5"></div>
                         </div>
                         <span>Beverages</span>
                       </button>
@@ -461,7 +708,7 @@ export default function MenuPage() {
                   <div className="w-full sm:w-auto flex justify-end">
                     <button
                       onClick={handleAddItem}
-                      className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                      className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white px-4 sm:px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                     >
                       <FaPlus className="text-lg" />
                       <span>Add New Item</span>
@@ -471,7 +718,7 @@ export default function MenuPage() {
               </div>
             </div>
 
-            {/* Menu Items Container */}
+            {/* Menu Items Container with Sidebar */}
             <div className="p-0">
               <div className="w-full px-6">
                 {loading ? (
@@ -479,59 +726,108 @@ export default function MenuPage() {
                     <LoadingSpinner size="40" />
                   </div>
                 ) : (
-                  <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                  <div className="flex gap-6">
+                    {/* Left Sidebar - Sections */}
+                    <div className="w-64 flex-shrink-0">
+                      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sticky top-44 max-h-[calc(100vh-12rem)] overflow-y-auto z-10">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                          <span>📂</span>
+                          <span>Sections</span>
+                        </h3>
+                        <div className="space-y-2">
+                          {sectionsWithCounts.map((section) => (
+                            <button
+                              key={section.name}
+                              onClick={() => handleSectionChange(section.name)}
+                              className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center justify-between ${
+                                selectedSection === section.name
+                                  ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                  : "hover:bg-gray-50 text-gray-700"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">
+                                  {section.name === "all" ? "📋" : section.icon || "📂"}
+                                </span>
+                                <span className="font-medium text-sm">
+                                  {section.displayName || section.name}
+                                </span>
+                              </div>
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                selectedSection === section.name
+                                  ? "bg-amber-200 text-amber-800"
+                                  : "bg-gray-100 text-gray-600"
+                              }`}>
+                                {section.count}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Content - Menu Items */}
+                    <div className="flex-1">
+                      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {filteredItems.map((item) => (
-                      <div key={item._id} className="group bg-white/90 backdrop-blur-sm border border-amber-200/50 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-2">
+                      <div key={item._id} className="group bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
                         {/* Card Header */}
-                        <div className="relative p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-b border-amber-200/30">
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center space-x-3">
+                        <div className="relative p-3 bg-white border-b border-gray-200">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center space-x-2">
                               {item.category === "veg" ? (
-                                <div className="bg-green-100 rounded-full p-2 shadow-sm">
-                                  <div className="w-4 h-4 rounded-full border-2 border-green-600 flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                                <div className="bg-gray-100 rounded-full p-1">
+                                  <div className="w-3 h-3 rounded-full border-2 border-emerald-600 flex items-center justify-center">
+                                    <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full"></div>
                                   </div>
                                 </div>
                               ) : item.category === "non-veg" ? (
-                                <div className="bg-red-100 rounded-full p-2 shadow-sm">
-                                  <div className="w-4 h-4 border-2 border-red-600 flex items-center justify-center">
-                                    <div className="w-0 h-0 border-l-[3px] border-r-[3px] border-b-[5px] border-l-transparent border-r-transparent border-b-red-600"></div>
+                                <div className="bg-gray-100 rounded-full p-1">
+                                  <div className="w-3 h-3 border-2 border-rose-600 flex items-center justify-center">
+                                    <div className="w-0 h-0 border-l-[2px] border-r-[2px] border-b-[3px] border-l-transparent border-r-transparent border-b-rose-600"></div>
                                   </div>
                                 </div>
                               ) : item.category === "jain" ? (
-                                <div className="bg-orange-100 rounded-full p-2 shadow-sm">
-                                  <div className="w-4 h-4 rounded-full border-2 border-orange-600 flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-orange-600 rounded-full"></div>
+                                <div className="bg-gray-100 rounded-full p-1">
+                                  <div className="w-3 h-3 rounded-full border-2 border-amber-700 flex items-center justify-center">
+                                    <div className="w-1.5 h-1.5 bg-amber-700 rounded-full"></div>
                                   </div>
                                 </div>
                               ) : item.category === "beverages" ? (
-                                <div className="bg-blue-100 rounded-full p-2 shadow-sm">
-                                  <div className="w-4 h-4 rounded-full border-2 border-blue-600 flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                                <div className="bg-gray-100 rounded-full p-1">
+                                  <div className="w-3 h-3 rounded-full border-2 border-sky-600 flex items-center justify-center">
+                                    <div className="w-1.5 h-1.5 bg-sky-600 rounded-full"></div>
                                   </div>
                                 </div>
                               ) : (
-                                <div className="bg-gray-100 rounded-full p-2 shadow-sm">
-                                  <div className="w-4 h-4 rounded-full border-2 border-gray-600 flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+                                <div className="bg-gray-100 rounded-full p-1">
+                                  <div className="w-3 h-3 rounded-full border-2 border-gray-600 flex items-center justify-center">
+                                    <div className="w-1.5 h-1.5 bg-gray-600 rounded-full"></div>
                                   </div>
                                 </div>
                               )}
                               <div>
-                                <h3 className="text-lg font-bold text-gray-800 group-hover:text-amber-700 transition-colors">{item.name}</h3>
-                                {item.subcategory && (
-                                  <span className="inline-block bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded-full mt-1 font-medium">
-                                    {item.subcategory}
-                                  </span>
-                                )}
+                                <h3 className="text-sm font-semibold text-gray-900">{item.name}</h3>
+                                <div className="flex flex-wrap gap-1 mt-0.5">
+                                  {item.section && (
+                                    <span className="inline-block bg-amber-100 text-amber-700 text-[9px] px-1.5 py-0.5 rounded-full">
+                                      📂 {item.section}
+                                    </span>
+                                  )}
+                                  {item.subcategory && (
+                                    <span className="inline-block bg-gray-100 text-gray-700 text-[9px] px-1.5 py-0.5 rounded-full">
+                                      {item.subcategory}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                            <div className="flex flex-col items-end space-y-2">
-                              <span className={`text-xs px-3 py-1 rounded-full font-semibold shadow-sm ${item.available ? "bg-green-100 text-green-700 border border-green-200" : "bg-red-100 text-red-700 border border-red-200"}`}>
+                            <div className="flex flex-col items-end space-y-1">
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${item.available ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"}`}>
                                 {item.available ? "Available" : "Unavailable"}
                               </span>
                               {item.spicyLevel && (
-                                <span className="inline-flex items-center bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full border border-red-200">
+                                <span className="inline-flex items-center bg-rose-50 text-rose-700 text-[10px] px-1.5 py-0.5 rounded-full border border-rose-200">
                                   🌶️ {item.spicyLevel}
                                 </span>
                               )}
@@ -539,37 +835,37 @@ export default function MenuPage() {
                           </div>
                           
                           {item.description && (
-                            <p className="text-gray-600 text-sm leading-relaxed">{item.description}</p>
+                            <p className="text-gray-600 text-xs leading-relaxed">{item.description}</p>
                           )}
                         </div>
 
                         {/* Card Body */}
-                        <div className="p-6">
+                        <div className="p-3">
                           {/* Pricing Section */}
-                          <div className="mb-6">
+                          <div className="mb-3">
                             {item.pricing && item.pricing.length > 0 ? (
-                              <div className="space-y-2">
-                                <h4 className="text-sm font-semibold text-gray-700 mb-3">Pricing Options</h4>
+                              <div className="space-y-1">
+                                <h4 className="text-xs font-medium text-gray-800 mb-2">Pricing Options</h4>
                                 {item.pricing.map((pricing, index) => (
-                                  <div key={index} className="flex items-center justify-between bg-amber-50/50 rounded-lg p-3 border border-amber-200/30">
+                                  <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-2 border border-gray-200">
                                     <div className="flex items-center space-x-2">
-                                      <span className="text-amber-700 font-bold text-lg">₹{pricing.price}</span>
-                                      <span className="text-gray-600 text-sm font-medium">{pricing.size}</span>
+                                      <span className="text-gray-900 font-semibold text-sm">₹{pricing.price}</span>
+                                      <span className="text-gray-600 text-xs">{pricing.size}</span>
                                     </div>
                                     {pricing.description && (
-                                      <span className="text-gray-500 text-xs bg-white px-2 py-1 rounded-full">
+                                      <span className="text-gray-500 text-[10px] bg-white px-1.5 py-0.5 rounded-full border border-gray-200">
                                         {pricing.description}
                                       </span>
                                     )}
                                   </div>
                                 ))}
-                                <span className="text-gray-400 text-xs">per {item.unit}</span>
+                                <span className="text-gray-500 text-[10px]">per {item.unit}</span>
                               </div>
                             ) : (
-                              <div className="bg-gradient-to-r from-amber-100 to-orange-100 rounded-xl p-4 border border-amber-200/50">
+                              <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-amber-700 font-bold text-2xl">₹{item.price}</span>
-                                  <span className="text-gray-600 text-sm font-medium">per {item.unit}</span>
+                                  <span className="text-gray-900 font-semibold text-lg">₹{item.price}</span>
+                                  <span className="text-gray-600 text-xs">per {item.unit}</span>
                                 </div>
                               </div>
                             )}
@@ -577,17 +873,17 @@ export default function MenuPage() {
 
                           {/* Preparation Time */}
                           {item.preparationTime && (
-                            <div className="flex items-center space-x-2 mb-4 text-gray-500">
-                              <FaClock className="text-amber-500" />
-                              <span className="text-sm">{item.preparationTime} minutes</span>
+                            <div className="flex items-center space-x-1 mb-2 text-gray-500">
+                              <FaClock className="text-gray-400 text-xs" />
+                              <span className="text-xs">{item.preparationTime} min</span>
                             </div>
                           )}
 
                           {/* Action Buttons */}
-                          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                          <div className="flex items-center justify-between pt-2 border-t border-gray-200">
                             {/* Availability Toggle */}
-                            <div className="flex items-center space-x-3">
-                              <span className="text-sm text-gray-600 font-medium">Available</span>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs text-gray-600 font-medium">Available</span>
                               <label className="relative inline-flex items-center cursor-pointer">
                                 <input 
                                   type="checkbox" 
@@ -595,31 +891,35 @@ export default function MenuPage() {
                                   onChange={() => toggleAvailability(item)}
                                   className="sr-only peer"
                                 />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-amber-500 shadow-inner"></div>
+                                <div className="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 rounded-full transition-colors duration-300 peer-checked:bg-amber-500">
+                                  <div className={`absolute top-0.5 left-0.5 bg-white border border-gray-300 rounded-full h-4 w-4 transition-transform duration-300 shadow-sm ${item.available ? 'translate-x-4 border-amber-500' : 'translate-x-0'}`}></div>
+                                </div>
                               </label>
                             </div>
 
                             {/* Edit and Delete Buttons */}
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-1">
                               <button 
                                 onClick={() => handleEdit(item)} 
-                                className="flex items-center justify-center w-10 h-10 bg-blue-100 text-blue-600 rounded-xl hover:bg-blue-200 transition-all duration-300 shadow-sm hover:shadow-md"
+                                className="flex items-center justify-center w-7 h-7 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                                 title="Edit Item"
                               >
-                                <FaEdit className="text-sm" />
+                                <FaEdit className="text-xs" />
                               </button>
                               <button 
                                 onClick={() => handleDelete(item._id)} 
-                                className="flex items-center justify-center w-10 h-10 bg-red-100 text-red-600 rounded-xl hover:bg-red-200 transition-all duration-300 shadow-sm hover:shadow-md"
+                                className="flex items-center justify-center w-7 h-7 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                                 title="Delete Item"
                               >
-                                <FaTrash className="text-sm" />
+                                <FaTrash className="text-xs" />
                               </button>
                             </div>
                           </div>
                         </div>
                       </div>
                     ))}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -632,15 +932,15 @@ export default function MenuPage() {
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative transform transition-all duration-300 scale-100">
               {/* Modal Header */}
-              <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-6 rounded-t-2xl">
+              <div className="bg-white border-b border-gray-200 text-gray-900 p-6 rounded-t-2xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="bg-white/20 rounded-xl p-2">
+                    <div className="bg-gray-100 rounded-xl p-2 text-amber-600">
                       <FaPlus className="text-xl" />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold">Add Menu Item</h2>
-                      <p className="text-amber-100 text-sm">Create a new delicious offering</p>
+                      <h2 className="text-2xl font-semibold">Add Menu Item</h2>
+                      <p className="text-gray-500 text-sm">Create a new delicious offering</p>
                     </div>
                   </div>
                   <button
@@ -648,9 +948,9 @@ export default function MenuPage() {
                       setIsFormModalOpen(false);
                       resetForm();
                     }}
-                    className="bg-white/20 hover:bg-white/30 rounded-xl p-2 transition-all duration-300"
+                    className="bg-gray-100 hover:bg-gray-200 rounded-xl p-2 transition-colors"
                   >
-                    <FaTimes className="text-xl" />
+                    <FaTimes className="text-xl text-gray-700" />
                   </button>
                 </div>
               </div>
@@ -658,6 +958,110 @@ export default function MenuPage() {
               {/* Modal Body */}
               <div className="p-6 max-h-[70vh] overflow-y-auto">
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Section Selection - Most Important */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">📂 Section</h3>
+                    <div className="w-full">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Select Section</label>
+                      <div className="relative" ref={sectionDropdownRef}>
+                        {/* Searchable Input */}
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={sectionSearchTerm}
+                            onChange={(e) => handleSectionInputChange(e.target.value)}
+                            onFocus={() => {
+                              // Lazy load sections on first focus
+                              if (!sectionsLoaded) {
+                                fetchSections();
+                              }
+                              setIsSectionDropdownOpen(true);
+                            }}
+                            placeholder="Type or select section (e.g., Pizza, Burgers, Sandwiches)"
+                            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 bg-white border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors hover:border-amber-400"
+                          />
+                          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <FaChevronDown 
+                              className={`w-4 h-4 text-gray-400 transition-transform ${
+                                isSectionDropdownOpen ? 'transform rotate-180' : ''
+                              }`} 
+                            />
+                          </div>
+                        </div>
+
+                        {/* Dropdown Menu */}
+                        {isSectionDropdownOpen && (sectionSearchTerm.length > 0 || sections.length > 0) && (
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                            {/* Show sections based on search term */}
+                            {sectionSearchTerm.trim() ? (
+                              <>
+                                {/* Filtered Sections when typing */}
+                                {filteredSections.length > 0 && (
+                                  <div className="py-1">
+                                    {filteredSections.map((section) => (
+                                      <button
+                                        key={section._id}
+                                        type="button"
+                                        onClick={() => handleSelectSection(section.name)}
+                                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-left hover:bg-amber-50 focus:bg-amber-50 transition-colors flex items-center space-x-2 text-sm sm:text-base"
+                                      >
+                                        <span className="text-lg">{section.icon}</span>
+                                        <span className="text-gray-900">{section.name}</span>
+                                        {section.name === form.section && (
+                                          <FaCheck className="w-4 h-4 text-amber-600 ml-auto" />
+                                        )}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Add New Section - Show only if search term doesn't match existing */}
+                                {!isExactMatch && (
+                                  <>
+                                    {filteredSections.length > 0 && <hr className="my-1" />}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAddNewSection(sectionSearchTerm)}
+                                      className="w-full px-4 py-2 text-left hover:bg-green-50 focus:bg-green-50 transition-colors flex items-center space-x-2 text-green-600"
+                                    >
+                                      <FaPlus className="w-4 h-4" />
+                                      <span>Add "{capitalizeFirstLetter(sectionSearchTerm)}"</span>
+                                    </button>
+                                  </>
+                                )}
+
+                                {/* No results message */}
+                                {filteredSections.length === 0 && isExactMatch && (
+                                  <div className="px-4 py-3 text-center text-gray-500 text-sm">
+                                    Section already selected
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              /* Show all sections when no search term */
+                              sections.length > 0 && (
+                                <div className="py-1">
+                                  {sections.map((section) => (
+                                    <button
+                                      key={section._id}
+                                      type="button"
+                                      onClick={() => handleSelectSection(section.name)}
+                                      className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-left hover:bg-amber-50 focus:bg-amber-50 transition-colors flex items-center space-x-2 text-sm sm:text-base"
+                                    >
+                                      <span className="text-lg">{section.icon}</span>
+                                      <span className="text-gray-900">{section.name}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">Choose which section this item belongs to. This helps organize your menu.</p>
+                    </div>
+                  </div>
+
                   {/* Basic Information */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">Basic Information</h3>
@@ -839,16 +1243,35 @@ export default function MenuPage() {
                               <div>
                                 <label className="block text-xs font-medium text-gray-600 mb-1">Size</label>
                                 <select
-                                  value={pricing.size}
-                                  onChange={(e) => updatePricingOption(index, 'size', e.target.value)}
+                                  value={customSizes[index] !== undefined ? 'custom' : pricing.size}
+                                  onChange={(e) => handleSizeSelection(index, e.target.value)}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300/30 text-sm"
                                   required
                                 >
                                   <option value="">Select Size</option>
                                   {getSizeOptions(form.unit).map(size => (
-                                    <option key={size} value={size}>{size}</option>
+                                    <option key={size} value={size}>
+                                      {size === 'custom' ? '🔧 Custom Size' : size}
+                                    </option>
                                   ))}
                                 </select>
+                                
+                                {/* Custom Size Input */}
+                                {customSizes[index] !== undefined && (
+                                  <div className="mt-2">
+                                    <input
+                                      type="text"
+                                      value={customSizes[index] || ''}
+                                      onChange={(e) => handleCustomSizeChange(index, e.target.value)}
+                                      placeholder="Enter custom size (e.g., 1.5L, XL, Family Pack)"
+                                      className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400/30 text-sm bg-amber-50"
+                                      required
+                                    />
+                                    <p className="text-xs text-amber-600 mt-1">
+                                      💡 Enter any custom size like "1.5L", "XL", "Family Pack", etc.
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                               <div>
                                 <label className="block text-xs font-medium text-gray-600 mb-1">Price (₹)</label>
@@ -899,27 +1322,25 @@ export default function MenuPage() {
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">Additional Details</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Subcategory</label>
-                          <select
-                            value={form.subcategory}
-                            onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-amber-300/30 focus:border-amber-400 transition-all"
-                          >
-                            <option value="">Select Subcategory</option>
-                            <option value="beverages">Beverages</option>
-                            <option value="appetizers">Appetizers</option>
-                            <option value="main-course">Main Course</option>
-                            <option value="desserts">Desserts</option>
-                            <option value="snacks">Snacks</option>
-                            <option value="salads">Salads</option>
-                            <option value="soups">Soups</option>
-                            <option value="breads">Breads</option>
-                            <option value="rice">Rice Items</option>
-                            <option value="specials">Chef's Specials</option>
-                          </select>
-                        </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Subcategory</label>
+                        <select
+                          value={form.subcategory}
+                          onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-amber-300/30 focus:border-amber-400 transition-all"
+                        >
+                          <option value="">Select Subcategory</option>
+                          <option value="beverages">Beverages</option>
+                          <option value="appetizers">Appetizers</option>
+                          <option value="main-course">Main Course</option>
+                          <option value="desserts">Desserts</option>
+                          <option value="snacks">Snacks</option>
+                          <option value="salads">Salads</option>
+                          <option value="soups">Soups</option>
+                          <option value="breads">Breads</option>
+                          <option value="rice">Rice Items</option>
+                          <option value="specials">Chef's Specials</option>
+                        </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Spicy Level</label>
@@ -975,7 +1396,7 @@ export default function MenuPage() {
                     </button>
                     <button
                       type="submit"
-                      className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
+                      className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
                     >
                       <FaPlus />
                       Add Item

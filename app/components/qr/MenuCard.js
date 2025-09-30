@@ -35,80 +35,57 @@ export default function MenuCard({
   };
 
   return (
-    <div className={` bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden 
-                   transition-all duration-300 hover:shadow-lg hover:shadow-gray-200/50 
+    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden 
+                   hover:shadow-md transition-shadow duration-200 
                    ${!isAvailable ? 'opacity-60' : ''}`}>
       
-      {/* Card Header */}
-      <div className="p-4 pb-3">
-        <div className="flex items-start justify-between gap-3 mb-3">
-          {/* Veg/Non-veg Badge & Name */}
-          <div className="flex items-start gap-2 flex-1 min-w-0">
-            {/* Category Badge */}
+      {/* Compact Card Content */}
+      <div className="p-3">
+        {/* Header - Name and Price */}
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex items-start gap-1.5 flex-1 min-w-0">
+            {/* Compact Category Badge - Only show for food items */}
             {item.category === "veg" ? (
-              <div className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-green-600 
-                           flex items-center justify-center">
-                <div className="w-3 h-3 rounded-full bg-green-600" />
+              <div className="flex-shrink-0 w-3 h-3 rounded-full border border-green-600 
+                           flex items-center justify-center mt-0.5">
+                <div className="w-2 h-2 rounded-full bg-green-600" />
               </div>
             ) : item.category === "jain" ? (
-              <div className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-orange-600 
-                           flex items-center justify-center">
-                <div className="w-3 h-3 rounded-full bg-orange-600" />
+              <div className="flex-shrink-0 w-3 h-3 rounded-full border border-orange-600 
+                           flex items-center justify-center mt-0.5">
+                <div className="w-2 h-2 rounded-full bg-orange-600" />
               </div>
-            ) : item.category === "none" ? (
-              <div className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-gray-500 
-                           flex items-center justify-center">
-                <div className="w-3 h-3 rounded-full bg-gray-500" />
-              </div>
-            ) : (
-              <div className="flex-shrink-0 w-5 h-5 rounded-sm border-2 border-red-500 
-                           flex items-center justify-center">
-                <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-b-[10px] 
+            ) : item.category === "non-veg" ? (
+              <div className="flex-shrink-0 w-3 h-3 rounded-sm border border-red-500 
+                           flex items-center justify-center mt-0.5">
+                <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-b-[6px] 
                              border-l-transparent border-r-transparent border-b-red-600" />
               </div>
-            )}
+            ) : null}
             
-            {/* Item Name */}
-            <h3 className="font-semibold text-lg text-gray-800 break-words whitespace-normal flex-1 min-w-0">
+            {/* Compact Item Name */}
+            <h3 className="font-medium text-sm text-gray-800 line-clamp-2 flex-1">
               {item.name}
             </h3>
           </div>
 
-          {/* Price */}
-          <div className="flex-shrink-0 text-right ml-2">
-            <div className="text-xl font-bold text-amber-600 whitespace-nowrap">
+          {/* Compact Price */}
+          <div className="flex-shrink-0">
+            <div className="text-sm font-bold text-orange-600">
               ₹{currentPrice.toFixed(0)}
             </div>
           </div>
         </div>
 
-        {/* Description */}
+        {/* Compact Description */}
         {item.description && (
-          <p className="text-sm text-gray-600 line-clamp-2 mb-3 leading-relaxed">
+          <p className="text-xs text-gray-500 line-clamp-1 mb-2">
             {item.description}
           </p>
         )}
 
-        {/* Subcategory Badge */}
-       
-        {item.subcategory && (
-          <div className="mb-3">
-            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-              item.category === 'beverages' 
-                ? 'bg-blue-100 text-blue-800'
-                : item.subcategory === 'desserts'
-                ? 'bg-purple-100 text-purple-800'
-                : item.subcategory === 'main-course'
-                ? 'bg-orange-100 text-orange-800'
-                : 'bg-gray-100 text-gray-800'
-            }`}>
-              {item.subcategory.charAt(0).toUpperCase() + item.subcategory.slice(1).replace('-', ' ')}
-            </span>
-          </div>
-        )}
-
-        {/* Size Selection */}
-        <div className="mb-4">
+        {/* Size Selection - Compact */}
+        <div className="mb-2">
           <SizeSelector
             item={item}
             selectedSizeIndex={selectedSizeIndex}
@@ -119,20 +96,18 @@ export default function MenuCard({
 
         {/* Availability Status */}
         {!isAvailable && (
-          <div className="mb-4">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium 
-                           bg-red-100 text-red-800">
-              Currently Unavailable
+          <div className="mb-2">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
+                           bg-red-100 text-red-700">
+              Unavailable
             </span>
           </div>
         )}
-      </div>
 
-      {/* Card Footer - Actions */}
-      <div className="px-4 pb-4">
+        {/* Compact Actions */}
         {isAvailable ? (
-          <div className="flex items-center justify-between gap-3">
-            {/* Quantity Selector */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Compact Quantity Selector */}
             <QuantitySelector
               quantity={quantity}
               onIncrement={onQuantityIncrement}
@@ -142,29 +117,26 @@ export default function MenuCard({
               itemName={item.name}
             />
 
-            {/* Add to Cart Button */}
+            {/* Compact Add Button */}
             <button
               onClick={quantity > 0 && !orderPlaced ? () => onAddToCart(item) : handleDisabledClick}
               disabled={false} 
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold 
-                       text-sm transition-all duration-200 min-h-[44px] ${
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-medium 
+                       text-xs transition-colors ${
                 quantity > 0 && !orderPlaced
-                  ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-md hover:shadow-lg active:scale-95'
+                  ? 'bg-orange-500 hover:bg-orange-600 text-white'
                   : 'bg-gray-200 text-gray-500 cursor-not-allowed'
               }`}
-              aria-disabled={quantity <= 0 || orderPlaced}
-              aria-label={`Add ${quantity} ${item.name} to cart`}
             >
-              <PlusIcon className="w-4 h-4" />
+              <PlusIcon className="w-3 h-3" />
               <span>Add{quantity > 0 ? ` (${quantity})` : ''}</span>
             </button>
           </div>
-        
         ) : (
           <button
             disabled
-            className="w-full py-3 rounded-xl bg-gray-200 text-gray-500 font-semibold 
-                     cursor-not-allowed text-sm"
+            className="w-full py-2 rounded-lg bg-gray-200 text-gray-500 font-medium 
+                     cursor-not-allowed text-xs"
           >
             Not Available
           </button>

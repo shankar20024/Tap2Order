@@ -1,5 +1,6 @@
 import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
+import { Bill } from "@/models/BillCounter";
 import { NextResponse } from "next/server";
 import { setTableFree } from "@/lib/tableStatus";
 import ably from "@/lib/ably";
@@ -48,12 +49,12 @@ export async function PATCH(req, { params }) {
       }, { status: 400 });
     }
 
-    const { status } = await req.json();
+    const { status, billNumber, tokenNumber } = await req.json();
 
-    if (!status) {
+    if (!status && !billNumber && !tokenNumber) {
       return NextResponse.json({
-        error: "Missing status field",
-        code: "MISSING_STATUS"
+        error: "Missing required fields",
+        code: "MISSING_FIELDS"
       }, { status: 400 });
     }
 
@@ -77,11 +78,33 @@ export async function PATCH(req, { params }) {
       }
     }
 
+    // Prepare update data
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (billNumber) updateData.billNumber = billNumber;
+    if (tokenNumber) updateData.tokenNumber = tokenNumber;
+
     const updatedOrder = await Order.findByIdAndUpdate(
       id,
-      { status },
+      updateData,
       { new: true }
     );
+
+    // Update corresponding bill status
+    try {
+      if (updatedOrder.billNumber) {
+        let billStatus = 'pending';
+        if (status === 'completed') billStatus = 'completed';
+        else if (status === 'cancelled') billStatus = 'cancelled';
+        
+        await Bill.findOneAndUpdate(
+          { billNumber: updatedOrder.billNumber },
+          { status: billStatus }
+        );
+      }
+    } catch (billError) {
+      console.error('Error updating bill status:', billError);
+    }
 
     // Publish real-time event to waiter dashboard
     try {
@@ -131,7 +154,7 @@ export async function PUT(request, { params }) {
       ...updateData,
       ...(updateData.paymentStatus === 'paid' && {
         status: "completed",
-        paymentMethod: "cash",
+        paymentMethod: updateData.paymentMethod || "cash",
         completedAt: new Date()
       })
     };
@@ -152,6 +175,27 @@ export async function PUT(request, { params }) {
     // Free the table if payment is completed
     if (updateData.paymentStatus === 'paid') {
       await setTableFree(order.userId, order.tableNumber);
+    }
+
+    // Update corresponding bill status and payment info
+    try {
+      if (updatedOrder.billNumber) {
+        const billUpdate = {};
+        
+        if (updateData.paymentStatus === 'paid') {
+          billUpdate.status = 'completed';
+          billUpdate['paymentInfo.status'] = 'completed';
+        }
+        
+        if (Object.keys(billUpdate).length > 0) {
+          await Bill.findOneAndUpdate(
+            { billNumber: updatedOrder.billNumber },
+            billUpdate
+          );
+        }
+      }
+    } catch (billError) {
+      console.error('Error updating bill payment status:', billError);
     }
 
     // Only publish reload event if it's NOT a payment completion

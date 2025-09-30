@@ -123,8 +123,7 @@ export default function PrinterSettings() {
         );
         previews[template.id] = receiptContent;
       } catch (error) {
-        console.error(`Error generating preview for ${template.id}:`, error);
-        previews[template.id] = `Error generating preview for ${template.name}`;
+                previews[template.id] = `Error generating preview for ${template.name}`;
       }
     });
 
@@ -170,8 +169,7 @@ export default function PrinterSettings() {
         await loadQZTray();
       }
     } catch (error) {
-      console.error('Printer connection error:', error);
-      setIsConnected(false);
+            setIsConnected(false);
       toast.error('Failed to connect to printer service');
     } finally {
       setIsLoading(false);
@@ -228,8 +226,7 @@ export default function PrinterSettings() {
         toast.error(result.message);
       }
     } catch (error) {
-      console.error('Test print error:', error);
-      toast.error('Failed to send test print');
+            toast.error('Failed to send test print');
     } finally {
       setIsLoading(false);
     }

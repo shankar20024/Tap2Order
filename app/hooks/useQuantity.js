@@ -57,6 +57,19 @@ export default function useQuantity(apiStatus, orderPlaced) {
     return selectedSizes[itemId] || 0;
   };
 
+  const getPriceForSize = (item, sizeIndex = 0) => {
+    if (!item) return 0;
+    
+    // If item has pricing array (multiple sizes)
+    if (item.pricing && Array.isArray(item.pricing) && item.pricing.length > 0) {
+      const validIndex = Math.min(sizeIndex, item.pricing.length - 1);
+      return item.pricing[validIndex]?.price || 0;
+    }
+    
+    // Fallback to single price
+    return item.price || 0;
+  };
+
   return {
     itemQuantities,
     selectedSizes,
@@ -66,6 +79,7 @@ export default function useQuantity(apiStatus, orderPlaced) {
     resetAllQuantities,
     handleSizeSelection,
     getQuantity,
-    getSelectedSize
+    getSelectedSize,
+    getPriceForSize
   };
 }

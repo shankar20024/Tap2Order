@@ -3,60 +3,81 @@ import { authOptions } from "../auth/[...nextauth]/route";
 import { connectDB } from "@/lib/mongodb";
 import Table from "@/models/Table";
 import { User } from "@/models/User";
+import { getAuthUser } from "@/lib/auth-middleware";
 
 export async function POST(req) {
-  const session = await getServerSession(authOptions);
-  if (!session) return new Response("Unauthorized", { status: 401 });
-
-  const { tableNumber } = await req.json();
-  await connectDB();
-
-  // Get user to check table limit
-  const user = await User.findById(session.user.id);
-  if (!user) {
-    return new Response(JSON.stringify({ error: "User not found" }), {
-      status: 404,
-    });
-  }
-
-  // Check if user has reached their table limit (only for regular users, not admins)
-  if (user.role === 'user') {
-    const tableCount = await Table.countDocuments({ userId: session.user.id });
-    if (tableCount >= (user.tableLimit || 10)) {
-      return new Response(
-        JSON.stringify({ 
-          error: `You have reached your table limit of ${user.tableLimit || 10} tables. Please contact your admin to increase the limit.` 
-        }), 
-        { status: 400 }
-      );
+  try {
+    // Use auth middleware to support both NextAuth and JWT
+    const authResult = await getAuthUser(req);
+    
+    if (!authResult.success) {
+      return new Response(JSON.stringify({ error: authResult.error }), { 
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      });
     }
-  }
 
-  // Check for duplicate table number for the same user
-  const existing = await Table.findOne({
-    tableNumber,
-    userId: session.user.id,
-  });
+    const { tableNumber } = await req.json();
+    await connectDB();
 
-  if (existing) {
-    return new Response(JSON.stringify({ error: "Table already exists" }), {
-      status: 400,
+    // Get user to check table limit
+    const user = await User.findById(authResult.user.id);
+    if (!user) {
+      return new Response(JSON.stringify({ error: "User not found" }), {
+        status: 404,
+      });
+    }
+
+    // Check if user has reached their table limit (only for regular users, not admins)
+    if (user.role === 'user') {
+      const tableCount = await Table.countDocuments({ userId: authResult.user.id });
+      if (tableCount >= (user.tableLimit || 10)) {
+        return new Response(
+          JSON.stringify({ 
+            error: `You have reached your table limit of ${user.tableLimit || 10} tables. Please contact your admin to increase the limit.` 
+          }), 
+          { status: 400 }
+        );
+      }
+    }
+
+    // Check for duplicate table number for the same user
+    const existing = await Table.findOne({
+      tableNumber,
+      userId: authResult.user.id,
+    });
+
+    if (existing) {
+      return new Response(JSON.stringify({ error: "Table already exists" }), {
+        status: 400,
+      });
+    }
+
+    const newTable = await Table.create({
+      tableNumber,
+      userId: authResult.user.id,
+      status: "free",
+    });
+
+    return Response.json(newTable);
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
     });
   }
-
-  const newTable = await Table.create({
-    tableNumber,
-    userId: session.user.id,
-    status: "free",
-  });
-
-  return Response.json(newTable);
 }
 
 export async function GET(req) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return new Response("Unauthorized", { status: 401 });
+    // Use auth middleware to support both NextAuth and JWT
+    const authResult = await getAuthUser(req);
+    
+    if (!authResult.success) {
+      return new Response(JSON.stringify({ error: authResult.error }), { 
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
 
     // Get all parameters from URL
     const url = new URL(req.url);
@@ -69,7 +90,7 @@ export async function GET(req) {
     await connectDB();
 
     // Use userId from query param if provided (for staff users), otherwise use authenticated user's id
-    const targetUserId = userIdParam || session.user.id;
+    const targetUserId = userIdParam || authResult.user.id;
 
     // Calculate skip value
     const skip = (page - 1) * limit;
@@ -146,8 +167,15 @@ export async function GET(req) {
 
 export async function PUT(req) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return new Response("Unauthorized", { status: 401 });
+    // Use auth middleware to support both NextAuth and JWT
+    const authResult = await getAuthUser(req);
+    
+    if (!authResult.success) {
+      return new Response(JSON.stringify({ error: authResult.error }), { 
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
 
     const { _id, userId } = await req.json();
     if (!userId) {

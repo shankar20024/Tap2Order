@@ -5,7 +5,7 @@ import Logo from "@/app/components/Logo";
 
 export default function QRHeader({ username, tableNumber, apiStatus, hotelName, customerInfo, businessInfo }) {
   return (
-    <header className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-200 shadow-lg backdrop-blur-sm">
+    <header className=" bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-200 shadow-lg backdrop-blur-sm">
       <div className="px-4 py-4">
         {/* Top Row - Logo & Restaurant */}
         <div className="flex items-center justify-between mb-3">

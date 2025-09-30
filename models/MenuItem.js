@@ -39,6 +39,10 @@ const menuItemSchema = new mongoose.Schema({
   
   // Additional fields for better organization
   subcategory: { type: String }, // e.g., "beverages", "main-course", "desserts"
+  section: { 
+    type: String,
+    trim: true
+  }, // e.g., "Pizza", "Burgers", "Sandwiches"
   spicyLevel: { 
     type: String, 
     enum: ["mild", "medium", "spicy", "extra-spicy"],

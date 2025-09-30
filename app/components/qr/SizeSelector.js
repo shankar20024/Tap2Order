@@ -12,23 +12,23 @@ export default function SizeSelector({
   if (!hasMultipleSizes) return null;
 
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap gap-1">
       {item.pricing.map((pricing, index) => (
         <button
           key={index}
           onClick={() => onSizeSelect(item._id, index)}
-          className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-all duration-200 
-                   min-h-[36px] flex items-center justify-center whitespace-nowrap ${
+          className={`px-2 py-1 text-xs font-medium rounded border transition-colors 
+                   flex items-center justify-center whitespace-nowrap ${
             selectedSizeIndex === index
-              ? 'bg-amber-500 text-white border-amber-500 shadow-md transform scale-105'
-              : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700'
+              ? 'bg-orange-500 text-white border-orange-500'
+              : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-orange-50 hover:border-orange-300'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
           disabled={disabled}
           title={`${pricing.size} - ₹${pricing.price}`}
           aria-label={`Select ${pricing.size} size for ₹${pricing.price}`}
         >
           <div className="flex flex-col items-center">
-            <span className="font-medium">{pricing.size}</span>
+            <span className="text-xs">{pricing.size}</span>
             <span className="text-[10px] opacity-75">₹{pricing.price}</span>
           </div>
         </button>

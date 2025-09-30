@@ -9,13 +9,16 @@ import {
   FaPrint,
   FaRupeeSign,
   FaCrown,
-  FaCheckCircle
+  FaCheckCircle,
+  FaMoneyBillWave,
+  FaCreditCard
 } from "react-icons/fa";
 import { getBusinessInfo } from "@/lib/businessInfoCache";
 
 const TableDetailsModal = ({ tableNumber, orders, onClose, onPrint, onMarkPaid, userProfile }) => {
   const { data: session } = useSession();
   const [businessInfo, setBusinessInfo] = useState(null);
+  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
 
   useEffect(() => {
     const fetchBusinessInfo = async () => {
@@ -92,6 +95,12 @@ const TableDetailsModal = ({ tableNumber, orders, onClose, onPrint, onMarkPaid, 
     });
     return counts;
   }, {});
+
+  // Payment method handlers
+  const handlePaymentMethodSelect = (paymentMethod) => {
+    onMarkPaid(gstDetails, paymentMethod);
+    setShowPaymentOptions(false);
+  };
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-slate-900/60 to-black/70 backdrop-blur-md flex items-center justify-center z-50 p-2 sm:p-4 md:p-6">
@@ -245,12 +254,38 @@ const TableDetailsModal = ({ tableNumber, orders, onClose, onPrint, onMarkPaid, 
               >
                 <FaPrint /> Print Bill
               </button>
-              <button 
-                onClick={() => onMarkPaid(gstDetails)} 
-                className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-3 rounded-xl shadow-md flex items-center gap-2 justify-center"
-              >
-                <FaRupeeSign />Paid
-              </button>
+              
+              {/* Payment Options */}
+              {!showPaymentOptions ? (
+                <button 
+                  onClick={() => setShowPaymentOptions(true)} 
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-3 rounded-xl shadow-md flex items-center gap-2 justify-center"
+                >
+                  <FaRupeeSign />Paid
+                </button>
+              ) : (
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button 
+                    onClick={() => handlePaymentMethodSelect('cash')} 
+                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl shadow-md flex items-center gap-2 justify-center text-sm"
+                  >
+                    <FaMoneyBillWave /> Cash
+                  </button>
+                  <button 
+                    onClick={() => handlePaymentMethodSelect('online')} 
+                    className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-xl shadow-md flex items-center gap-2 justify-center text-sm"
+                  >
+                    <FaCreditCard /> Online
+                  </button>
+                  <button 
+                    onClick={() => setShowPaymentOptions(false)} 
+                    className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-xl shadow-md text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+              
               <button 
                 onClick={onClose} 
                 className="bg-slate-500 hover:bg-slate-600 text-white px-5 py-3 rounded-xl shadow-md"

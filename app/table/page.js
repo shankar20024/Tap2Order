@@ -295,8 +295,7 @@ export default function TablePage() {
       toast.success('All QR codes have been downloaded!', { id: toastId });
 
     } catch (error) {
-      console.error('Error generating QR codes:', error);
-      toast.error(`Error: ${error.message}`, { id: toastId });
+            toast.error(`Error: ${error.message}`, { id: toastId });
     } finally {
       setIsDownloading(false);
     }

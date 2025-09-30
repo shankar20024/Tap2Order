@@ -2,11 +2,127 @@ import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
 import Table from "@/models/Table"; // Import Table model
 import { User } from "@/models/User"; // Import User model for GST details
+import { BillCounter, Bill } from "@/models/BillCounter"; // Import Bill models
 import { NextResponse } from "next/server";
 import { setTableOccupied, setTableFree } from "@/lib/tableStatus";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import ably from "@/lib/ably";
+
+// Helper function to create bill for order
+async function createBillForOrder(order, userId) {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    // Get or create bill counter for today
+    let billCounter = await BillCounter.findOne({
+      hotelOwner: userId,
+      date: today
+    });
+
+    if (!billCounter) {
+      // New day - create counter starting from 0 (so first token will be 1)
+      billCounter = new BillCounter({
+        hotelOwner: userId,
+        date: today,
+        counter: 0
+      });
+      console.log(`New day detected: Token counter reset for ${today}`);
+    }
+
+    // Increment counter
+    billCounter.counter += 1;
+    await billCounter.save();
+
+    // Generate unique bill number with retry logic
+    let finalBillNumber;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (attempts < maxAttempts) {
+      const testBillNumber = `${today.replace(/-/g, '')}-${billCounter.counter.toString().padStart(4, '0')}`;
+      const existingBill = await Bill.findOne({ billNumber: testBillNumber });
+      
+      if (!existingBill) {
+        finalBillNumber = testBillNumber;
+        break;
+      }
+      
+      billCounter.counter += 1;
+      await billCounter.save();
+      attempts++;
+    }
+
+    if (!finalBillNumber) {
+      throw new Error("Unable to generate unique bill number");
+    }
+
+    // Map orderType to valid Bill enum values
+    const mapOrderType = (orderType) => {
+      const validTypes = ['dine-in', 'takeaway', 'billing', 'delivery'];
+      if (validTypes.includes(orderType)) {
+        return orderType;
+      }
+      // Default mapping for invalid types
+      return 'dine-in';
+    };
+
+    // Create bill with order data
+    const bill = new Bill({
+      billNumber: finalBillNumber,
+      tokenNumber: order.tokenNumber || billCounter.counter,
+      userId: userId,
+      orderId: order._id, // Add order ID reference
+      orderType: mapOrderType(order.orderType),
+      tableNumber: order.tableNumber,
+      items: order.items.map(item => ({
+        _id: item.menuItemId,
+        name: item.name,
+        price: item.price,
+        selectedSize: item.selectedSize || 'Regular',
+        quantity: item.quantity || 1,
+        category: item.category,
+        subcategory: item.subcategory
+      })),
+      customerInfo: {
+        name: order.customerInfo?.name || 'Guest',
+        phone: order.customerInfo?.phone || '',
+        email: '',
+        address: ''
+      },
+      pricing: {
+        subtotal: order.gstDetails?.subtotal || order.totalAmount || 0,
+        gst: order.gstDetails?.totalGst || 0,
+        discount: 0,
+        total: order.gstDetails?.grandTotal || order.totalAmount || 0
+      },
+      paymentInfo: {
+        method: order.paymentMethod || 'cash',
+        status: order.paymentStatus === 'paid' ? 'completed' : 'pending',
+        transactionId: ''
+      },
+      date: today,
+      status: 'pending', // Will be updated when order is completed
+      notes: order.orderMessage || '',
+      printCount: 0
+    });
+
+    await bill.save();
+
+    // Update order with bill number and token number (only for billing orders)
+    order.billNumber = finalBillNumber;
+    // Only set token number for billing orders, not takeaway/dine-in
+    if (order.orderType === 'billing') {
+      order.tokenNumber = billCounter.counter;
+    }
+    await order.save();
+
+    return bill;
+  } catch (error) {
+    console.error('Error in createBillForOrder:', error);
+    throw error;
+  }
+}
 
 // POST method to create a new order
 export async function POST(req) {
@@ -179,6 +295,24 @@ export async function POST(req) {
           code: "TABLE_STATUS_ERROR"
         }, { status: 500 });
       }
+    }
+
+    // Create bill entry only for specific order types (not for waiter manual orders)
+    const shouldCreateBill = savedOrder.orderType === 'billing' || savedOrder.orderType === 'takeaway';
+    
+    if (shouldCreateBill) {
+      try {
+        const bill = await createBillForOrder(savedOrder, userId);
+        // Refresh the saved order to get the updated billNumber
+        savedOrder = await Order.findById(savedOrder._id);
+        console.log('Bill created for order:', bill.billNumber);
+        console.log('Updated order with bill number:', savedOrder.billNumber);
+      } catch (billError) {
+        console.error('Error creating bill for order:', billError);
+        // Don't fail order creation if bill creation fails
+      }
+    } else {
+      console.log('Skipping bill creation for orderType:', savedOrder.orderType);
     }
 
     // Publish real-time event to waiter dashboard

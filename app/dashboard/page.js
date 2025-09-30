@@ -26,7 +26,11 @@ import {
   FaArrowDown,
   FaTachometerAlt,
   FaFire,
-  FaConciergeBell
+  FaConciergeBell,
+  FaExpand,
+  FaCompress,
+  FaChevronDown,
+  FaChevronUp
 } from "react-icons/fa";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
@@ -37,21 +41,33 @@ import DashboardStats from "../components/dashboard/DashboardStats";
 import { printBill } from "../components/bill/PrintBill";
 
 // Enhanced Quick Actions with Stunning Effects
-const QuickActions = ({ onRefresh, onViewHistory, onManageTables, onViewAnalytics, onViewWaiter, onTakeaway, className = "" }) => (
-  <div className={`bg-white rounded-3xl shadow-2xl border-0 overflow-hidden ${className} backdrop-blur-lg scale-90`}>
-    <div className="bg-gradient-to-r from-slate-800 via-gray-900 to-black px-4 sm:px-6 py-4 border-b-0">
-      <h3 className="text-lg sm:text-xl font-black text-white flex items-center">
-        <div className="p-2.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl mr-3 shadow-lg animate-pulse">
-          <FaTachometerAlt className="text-white text-base sm:text-lg" />
-        </div>
-        <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-          Quick Actions
-        </span>
-      </h3>
-    </div>
+const QuickActions = ({ onRefresh, onViewHistory, onManageTables, onViewAnalytics, onViewWaiter, onTakeaway, className = "" }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div className={`bg-white rounded-3xl shadow-2xl border-0 overflow-hidden ${className} backdrop-blur-lg scale-90`}>
+      <div 
+        className="bg-gradient-to-r from-slate-800 via-gray-900 to-black px-4 sm:px-6 py-4 border-b-0 cursor-pointer hover:from-slate-700 hover:via-gray-800 hover:to-gray-900 transition-all duration-300"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <h3 className="text-lg sm:text-xl font-black text-white flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="p-2.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl mr-3 shadow-lg animate-pulse">
+              <FaTachometerAlt className="text-white text-base sm:text-lg" />
+            </div>
+            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+              Quick Actions
+            </span>
+          </div>
+          <div className="text-white/80 hover:text-white transition-colors">
+            {isExpanded ? <FaChevronUp size={16} /> : <FaChevronDown size={16} />}
+          </div>
+        </h3>
+      </div>
     
-    <div className="p-4 sm:p-6 bg-gradient-to-br from-gray-50 to-blue-50">
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+      {isExpanded && (
+        <div className="p-4 sm:p-6 bg-gradient-to-br from-gray-50 to-blue-50">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         <button
           onClick={onRefresh}
           className="group flex flex-col items-center p-4 sm:p-5 rounded-2xl border-0 
@@ -131,10 +147,12 @@ const QuickActions = ({ onRefresh, onViewHistory, onManageTables, onViewAnalytic
             Waiter View
           </span>
         </button>
-      </div>
+          </div>
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 // Utility function to group orders by table number
 function groupOrdersByTable(orders) {
@@ -154,6 +172,7 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [tableModal, setTableModal] = useState(null);
   const [businessName, setBusinessName] = useState('');
+  const [isExpanded, setIsExpanded] = useState(false);
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -522,7 +541,7 @@ export default function Dashboard() {
     }
   };
 
-  const markOrderPaid = async (orderId, gstDetails) => {
+  const markOrderPaid = async (orderId, gstDetails, paymentMethod = 'cash') => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     const res = await fetch(`/api/order/${orderId}`, {
       method: 'PUT',
@@ -532,6 +551,7 @@ export default function Dashboard() {
       },
       body: JSON.stringify({
         paymentStatus: 'paid',
+        paymentMethod: paymentMethod,
         gstDetails: gstDetails,
         triggerPaymentEvent: true // Flag to trigger Ably payment event
       })
@@ -555,7 +575,7 @@ export default function Dashboard() {
     }
   };
 
-  const markTablePaid = async (tableNumber, tableOrders, allOrdersForTable, gstDetails) => {
+  const markTablePaid = async (tableNumber, tableOrders, allOrdersForTable, gstDetails, paymentMethod = 'cash') => {
     try {
       // consider all non-cancelled & not already paid orders
       const candidates = (allOrdersForTable || tableOrders).filter(o => o.status !== 'cancelled' && !isOrderPaid(o));
@@ -564,8 +584,8 @@ export default function Dashboard() {
         toast.info(`All orders already paid for Table ${tableNumber}`);
         return;
       }
-      await Promise.all(candidates.map(o => markOrderPaid(o._id, gstDetails)));
-      toast.success(`Marked ${candidates.length} order(s) paid for Table ${tableNumber}`);
+      await Promise.all(candidates.map(o => markOrderPaid(o._id, gstDetails, paymentMethod)));
+      toast.success(`Marked ${candidates.length} order(s) paid for Table ${tableNumber} via ${paymentMethod}`);
       await fetchOrders();
     } catch (e) {
       toast.error('Failed to mark orders paid');
@@ -622,40 +642,322 @@ export default function Dashboard() {
     });
   };
 
-  const handlePrintBill = (tableNumber, orders) => {
-    printBill(tableNumber, orders, session);
+  // Fetch bill details from database
+  const fetchBillDetails = async (billNumber) => {
+    try {
+      const response = await fetch(`/api/bills/search?billNumber=${billNumber}&userId=${session.user.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        return data.bill;
+      }
+    } catch (error) {
+      console.error('Error fetching bill details:', error);
+    }
+    return null;
+  };
+
+  // Fetch bill by order ID
+  const fetchBillByOrderId = async (orderId) => {
+    try {
+      const response = await fetch(`/api/bills/by-order?orderId=${orderId}&userId=${session.user.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        return data.bill;
+      }
+    } catch (error) {
+      console.error('Error fetching bill by order ID:', error);
+    }
+    return null;
+  };
+
+  // Increment bill print count
+  const incrementBillPrintCount = async (billNumber) => {
+    try {
+      await fetch(`/api/bills/print-count`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ billNumber, userId: session.user.id })
+      });
+    } catch (error) {
+      console.error('Error incrementing print count:', error);
+    }
+  };
+
+  // Create bill for table orders that don't have one
+  const createBillForTableOrders = async (tableNumber, orders) => {
+    try {
+      // Prepare items from all orders
+      const allItems = orders.flatMap(order => 
+        (order.items || []).map(item => ({
+          _id: item.menuItemId || item._id,
+          name: item.name,
+          price: item.price,
+          selectedSize: item.selectedSize || 'Regular',
+          quantity: item.quantity || 1,
+          category: item.category,
+          subcategory: item.subcategory
+        }))
+      );
+
+      // Fetch user's GST details for proper calculation
+      let userGstRate = 0;
+      try {
+        const businessResponse = await fetch(`/api/business/info?userId=${session.user.id}`);
+        if (businessResponse.ok) {
+          const businessData = await businessResponse.json();
+          userGstRate = businessData.gstDetails?.taxRate || 0;
+          console.log('User GST rate from business info:', userGstRate);
+        }
+      } catch (error) {
+        console.error('Error fetching business GST rate:', error);
+      }
+
+      // Calculate totals with proper GST using user's rate
+      const subtotal = allItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const gst = userGstRate > 0 ? Math.round(subtotal * (userGstRate / 100)) : 0;
+      const total = subtotal + gst;
+      
+      console.log('Dashboard GST Calculation:');
+      console.log('Subtotal:', subtotal);
+      console.log(`GST (${userGstRate}%):`, gst);
+      console.log('Total:', total);
+
+      // Get customer info from most recent order
+      const mostRecentOrder = orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+      const customerInfo = mostRecentOrder?.customerInfo || {};
+
+      const billData = {
+        items: allItems,
+        customerName: customerInfo.name || 'Guest',
+        customerPhone: customerInfo.phone || '',
+        tableNumber: tableNumber,
+        orderType: 'dine-in',
+        paymentMethod: 'cash',
+        notes: `Table ${tableNumber} - Dashboard Print`,
+        subtotal,
+        gst,
+        total,
+        orderId: mostRecentOrder._id // Add most recent order ID for linking
+      };
+
+      const response = await fetch('/api/bills/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(billData)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Bill created for table orders:', data.bill?.billNumber);
+        return data.bill;
+      } else {
+        console.error('Failed to create bill for table orders');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error creating bill for table orders:', error);
+      return null;
+    }
+  };
+
+  // Update orders with bill number
+  const updateOrdersWithBillNumber = async (orders, billNumber, tokenNumber) => {
+    try {
+      for (const order of orders) {
+        if (order._id) {
+          const updateData = { billNumber };
+          // Only include token number if it's provided (for billing orders only)
+          if (tokenNumber !== null && tokenNumber !== undefined) {
+            updateData.tokenNumber = tokenNumber;
+          }
+          
+          await fetch(`/api/order/${order._id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateData)
+          });
+        }
+      }
+      console.log('Orders updated with bill number:', billNumber, tokenNumber ? `and token: ${tokenNumber}` : '(no token)');
+    } catch (error) {
+      console.error('Error updating orders with bill number:', error);
+    }
+  };
+
+  const handlePrintBill = async (tableNumber, orders) => {
+    try {
+      // Get the first order to extract bill information
+      const firstOrder = orders[0];
+      
+      // First check if any order has a billNumber
+      let existingBill = null;
+      if (firstOrder?.billNumber) {
+        existingBill = await fetchBillDetails(firstOrder.billNumber);
+      }
+      
+      // If no billNumber, check if bill exists for any order ID
+      if (!existingBill) {
+        for (const order of orders) {
+          const billByOrderId = await fetchBillByOrderId(order._id);
+          if (billByOrderId) {
+            existingBill = billByOrderId;
+            // Update order with bill number for future reference
+            await updateOrdersWithBillNumber([order], billByOrderId.billNumber, billByOrderId.tokenNumber);
+            break;
+          }
+        }
+      }
+      
+      if (existingBill) {
+        // Use existing bill - increment print count
+        await incrementBillPrintCount(existingBill.billNumber);
+        
+        const printData = {
+          orderNumber: existingBill.billNumber,
+          billNumber: existingBill.billNumber,
+          tokenNumber: existingBill.tokenNumber || null,
+          customerName: existingBill.customerInfo?.name || firstOrder.customerInfo?.name || 'Guest',
+          customerPhone: existingBill.customerInfo?.phone || firstOrder.customerInfo?.phone || '',
+          date: existingBill.date || new Date().toLocaleString('en-IN'),
+          items: existingBill.items || orders.flatMap(order => order.items || []),
+          subtotal: existingBill.pricing?.subtotal || orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0),
+          gst: existingBill.pricing?.gst || 0,
+          total: existingBill.pricing?.total || orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0)
+        };
+        
+        console.log('Dashboard printing with existing bill (print count incremented):', printData);
+        await printBill(`Table ${tableNumber}`, orders, session, printData);
+      } else {
+        // Create new bill only if none exists
+        console.log('No existing bill found, creating new bill for table orders');
+        const createdBill = await createBillForTableOrders(tableNumber, orders);
+        
+        if (createdBill) {
+          const printData = {
+            orderNumber: createdBill.billNumber,
+            billNumber: createdBill.billNumber,
+            tokenNumber: createdBill.tokenNumber || null,
+            customerName: createdBill.customerInfo?.name || 'Guest',
+            customerPhone: createdBill.customerInfo?.phone || '',
+            date: new Date().toLocaleString('en-IN'),
+            items: createdBill.items || orders.flatMap(order => order.items || []),
+            subtotal: createdBill.pricing?.subtotal || 0,
+            gst: createdBill.pricing?.gst || 0,
+            total: createdBill.pricing?.total || 0
+          };
+          
+          console.log('Dashboard printing with newly created bill:', printData);
+          await printBill(`Table ${tableNumber}`, orders, session, printData);
+          
+          // Update orders with bill number for future reference
+          await updateOrdersWithBillNumber(orders, createdBill.billNumber, createdBill.tokenNumber);
+        } else {
+          // Fallback to original print method
+          console.log('Failed to create bill, using fallback print method');
+          await printBill(tableNumber, orders, session);
+        }
+      }
+    } catch (error) {
+      console.error('Error printing bill:', error);
+      // Fallback to original method if error occurs
+      await printBill(tableNumber, orders, session);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header title="Dashboard" />
-      <main className="p-4 sm:p-6 lg:p-8">
-        {/* Modern Dashboard Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 sm:mb-12 mt-20 sm:mt-15 lg:mt-15 xl:mt-15 md:mt-15">
-          <div className="flex flex-row items-center gap-4">
-            <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-orange-600 p-4 rounded-3xl mr-0 sm:mr-6 mb-4 sm:mb-0 self-start">
-              <FaUtensils className="text-white text-xl sm:text-3xl" />
-            </div>
-            <div>
-              <p className="text-xl sm:text-2xl text-gray-600">Welcome back,</p>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 -mt-1">
-                {businessName}
-              </h1>
-              <p className="text-gray-600 text-base sm:text-lg mt-2">
-                Manage your orders and operations efficiently
-              </p>
-              <div className="flex items-center mt-2 text-sm text-gray-500">
-                <FaFire className="mr-2 text-orange-500" />
-                <span>Real-time updates enabled</span>
-              </div>
-            </div>
+      {isExpanded && (
+        <div className="fixed inset-0 bg-white z-[70] overflow-auto">
+          {/* Expanded View Header */}
+          <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between z-10">
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+              <FaTable className="mr-3 text-blue-600"/>
+              Tables Overview
+            </h2>
+            <button
+              onClick={() => setIsExpanded(false)}
+              className="p-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors flex items-center gap-2"
+              title="Exit full screen"
+            >
+              <FaCompress className="text-gray-600" />
+              <span className="text-sm text-gray-600">Exit</span>
+            </button>
           </div>
           
-          
+          {/* Expanded Tables Grid */}
+          <div className="p-6">
+            {Object.keys(groupOrdersByTable(orders)).length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center">
+                <div className="bg-gradient-to-br from-blue-100 to-indigo-100 p-8 rounded-full mb-6">
+                  <FaTable className="text-6xl text-blue-600" />
+                </div>
+                <h3 className="text-3xl font-bold text-gray-800 mb-4">No Active Tables</h3>
+                <p className="text-gray-600 mb-6 max-w-md text-lg">
+                  Tables with active orders will appear here. Start taking orders to see table activity.
+                </p>
+                <div className="flex items-center space-x-2 text-gray-500">
+                  <FaUtensils className="text-amber-500" />
+                  <span>Ready to serve your customers</span>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-8 auto-rows-max">
+                {Object.keys(groupOrdersByTable(orders)).map((tn) => {
+                  const ordersForTable = groupOrdersByTable(orders)[tn];
+                  const activeOrders = ordersForTable.filter(o => !isOrderPaid(o));
+                  const total = activeOrders.reduce((sum, o)=> sum + (o.totalAmount || (o.items||o.cart||[]).reduce((s,i)=>s+i.price*i.quantity,0)), 0);
+                  const hasOrders = activeOrders.length > 0;
+                  const hasPaid = false;
+                  
+                  if (!hasOrders) return null;
+                  
+                  return (
+                    <TableBox
+                      key={tn}
+                      tableNumber={tn}
+                      totalAmount={total}
+                      hasOrders={hasOrders}
+                      hasPaid={hasPaid}
+                      onView={() => setTableModal({ tableNumber: tn, orders: activeOrders })}
+                      onCancel={() => cancelTableOrders(tn, activeOrders)}
+                      onMarkPaid={() => markTablePaid(tn, activeOrders, activeOrders, ordersForTable[0]?.gstDetails)}
+                      gstDetails={ordersForTable[0]?.gstDetails}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      <main className="p-4 sm:p-6 lg:p-8">
+        {/* Modern Dashboard Header */}
+        <div className="mb-2 mt-20 sm:mt-16 lg:mt-16">
+          <div className="flex items-start gap-4">
+            {/* Icon Container */}
+            <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-orange-600 p-3 rounded-2xl shadow-lg flex-shrink-0">
+              <FaUtensils className="text-white text-2xl" />
+            </div>
+            
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <div className="mb-1">
+                <p className="text-lg text-gray-600 mb-1">Welcome back,</p>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 leading-tight">
+                  {businessName}
+                </h1>
+              </div>
+              
+              <p className="text-gray-600 text-base mb-3">
+                Manage your orders and operations efficiently
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Enhanced Quick Actions Panel */}
-        <div className="mb-6">
+        <div className="mb-4">
           <QuickActions
             onRefresh={fetchOrders}
             onViewHistory={() => router.push('/order-history')}
@@ -677,7 +979,15 @@ export default function Dashboard() {
             <h2 className="text-lg font-bold text-gray-800 flex items-center"><FaTable className="mr-2 text-blue-600"/>Tables</h2>
             <div className="text-xs text-gray-500">{Object.keys(groupOrdersByTable(orders)).length} active</div>
           </div>
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8 sm:p-6 lg:p-6 md:p-6 min-h-[300px] h-auto overflow-hidden">
+          <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 p-8 sm:p-6 lg:p-6 md:p-6 min-h-[300px] h-auto overflow-hidden">
+            {/* Expand Icon */}
+            <button
+              onClick={() => setIsExpanded(true)}
+              className="absolute top-4 right-4 w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center group z-10"
+              title="Expand to full screen"
+            >
+              <FaExpand className="text-sm text-gray-600 group-hover:text-blue-600 transition-colors" />
+            </button>
             {Object.keys(groupOrdersByTable(orders)).length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full min-h-[250px] text-center">
                 <div className="bg-gradient-to-br from-blue-100 to-indigo-100 p-6 rounded-full mb-4">
@@ -738,8 +1048,8 @@ export default function Dashboard() {
             orders={tableModal.orders} 
             onClose={() => setTableModal(null)} 
             onPrint={() => handlePrintBill(tableModal.tableNumber, tableModal.orders)}
-            onMarkPaid={(gstDetails) => {
-              markTablePaid(tableModal.tableNumber, tableModal.orders, tableModal.orders, gstDetails);
+            onMarkPaid={(gstDetails, paymentMethod) => {
+              markTablePaid(tableModal.tableNumber, tableModal.orders, tableModal.orders, gstDetails, paymentMethod);
               setTableModal(null);
             }}
             userProfile={session?.user}

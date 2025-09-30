@@ -123,13 +123,13 @@ const OrderSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ["cash", "card", "upi", "wallet"],
+      enum: ["cash", "online", "card", "upi", "wallet"],
       default: "cash",
     },
     totalAmount: {
       type: Number,
       required: true,
-      min: 0, // Ensure total amount is non-negative
+      min: 0, 
     },
     gstDetails: {
       subtotal: {
@@ -211,6 +211,14 @@ const OrderSchema = new mongoose.Schema(
     orderMessage: {
       type: String,
       default: ''
+    },
+    billNumber: {
+      type: String,
+      default: null
+    },
+    tokenNumber: {
+      type: Number,
+      default: null
     }
   },
   { timestamps: true }
