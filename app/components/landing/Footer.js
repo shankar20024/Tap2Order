@@ -94,7 +94,7 @@ export default function Footer({ onContactClick }) {
                   whileHover={{ x: 5 }}
                 >
                   <FaEnvelope className="text-amber-400" />
-                  <span>info@tap2order.com</span>
+                  <span>info.tap2order@gmail.com</span>
                 </motion.div>
                 
                 <motion.div 

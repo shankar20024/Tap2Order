@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { FiPhone, FiMail, FiMessageCircle, FiHelpCircle, FiArrowLeft, FiSend, FiClock, FiUser, FiSettings, FiBook } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
+import Header from '../components/Header';
 
 export default function SupportPage() {
   const { data: session } = useSession();
@@ -100,8 +101,10 @@ export default function SupportPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
+    <>
+      <Header />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pt-20">
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* Header */}
         <div className="bg-white rounded-xl lg:rounded-2xl shadow-lg border border-gray-100 mb-6 lg:mb-8 overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 sm:px-8 py-6">
@@ -144,8 +147,8 @@ export default function SupportPage() {
             </div>
             <h3 className="font-bold text-gray-900 mb-2">Email Support</h3>
             <p className="text-sm text-gray-600 mb-3">Response within 2 hours</p>
-            <a href="mailto:support@tap2order.com" className="text-blue-600 font-semibold hover:text-blue-700">
-              support@tap2order.com
+            <a href="mailto:info.tap2order@gmail.com" className="text-blue-600 font-semibold hover:text-blue-700">
+              info.tap2order@gmail.com
             </a>
           </div>
 
@@ -387,7 +390,8 @@ export default function SupportPage() {
             </div>
           )}
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -1006,7 +1006,7 @@ export default function Dashboard() {
               <div className="grid grid-cols-3 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2 xs:gap-3 sm:gap-6 md:gap-6 lg:gap-10 auto-rows-max">
                 {Object.keys(groupOrdersByTable(orders)).map((tn) => {
               const ordersForTable = groupOrdersByTable(orders)[tn];
-              // Debug: Log orders for this table
+              
               
               
               // Show all orders except those that are completed AND paid
