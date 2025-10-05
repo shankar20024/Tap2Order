@@ -902,7 +902,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-8 auto-rows-max">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-3 xs:gap-4 sm:gap-5 md:gap-6 lg:gap-8 auto-rows-max">
                 {Object.keys(groupOrdersByTable(orders)).map((tn) => {
                   const ordersForTable = groupOrdersByTable(orders)[tn];
                   const activeOrders = ordersForTable.filter(o => !isOrderPaid(o));
@@ -1003,7 +1003,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6 sm:gap-8 lg:gap-10 auto-rows-max">
+              <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2 xs:gap-3 sm:gap-6 md:gap-6 lg:gap-10 auto-rows-max">
                 {Object.keys(groupOrdersByTable(orders)).map((tn) => {
               const ordersForTable = groupOrdersByTable(orders)[tn];
               // Debug: Log orders for this table

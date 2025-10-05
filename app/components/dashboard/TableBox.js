@@ -22,7 +22,7 @@ const TableBox = ({ tableNumber, totalAmount, hasOrders, hasPaid, onView, onCanc
   };
 
   return (
-    <div className="flex flex-col items-center p-1 xs:p-2 sm:p-3 md:p-4 lg:p-2 xl:p-3 2xl:p-4">
+    <div className="flex flex-col items-center">
       <div
         onClick={hasOrders ? onView : undefined}
         className={`relative 
@@ -87,7 +87,7 @@ const TableBox = ({ tableNumber, totalAmount, hasOrders, hasPaid, onView, onCanc
       </div>
       
       {/* Bottom action section - responsive sizing */}
-      <div className="mt-1 xs:mt-2 sm:mt-3 
+      <div className="mt-2 xs:mt-3 sm:mt-4 
         w-20 xs:w-24 sm:w-28 md:w-32 lg:w-28 xl:w-32 2xl:w-36">
         <button
           onClick={handleCancelClick}
