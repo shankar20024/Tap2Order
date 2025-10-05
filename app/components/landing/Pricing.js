@@ -3,11 +3,11 @@
 import { motion } from 'framer-motion';
 import { FaCheck, FaTimes, FaCrown, FaRocket } from 'react-icons/fa';
 
-export default function Pricing() {
+export default function Pricing({ onStartTrialClick, onContactSalesClick }) {
   const plans = [
     {
       name: "Starter",
-      price: "₹99",
+      price: "₹299",
       period: "/month",
       description: "Perfect for small restaurants and cafes",
       icon: FaRocket,
@@ -15,13 +15,11 @@ export default function Pricing() {
       bgColor: "from-blue-50 to-cyan-50",
       popular: false,
       features: [
-        { text: "Up to 10 tables", included: true },
+        { text: "Up to 10 tables & Staff accounts (5)", included: true },
         { text: "QR code ordering", included: true },
-        { text: "Menu management", included: true },
-        { text: "Order management", included: true },
+        { text: "Menu & Order management", included: true },
         { text: "Basic analytics", included: true },
         { text: "Email support", included: true },
-        { text: "Staff accounts (5)", included: true },
         { text: "Multi-language support", included: false },
         { text: "Advanced analytics", included: false },
         { text: "Priority support", included: false }
@@ -29,7 +27,7 @@ export default function Pricing() {
     },
     {
       name: "Professional",
-      price: "₹199",
+      price: "₹499",
       period: "/month",
       description: "Best for growing restaurants with multiple locations",
       icon: FaCrown,
@@ -222,7 +220,7 @@ export default function Pricing() {
                   }`}
                   whileHover={{ scale: 1.02, y: -2 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => window.location.href = '/login'}
+                  onClick={plan.name === 'Enterprise' ? onContactSalesClick : onStartTrialClick}
                 >
                   {plan.name === 'Enterprise' ? '📞 Contact Sales' : '🚀 Start Free Trial'}
                 </motion.button>
@@ -261,7 +259,7 @@ export default function Pricing() {
                 className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => window.location.href = '/login'}
+                onClick={onContactSalesClick}
               >
                 📞 Contact Sales
               </motion.button>

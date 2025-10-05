@@ -12,7 +12,7 @@ import {
   FaUtensils
 } from 'react-icons/fa';
 
-export default function Footer() {
+export default function Footer({ onContactClick }) {
   const footerLinks = {
     product: [
       { name: "Features", href: "#features" },
@@ -28,7 +28,7 @@ export default function Footer() {
     ],
     support: [
       { name: "Help Center", href: "/help" },
-      { name: "Contact Us", href: "/contact" },
+      { name: "Contact Us", href: "#", onClick: onContactClick },
       { name: "Status", href: "/status" },
       { name: "Community", href: "/community" }
     ],

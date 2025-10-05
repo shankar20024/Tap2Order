@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { FaArrowRight } from 'react-icons/fa';
 import DashboardScreenshot from '../../../public/Web-Screenshot/Dashboard.png';
 
-export default function Hero() {
+export default function Hero({ onGetStartedClick }) {
   return (
     <section id="hero" className="relative w-full min-h-screen flex items-center justify-center bg-white overflow-hidden pt-20">
       <div className="absolute inset-0 z-0">
@@ -43,7 +43,7 @@ export default function Hero() {
               className="mt-8 inline-flex items-center gap-3 bg-gray-900 text-white px-6 py-3 rounded-full font-bold text-md shadow-lg hover:shadow-xl hover:bg-gray-800 transition-all duration-300 transform hover:-translate-y-0.5"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => window.location.href = '/login'}
+              onClick={onGetStartedClick}
             >
               <span>Get Started Free</span>
               <FaArrowRight />

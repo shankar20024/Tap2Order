@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { FaArrowRight } from 'react-icons/fa';
 import Logo from '../Logo';
 
-export default function Navbar() {
+export default function Navbar({ onContactClick }) {
   const navItems = ['Features', 'How it Works', 'Testimonials', 'Pricing', 'Contact'];
 
   return (
@@ -32,8 +32,9 @@ export default function Navbar() {
             {navItems.map((item) => (
               <a
                 key={item}
-                href={`#${item.toLowerCase().replace(/\s+/g, '-')}`}
-                className="text-gray-600 hover:text-amber-700 transition-colors duration-300 font-medium relative group"
+                href={item === 'Contact' ? '#' : `#${item.toLowerCase().replace(/\s+/g, '-')}`}
+                onClick={item === 'Contact' ? (e) => { e.preventDefault(); onContactClick(); } : undefined}
+                className="text-gray-600 hover:text-amber-700 transition-colors duration-300 font-medium relative group cursor-pointer"
               >
                 {item}
                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-amber-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out"></span>

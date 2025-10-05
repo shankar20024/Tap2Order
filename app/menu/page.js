@@ -554,94 +554,125 @@ export default function MenuPage() {
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       <Header className=""/> 
 
-      <div className="min-h-screen bg-gray-50 relative w-full mt-21 sm:mt-18 md:mt-18">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 py-6 px-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl p-3 bg-gray-100">
-                <MdOutlineRestaurantMenu className="text-2xl text-amber-600" />
+      <div className="min-h-screen bg-gray-50 relative w-full mt-20 xs:mt-18 sm:mt-20 md:mt-21 lg:mt-18">
+        {/* Header - Ultra Responsive */}
+        <div className="bg-white border-b border-gray-200 
+          py-3 xs:py-4 sm:py-5 md:py-6 
+          px-2 xs:px-3 sm:px-4 md:px-6">
+          <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 xs:gap-3">
+            <div className="flex items-center gap-2 xs:gap-3">
+              <div className="rounded-lg xs:rounded-xl 
+                p-2 xs:p-2.5 sm:p-3 
+                bg-gray-100">
+                <MdOutlineRestaurantMenu className="text-lg xs:text-xl sm:text-2xl text-amber-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900">Menu Management</h1>
-                <p className="text-sm text-gray-500">Manage your restaurant's offerings</p>
+                <h1 className="text-lg xs:text-xl sm:text-2xl font-semibold text-gray-900">Menu Management</h1>
+                <p className="text-xs xs:text-sm text-gray-500 hidden xs:block">Manage your restaurant's offerings</p>
               </div>
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-            <div className="bg-white border border-gray-200 rounded-xl p-4">
+          {/* Stats - Ultra Responsive Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 
+            gap-2 xs:gap-3 sm:gap-4 
+            mt-3 xs:mt-4 sm:mt-5 md:mt-6">
+            {/* Stats Cards - Responsive */}
+            <div className="bg-white border border-gray-200 
+              rounded-lg xs:rounded-xl 
+              p-2 xs:p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-500">Total Items</p>
-                  <p className="text-2xl font-semibold text-gray-900">{items.length}</p>
+                  <p className="text-[10px] xs:text-xs text-gray-500">Total Items</p>
+                  <p className="text-lg xs:text-xl sm:text-2xl font-semibold text-gray-900">{items.length}</p>
                 </div>
-                <FaUtensils className="text-xl text-gray-400" />
+                <FaUtensils className="text-sm xs:text-lg sm:text-xl text-gray-400" />
               </div>
             </div>
-            <div className="bg-white border border-gray-200 rounded-xl p-4">
+            <div className="bg-white border border-gray-200 
+              rounded-lg xs:rounded-xl 
+              p-2 xs:p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-500">Available</p>
-                  <p className="text-2xl font-semibold text-gray-900">{items.filter(item => item.available).length}</p>
+                  <p className="text-[10px] xs:text-xs text-gray-500">Available</p>
+                  <p className="text-lg xs:text-xl sm:text-2xl font-semibold text-gray-900">{items.filter(item => item.available).length}</p>
                 </div>
-                <MdInventory className="text-xl text-gray-400" />
+                <MdInventory className="text-sm xs:text-lg sm:text-xl text-gray-400" />
               </div>
             </div>
-            <div className="bg-white border border-gray-200 rounded-xl p-4">
+            <div className="bg-white border border-gray-200 
+              rounded-lg xs:rounded-xl 
+              p-2 xs:p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-500">Veg Items</p>
-                  <p className="text-2xl font-semibold text-gray-900">{items.filter(item => item.category === 'veg').length}</p>
+                  <p className="text-[10px] xs:text-xs text-gray-500">Veg Items</p>
+                  <p className="text-lg xs:text-xl sm:text-2xl font-semibold text-gray-900">{items.filter(item => item.category === 'veg').length}</p>
                 </div>
-                <div className="w-6 h-6 rounded-full border-2 border-green-500/50 flex items-center justify-center">
-                  <div className="w-3 h-3 bg-green-500/50 rounded-full"></div>
+                <div className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 rounded-full border-2 border-green-500/50 flex items-center justify-center">
+                  <div className="w-2 h-2 xs:w-2.5 xs:h-2.5 sm:w-3 sm:h-3 bg-green-500/50 rounded-full"></div>
                 </div>
               </div>
             </div>
-            <div className="bg-white border border-gray-200 rounded-xl p-4">
+            <div className="bg-white border border-gray-200 
+              rounded-lg xs:rounded-xl 
+              p-2 xs:p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-500">Non-Veg</p>
-                  <p className="text-2xl font-semibold text-gray-900">{items.filter(item => item.category === 'non-veg').length}</p>
+                  <p className="text-[10px] xs:text-xs text-gray-500">Non-Veg</p>
+                  <p className="text-lg xs:text-xl sm:text-2xl font-semibold text-gray-900">{items.filter(item => item.category === 'non-veg').length}</p>
                 </div>
-                <div className="w-6 h-6 border-2 border-red-500/50 flex items-center justify-center">
-                  <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-b-[6px] border-l-transparent border-r-transparent border-b-red-500/50"></div>
+                <div className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 border-2 border-red-500/50 flex items-center justify-center">
+                  <div className="w-0 h-0 border-l-[2px] xs:border-l-[3px] sm:border-l-[4px] border-r-[2px] xs:border-r-[3px] sm:border-r-[4px] border-b-[3px] xs:border-b-[4px] sm:border-b-[6px] border-l-transparent border-r-transparent border-b-red-500/50"></div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row lg:h-screen overflow-hidden">
-          {/* Right: Enhanced Menu Section */}
-          <div className="flex-1 overflow-y-auto bg-white">
-            {/* Search and Filter Section */}
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-20">
+        {/* Main Content Container - Ultra Responsive */}
+        <div className="flex flex-col xl:flex-row">
+          {/* Enhanced Menu Section */}
+          <div className="flex-1 bg-white">
+            {/* Search and Filter Section - Mobile First */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 
+              p-2 xs:p-3 sm:p-4 md:p-6 z-20">
               <div>
-                {/* Search Bar */}
-                <div className="relative mb-6">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <FaSearch className="text-gray-400" />
+                {/* Search Bar - Responsive */}
+                <div className="relative mb-3 xs:mb-4 sm:mb-5 md:mb-6">
+                  <div className="absolute inset-y-0 left-0 
+                    pl-3 xs:pl-4 
+                    flex items-center pointer-events-none">
+                    <FaSearch className="text-gray-400 text-sm xs:text-base" />
                   </div>
                   <input
                     type="text"
-                    placeholder="Search delicious menu items..."
+                    placeholder="Search menu items..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300 transition text-gray-800 placeholder-gray-400"
+                    className="w-full 
+                      pl-9 xs:pl-12 
+                      pr-3 xs:pr-4 
+                      py-2 xs:py-2.5 sm:py-3 
+                      bg-white border border-gray-300 
+                      rounded-lg xs:rounded-xl 
+                      focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300 
+                      transition text-gray-800 placeholder-gray-400
+                      text-sm xs:text-base"
                   />
                 </div>
 
-                {/* Category Filters */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-                    <span className="text-gray-600 text-sm whitespace-nowrap">Filter by:</span>
-                    <div className="flex flex-wrap gap-2">
+                {/* Category Filters - Mobile Optimized */}
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-3">
+                    <span className="text-gray-600 text-xs xs:text-sm whitespace-nowrap">Filter by:</span>
+                    <div className="flex flex-wrap gap-1 xs:gap-2">
                       <button
                         onClick={() => handleCategoryChange("all")}
-                        className={`px-3 sm:px-4 py-2 rounded-lg text-sm border transition-colors whitespace-nowrap ${
+                        className={`px-2 xs:px-3 sm:px-4 
+                          py-1.5 xs:py-2 
+                          rounded-md xs:rounded-lg 
+                          text-xs xs:text-sm 
+                          border transition-colors whitespace-nowrap ${
                           selectedCategory === "all"
                             ? "bg-amber-600 text-white border-amber-600"
                             : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
@@ -704,56 +735,71 @@ export default function MenuPage() {
                     </div>
                   </div>
                   
-                  {/* Add Item Button */}
-                  <div className="w-full sm:w-auto flex justify-end">
+                  {/* Add Item Button - Responsive */}
+                  <div className="w-full xs:w-auto flex justify-end mt-2 xs:mt-0">
                     <button
                       onClick={handleAddItem}
                       className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white px-4 sm:px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                     >
-                      <FaPlus className="text-lg" />
-                      <span>Add New Item</span>
+                      <FaPlus className="text-sm xs:text-base" />
+                      <span>Add Item</span>
                     </button>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Menu Items Container with Sidebar */}
+            {/* Menu Items Container - Ultra Responsive Layout */}
             <div className="p-0">
-              <div className="w-full px-6">
+              <div className="w-full 
+                px-2 xs:px-3 sm:px-4 md:px-6">
                 {loading ? (
-                  <div className="flex items-center justify-center py-20">
+                  <div className="flex items-center justify-center py-10 xs:py-15 sm:py-20">
                     <LoadingSpinner size="40" />
                   </div>
                 ) : (
-                  <div className="flex gap-6">
-                    {/* Left Sidebar - Sections */}
-                    <div className="w-64 flex-shrink-0">
-                      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sticky top-44 max-h-[calc(100vh-12rem)] overflow-y-auto z-10">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <div className="flex flex-col xl:flex-row gap-3 xs:gap-4 sm:gap-6">
+                    {/* Left Sidebar - Responsive Sections */}
+                    <div className="xl:w-64 xl:flex-shrink-0">
+                      <div className="bg-white 
+                        rounded-lg xs:rounded-xl 
+                        shadow-sm border border-gray-200 
+                        p-3 xs:p-4 
+                        xl:sticky xl:top-44 xl:max-h-[calc(100vh-12rem)] xl:overflow-y-auto z-10">
+                        <h3 className="text-base xs:text-lg font-semibold text-gray-800 
+                          mb-3 xs:mb-4 
+                          flex items-center gap-2">
                           <span>📂</span>
                           <span>Sections</span>
                         </h3>
-                        <div className="space-y-2">
+                        <div className="space-y-1 xs:space-y-2">
                           {sectionsWithCounts.map((section) => (
                             <button
                               key={section.name}
                               onClick={() => handleSectionChange(section.name)}
-                              className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center justify-between ${
+                              className={`w-full text-left 
+                                px-2 xs:px-3 
+                                py-2 xs:py-2.5 
+                                rounded-md xs:rounded-lg 
+                                transition-colors flex items-center justify-between 
+                                text-sm xs:text-base ${
                                 selectedSection === section.name
                                   ? "bg-amber-100 text-amber-800 border border-amber-200"
                                   : "hover:bg-gray-50 text-gray-700"
                               }`}
                             >
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm">
+                              <div className="flex items-center gap-1 xs:gap-2">
+                                <span className="text-xs xs:text-sm">
                                   {section.name === "all" ? "📋" : section.icon || "📂"}
                                 </span>
-                                <span className="font-medium text-sm">
+                                <span className="font-medium text-xs xs:text-sm">
                                   {section.displayName || section.name}
                                 </span>
                               </div>
-                              <span className={`text-xs px-2 py-1 rounded-full ${
+                              <span className={`text-[10px] xs:text-xs 
+                                px-1.5 xs:px-2 
+                                py-0.5 xs:py-1 
+                                rounded-full ${
                                 selectedSection === section.name
                                   ? "bg-amber-200 text-amber-800"
                                   : "bg-gray-100 text-gray-600"
@@ -766,9 +812,10 @@ export default function MenuPage() {
                       </div>
                     </div>
 
-                    {/* Right Content - Menu Items */}
+                    {/* Right Content - Ultra Responsive Menu Grid */}
                     <div className="flex-1">
-                      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      <div className="grid gap-2 xs:gap-3 sm:gap-4 
+                        grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 2xl:grid-cols-4">
                     {filteredItems.map((item) => (
                       <div key={item._id} className="group bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
                         {/* Card Header */}
