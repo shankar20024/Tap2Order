@@ -77,7 +77,7 @@ export default function ContactModal({ isOpen, onClose }) {
                 >
                   <FaTimes className="w-5 h-5" />
                 </button>
-                <h2 className="text-2xl sm:text-3xl font-bold mb-2">Get Started with Tap2Order</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold mb-2">Get Started with tap2orders</h2>
                 <p className="text-amber-100">Let's transform your restaurant together!</p>
               </div>
 
@@ -121,7 +121,7 @@ export default function ContactModal({ isOpen, onClose }) {
 
                   {/* Features Highlight */}
                   <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
-                    <h4 className="font-semibold text-gray-800 mb-3">Why Choose Tap2Order?</h4>
+                    <h4 className="font-semibold text-gray-800 mb-3">Why Choose tap2orders?</h4>
                     <ul className="space-y-2 text-sm text-gray-600">
                       <li className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-amber-500 rounded-full"></div>

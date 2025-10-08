@@ -22,6 +22,7 @@ import {
 import { HiUserCircle } from 'react-icons/hi';
 import LogoutButton from './Logout';
 import { useSidebar } from '../contexts/SidebarContext';
+import { useSession } from 'next-auth/react';
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: <FaUtensils /> },
@@ -43,6 +44,17 @@ export default function Sidebar() {
   const { isCollapsed, setIsCollapsed } = useSidebar();
   const pathname = usePathname();
   const [isMobile, setIsMobile] = useState(false);
+  const { data: session, status } = useSession();
+
+  const publicPaths = ['/login', '/', '/support', '/qr', '/customer-bill'];
+
+  if (status !== 'authenticated' && publicPaths.some(path => pathname.startsWith(path))) {
+    return null;
+  }
+
+  if (status === 'loading') {
+    return null; // Or a loading spinner
+  }
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -88,7 +100,7 @@ export default function Sidebar() {
             exit="closed"
             variants={sidebarVariants}
             transition={{ type: 'tween', ease: 'easeInOut', duration: 0.3 }}
-            className={`fixed px-0 left-0 z-40 ${isCollapsed && !isMobile ? 'w-16' : 'w-64'} bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-lg flex flex-col top-20 md:top-16 h-[calc(100vh-5rem)] md:h-[calc(100vh-4rem)] transition-all duration-300`}
+            className={`fixed px-0 left-0 z-[45] ${isCollapsed && !isMobile ? 'w-16' : 'w-64'} bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-lg flex flex-col top-20 md:top-16 h-[calc(100vh-5rem)] md:h-[calc(100vh-4rem)] transition-all duration-300`}
           >
             {/* Collapse/Expand Button - Desktop Only */}
             {!isMobile && (
@@ -171,7 +183,7 @@ export default function Sidebar() {
       {/* Overlay for Mobile */}
       {isOpen && isMobile && (
         <motion.div
-          className="fixed inset-0 bg-black bg-opacity-40 z-30"
+          className="fixed inset-0 bg-black bg-opacity-50 z-[40]"
           onClick={() => setIsOpen(false)}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

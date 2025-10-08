@@ -545,12 +545,12 @@ export default function BillingPage() {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <main className="container mx-auto px-2 py-20">
-        <div className="flex gap-3 h-[calc(100vh-5rem)]">
+      <main className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-2 pt-25 sm:py-20">
+        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-3 min-h-[calc(100vh-8rem)] lg:h-[calc(100vh-5rem)]">
           {/* Left Sidebar - Sections */}
-          <div className="w-48 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 h-full overflow-y-auto">
-              <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <div className="w-full lg:w-48 lg:flex-shrink-0 order-1 lg:order-1">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-3 h-auto lg:h-full overflow-y-auto">
+              <h3 className="text-base sm:text-lg lg:text-base font-semibold text-gray-800 mb-3 sm:mb-4 lg:mb-3 flex items-center gap-2">
                 <span>📂</span>
                 <span>Sections ({sectionsWithCounts.length})</span>
               </h3>
@@ -562,26 +562,26 @@ export default function BillingPage() {
                 </div>
               )}
               
-              <div className="space-y-1">
+              <div className="flex lg:flex-col gap-2 lg:space-y-1 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
                 {sectionsWithCounts.map((section) => (
                   <button
                     key={section.name}
                     onClick={() => setSelectedSection(section.name)}
-                    className={`w-full text-left px-2 py-2 rounded-md transition-colors flex items-center justify-between ${
+                    className={`flex-shrink-0 lg:w-full text-left px-3 py-2 sm:py-2.5 lg:px-2 lg:py-2 rounded-lg lg:rounded-md transition-colors flex items-center justify-between min-h-[44px] lg:min-h-[36px] ${
                       selectedSection === section.name
                         ? "bg-blue-100 text-blue-800 border border-blue-200"
                         : "hover:bg-gray-50 text-gray-700"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 sm:gap-2">
                       <span className="text-sm">
                         {section.name === "all" ? "📋" : section.icon || "📂"}
                       </span>
-                      <span className="font-medium text-sm">
+                      <span className="font-medium text-xs sm:text-sm lg:text-sm whitespace-nowrap">
                         {section.displayName || section.name}
                       </span>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
+                    <span className={`text-xs px-1.5 sm:px-2 lg:px-2 py-0.5 sm:py-1 lg:py-1 rounded-full flex-shrink-0 ${
                       selectedSection === section.name
                         ? "bg-blue-200 text-blue-800"
                         : "bg-gray-100 text-gray-600"
@@ -595,9 +595,9 @@ export default function BillingPage() {
           </div>
 
           {/* Middle - Menu Items */}
-          <div className="flex-1">
-            <div className="bg-white rounded-lg shadow-sm p-3 h-full overflow-y-auto">
-              <h2 className="text-lg font-bold text-gray-800 mb-3">
+          <div className="flex-1 order-3 lg:order-2">
+            <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 lg:p-3 h-auto lg:h-full overflow-y-auto">
+              <h2 className="text-base sm:text-lg lg:text-lg font-bold text-gray-800 mb-3 sm:mb-4 lg:mb-3">
                 Menu Items 
                 <span className="text-xs text-gray-500 ml-2">
                   ({menu.length} total, {filteredMenu.length} filtered)
@@ -614,24 +614,24 @@ export default function BillingPage() {
               
               {/* Menu Items Grid */}
               {filteredMenu.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-2">
                   {filteredMenu.map(item => (
-                    <div key={item._id} className="bg-gray-50 rounded-md p-2 hover:shadow-md transition-shadow">
-                      <div className="flex justify-between items-start mb-1">
-                        <h3 className="font-medium text-gray-800 text-xs leading-tight">{item.name}</h3>
-                        <div className={`w-3 h-3 rounded-full ${
+                    <div key={item._id} className="bg-gray-50 rounded-lg lg:rounded-md p-3 sm:p-4 lg:p-2 hover:shadow-md transition-shadow border border-gray-100">
+                      <div className="flex justify-between items-start mb-2 lg:mb-1">
+                        <h3 className="font-medium text-gray-800 text-sm sm:text-base lg:text-xs leading-tight truncate flex-1 mr-2">{item.name}</h3>
+                        <div className={`w-4 h-4 sm:w-5 sm:h-5 lg:w-3 lg:h-3 rounded-full flex-shrink-0 ${
                           item.category === 'veg' ? 'bg-green-500' : 
                           item.category === 'non-veg' ? 'bg-red-500' : 'bg-yellow-500'
                         }`}></div>
                       </div>
                       
                       {item.pricing && item.pricing.length > 1 ? (
-                        <div className="space-y-0.5">
+                        <div className="space-y-1 lg:space-y-0.5">
                           {item.pricing.map((size, index) => (
                             <button
                               key={index}
                               onClick={() => addToCart(item, index)}
-                              className="w-full text-left px-1.5 py-0.5 text-xs border rounded hover:bg-blue-50 hover:border-blue-200 flex justify-between"
+                              className="w-full text-left px-2 py-1.5 lg:px-1.5 lg:py-0.5 text-xs sm:text-sm lg:text-xs border rounded hover:bg-blue-50 hover:border-blue-200 flex justify-between min-h-[36px] lg:min-h-[28px] items-center"
                             >
                               <span>{size.size}</span>
                               <span>₹{size.price}</span>
@@ -641,7 +641,7 @@ export default function BillingPage() {
                       ) : (
                         <button
                           onClick={() => addToCart(item)}
-                          className="w-full mt-1 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                          className="w-full mt-2 lg:mt-1 py-2 lg:py-1 text-xs sm:text-sm lg:text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors min-h-[36px] lg:min-h-[28px] flex items-center justify-center"
                         >
                           Add - ₹{item.price}
                         </button>
@@ -658,50 +658,50 @@ export default function BillingPage() {
           </div>
 
           {/* Right Sidebar - Billing Area */}
-          <div className="w-80 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow-sm h-full flex flex-col">
+          <div className="w-full lg:w-80 lg:flex-shrink-0 order-2 lg:order-3">
+            <div className="bg-white rounded-lg shadow-sm h-auto lg:h-full flex flex-col">
               {/* Header - Fixed */}
-              <div className="flex-shrink-0 p-3 border-b">
+              <div className="flex-shrink-0 p-4 sm:p-5 lg:p-3 border-b">
                 <div className="flex justify-between items-center">
-                  <h2 className="text-lg font-bold text-gray-800">Billing</h2>
-                  <div className="text-xs text-gray-600">
+                  <h2 className="text-lg sm:text-xl lg:text-lg font-bold text-gray-800">Billing</h2>
+                  <div className="text-sm sm:text-base lg:text-xs text-gray-600">
                     Token #{todayTokenNumber}
                   </div>
                 </div>
               </div>
 
               {/* Scrollable Content Area */}
-              <div className="flex-1 overflow-y-auto p-3">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-5 lg:p-3">
                 {/* Bill Search */}
-                <div className="mb-3">
-                  <div className="flex gap-1 mb-2">
-                  <input
-                    type="text"
-                    placeholder="Enter bill number..."
-                    value={searchBillNumber}
-                    onChange={(e) => setSearchBillNumber(e.target.value)}
-                    className="flex-1 px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    onKeyPress={(e) => e.key === 'Enter' && searchBill()}
-                  />
+                <div className="mb-4 sm:mb-6 lg:mb-3">
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      type="text"
+                      placeholder="Enter bill number..."
+                      value={searchBillNumber}
+                      onChange={(e) => setSearchBillNumber(e.target.value)}
+                      className="flex-1 px-3 sm:px-4 lg:px-2 py-2.5 sm:py-3 lg:py-1.5 border border-gray-300 rounded text-sm sm:text-base lg:text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] lg:min-h-[36px]"
+                      onKeyPress={(e) => e.key === 'Enter' && searchBill()}
+                    />
+                    <button
+                      onClick={searchBill}
+                      className="px-3 sm:px-4 lg:px-2 py-2.5 sm:py-3 lg:py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors min-h-[44px] lg:min-h-[36px] flex items-center justify-center"
+                    >
+                      <FaSearch className="text-sm lg:text-xs" />
+                    </button>
+                  </div>
                   <button
-                    onClick={searchBill}
-                    className="px-2 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                    onClick={() => {
+                      setShowBillsHistory(!showBillsHistory);
+                      if (!showBillsHistory && allBills.length === 0) {
+                        fetchAllBills();
+                      }
+                    }}
+                    className="w-full px-4 py-3 lg:px-3 lg:py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm sm:text-base lg:text-sm min-h-[44px] lg:min-h-[36px] flex items-center justify-center"
                   >
-                    <FaSearch className="text-xs" />
+                    {showBillsHistory ? 'Hide' : 'Show'} Bills History
                   </button>
                 </div>
-                <button
-                  onClick={() => {
-                    setShowBillsHistory(!showBillsHistory);
-                    if (!showBillsHistory && allBills.length === 0) {
-                      fetchAllBills();
-                    }
-                  }}
-                  className="w-full px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
-                >
-                  {showBillsHistory ? 'Hide' : 'Show'} Bills History
-                </button>
-              </div>
 
               {/* Bills History */}
               {showBillsHistory && (
@@ -749,55 +749,55 @@ export default function BillingPage() {
               )}
 
               {/* Customer Details */}
-              <div className="mb-3 space-y-1">
+              <div className="mb-4 sm:mb-6 lg:mb-3 space-y-3 lg:space-y-1">
                 <input
                   type="text"
                   placeholder="Customer Name (Optional)"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-3 sm:px-4 lg:px-2 py-2.5 sm:py-3 lg:py-1.5 border border-gray-300 rounded text-sm sm:text-base lg:text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] lg:min-h-[36px]"
                 />
                 <input
                   type="tel"
                   placeholder="Customer Phone (Optional)"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-3 sm:px-4 lg:px-2 py-2.5 sm:py-3 lg:py-1.5 border border-gray-300 rounded text-sm sm:text-base lg:text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] lg:min-h-[36px]"
                 />
               </div>
 
               {/* Cart Items */}
-              <div className="mb-3">
-                <h3 className="font-medium text-gray-800 mb-2 text-sm">Order Items</h3>
+              <div className="mb-4 sm:mb-6 lg:mb-3">
+                <h3 className="font-medium text-gray-800 mb-3 lg:mb-2 text-sm sm:text-base lg:text-sm">Order Items</h3>
                 {cart.length === 0 ? (
-                  <p className="text-gray-500 text-xs text-center py-3">No items added</p>
+                  <p className="text-gray-500 text-sm sm:text-base lg:text-xs text-center py-6 lg:py-3">No items added</p>
                 ) : (
-                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                  <div className="space-y-2 lg:space-y-1 max-h-64 sm:max-h-72 lg:max-h-48 overflow-y-auto">
                     {cart.map((item, index) => (
-                      <div key={`${item._id}-${item.selectedSize}`} className="flex items-center justify-between bg-gray-50 p-1.5 rounded">
-                        <div className="flex-1">
-                          <p className="text-xs font-medium leading-tight">{item.name}</p>
-                          <p className="text-xs text-gray-600">{item.selectedSize} - ₹{item.price}</p>
+                      <div key={`${item._id}-${item.selectedSize}`} className="flex items-center justify-between bg-gray-50 p-3 lg:p-1.5 rounded-lg lg:rounded gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm sm:text-base lg:text-xs font-medium leading-tight truncate">{item.name}</p>
+                          <p className="text-xs sm:text-sm lg:text-xs text-gray-600">{item.selectedSize} - ₹{item.price}</p>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 sm:gap-2 lg:gap-1 flex-shrink-0">
                           <button
                             onClick={() => updateCartQuantity(item._id, item.selectedSize, item.quantity - 1)}
-                            className="w-5 h-5 bg-gray-200 rounded text-xs hover:bg-gray-300"
+                            className="w-8 h-8 lg:w-5 lg:h-5 bg-gray-200 rounded text-sm lg:text-xs hover:bg-gray-300 flex items-center justify-center"
                           >
                             -
                           </button>
-                          <span className="text-xs w-6 text-center">{item.quantity}</span>
+                          <span className="text-sm lg:text-xs w-8 lg:w-6 text-center">{item.quantity}</span>
                           <button
                             onClick={() => updateCartQuantity(item._id, item.selectedSize, item.quantity + 1)}
-                            className="w-5 h-5 bg-gray-200 rounded text-xs hover:bg-gray-300"
+                            className="w-8 h-8 lg:w-5 lg:h-5 bg-gray-200 rounded text-sm lg:text-xs hover:bg-gray-300 flex items-center justify-center"
                           >
                             +
                           </button>
                           <button
                             onClick={() => removeFromCart(item._id, item.selectedSize)}
-                            className="text-red-500 hover:text-red-700 ml-1"
+                            className="text-red-500 hover:text-red-700 ml-1 sm:ml-2 lg:ml-1 w-8 h-8 lg:w-auto lg:h-auto flex items-center justify-center"
                           >
-                            <FaTimes className="text-xs" />
+                            <FaTimes className="text-sm lg:text-xs" />
                           </button>
                         </div>
                       </div>
@@ -840,24 +840,24 @@ export default function BillingPage() {
               </div>
 
               {/* Fixed Footer - Action Buttons */}
-              <div className="flex-shrink-0 border-t bg-gray-50 p-2">
-                <div className="grid grid-cols-2 gap-1 mb-1">
+              <div className="flex-shrink-0 border-t bg-gray-50 p-3 sm:p-4 lg:p-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:gap-1 mb-2 lg:mb-1">
                   {/* Primary Actions */}
                   {selectedBill && isEditMode ? (
                     <>
                       <button
                         onClick={updateBill}
                         disabled={cart.length === 0}
-                        className="py-1.5 px-2 bg-green-500 text-white rounded text-xs font-medium hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1"
+                        className="py-3 sm:py-2.5 lg:py-1.5 px-4 lg:px-2 bg-green-500 text-white rounded-lg lg:rounded text-sm lg:text-xs font-medium hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 lg:gap-1 min-h-[48px] lg:min-h-[36px]"
                       >
-                        <FaEdit className="text-xs" />
+                        <FaEdit className="text-sm lg:text-xs" />
                         Update
                       </button>
                       <button
                         onClick={() => deleteBill(selectedBill._id)}
-                        className="py-1.5 px-2 bg-red-500 text-white rounded text-xs font-medium hover:bg-red-600 transition-colors flex items-center justify-center gap-1"
+                        className="py-3 sm:py-2.5 lg:py-1.5 px-4 lg:px-2 bg-red-500 text-white rounded-lg lg:rounded text-sm lg:text-xs font-medium hover:bg-red-600 transition-colors flex items-center justify-center gap-2 lg:gap-1 min-h-[48px] lg:min-h-[36px]"
                       >
-                        <FaTrash className="text-xs" />
+                        <FaTrash className="text-sm lg:text-xs" />
                         Delete
                       </button>
                     </>
@@ -866,17 +866,17 @@ export default function BillingPage() {
                       <button
                         onClick={createBill}
                         disabled={cart.length === 0}
-                        className="py-1.5 px-2 bg-blue-500 text-white rounded text-xs font-medium hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1"
+                        className="py-3 sm:py-2.5 lg:py-1.5 px-4 lg:px-2 bg-blue-500 text-white rounded-lg lg:rounded text-sm lg:text-xs font-medium hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 lg:gap-1 min-h-[48px] lg:min-h-[36px] sm:col-span-2 lg:col-span-1"
                       >
-                        <FaPrint className="text-xs" />
+                        <FaPrint className="text-sm lg:text-xs" />
                         Create Bill
                       </button>
                       {selectedBill && !isEditMode && (
                         <button
                           onClick={() => setIsEditMode(true)}
-                          className="py-1.5 px-2 bg-yellow-500 text-white rounded text-xs font-medium hover:bg-yellow-600 transition-colors flex items-center justify-center gap-1"
+                          className="py-3 sm:py-2.5 lg:py-1.5 px-4 lg:px-2 bg-yellow-500 text-white rounded-lg lg:rounded text-sm lg:text-xs font-medium hover:bg-yellow-600 transition-colors flex items-center justify-center gap-2 lg:gap-1 min-h-[48px] lg:min-h-[36px]"
                         >
-                          <FaEdit className="text-xs" />
+                          <FaEdit className="text-sm lg:text-xs" />
                           Edit
                         </button>
                       )}
@@ -885,28 +885,28 @@ export default function BillingPage() {
                 </div>
                 
                 {/* Secondary Actions */}
-                <div className="grid grid-cols-3 gap-1">
+                <div className="grid grid-cols-3 gap-2 lg:gap-1">
                   <button
                     onClick={testPrint}
                     disabled={cart.length === 0}
-                    className="py-1 px-1 bg-purple-500 text-white rounded text-xs font-medium hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1"
+                    className="py-2.5 lg:py-1 px-2 lg:px-1 bg-purple-500 text-white rounded-lg lg:rounded text-sm lg:text-xs font-medium hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1 min-h-[44px] lg:min-h-[32px]"
                   >
-                    <FaPrint className="text-xs" />
-                    Test
+                    <FaPrint className="text-sm lg:text-xs" />
+                    <span className="hidden sm:inline lg:hidden">Test</span>
                   </button>
                   
                   <button
                     onClick={clearForm}
-                    className="py-1 px-1 bg-gray-500 text-white rounded text-xs font-medium hover:bg-gray-600 transition-colors"
+                    className="py-2.5 lg:py-1 px-2 lg:px-1 bg-gray-500 text-white rounded-lg lg:rounded text-sm lg:text-xs font-medium hover:bg-gray-600 transition-colors flex items-center justify-center min-h-[44px] lg:min-h-[32px]"
                   >
                     Clear
                   </button>
                   
                   <button
                     onClick={cleanupBills}
-                    className="py-1 px-1 bg-orange-500 text-white rounded text-xs font-medium hover:bg-orange-600 transition-colors flex items-center justify-center gap-1"
+                    className="py-2.5 lg:py-1 px-2 lg:px-1 bg-orange-500 text-white rounded-lg lg:rounded text-sm lg:text-xs font-medium hover:bg-orange-600 transition-colors flex items-center justify-center gap-1 min-h-[44px] lg:min-h-[32px]"
                   >
-                    🧹 Fix
+                    🧹 <span className="hidden sm:inline lg:hidden">Fix</span>
                   </button>
                 </div>
               </div>

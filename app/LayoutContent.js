@@ -3,14 +3,16 @@
 import { usePathname } from 'next/navigation';
 import Sidebar from './components/Sidebar';
 import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
+import { useSession } from 'next-auth/react';
 
 function LayoutContentInner({ children }) {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
   const isLoginPage = pathname === '/' || pathname === '/login';
   const { isCollapsed } = useSidebar();
   
   // Define the routes where sidebar should be visible
-  const showSidebar = [
+  const showSidebar = status === 'authenticated' && [
     '/dashboard',
     '/menu',
     '/table',
@@ -23,6 +25,14 @@ function LayoutContentInner({ children }) {
     '/support'
 
   ].some(route => pathname.startsWith(route));
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gray-100">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-amber-500"></div>
+      </div>
+    );
+  }
 
   if (isLoginPage) {
     return (

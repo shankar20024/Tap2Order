@@ -240,7 +240,7 @@ export default function LoginForm() {
                 <div className="mb-8">
                   <Logo className="text-6xl xl:text-7xl mb-6 text-amber-600" />
                   <h1 className="text-4xl xl:text-5xl font-bold text-gray-800 mb-4 leading-tight">
-                    Welcome to <span className="text-amber-600">Tap2Order</span>
+                    Welcome to <span className="text-amber-600">Tap2Orders</span>
                   </h1>
                   <p className="text-xl text-gray-600 leading-relaxed max-w-lg">
                     {activeTab === "admin" 
@@ -567,7 +567,7 @@ export default function LoginForm() {
                 {/* Footer */}
                 <div className="text-center mt-8">
                   <p className="text-sm text-gray-500">
-                    2024 Tap2Order. All rights reserved.
+                    2024 Tap2Orders. All rights reserved.
                   </p>
                 </div>
               </div>

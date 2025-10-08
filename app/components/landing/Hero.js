@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { FaArrowRight } from 'react-icons/fa';
-import DashboardScreenshot from '../../../public/Web-Screenshot/Dashboard.png';
+
 
 export default function Hero({ onGetStartedClick }) {
   return (
@@ -33,7 +33,7 @@ export default function Hero({ onGetStartedClick }) {
             <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight tracking-tight">
               Revolutionize Your Restaurant with
               <span className="block bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent mt-1">
-                Tap2Order
+                tap2orders
               </span>
             </h1>
             <p className="mt-4 text-md md:text-lg text-gray-600 max-w-lg mx-auto lg:mx-0">
@@ -64,8 +64,8 @@ export default function Hero({ onGetStartedClick }) {
             >
               <div className="w-full aspect-video relative rounded-sm overflow-hidden">
                 <Image
-                  src={DashboardScreenshot}
-                  alt="Tap2Order Dashboard View"
+                  src="/Dashboard.png"
+                  alt="tap2orders Dashboard View"
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 60vw"
                   className="rounded-sm object-contain"
@@ -83,8 +83,8 @@ export default function Hero({ onGetStartedClick }) {
             >
               <div className="w-full h-auto aspect-[9/16] relative rounded-md overflow-hidden">
                 <Image
-                  src="/Web-Screenshot/QR-Page.png"
-                  alt="Tap2Order Mobile View"
+                  src="/QR-Page.png"
+                  alt="tap2orders Mobile View"
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 60vw, 40vw"
                   className="rounded-md object-cover object-center"

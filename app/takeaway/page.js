@@ -28,6 +28,7 @@ export default function TakeawayPage() {
   const [userId, setUserId] = useState('');
   const [token, setToken] = useState('');
   const [gstRate, setGstRate] = useState(0);
+  const [printBillEnabled, setPrintBillEnabled] = useState(true);
 
   // Set userId from session when available
   useEffect(() => {
@@ -49,7 +50,7 @@ export default function TakeawayPage() {
           setSections(data.sections || []);
         }
       } catch (error) {
-              }
+      }
     };
 
     if (session) {
@@ -61,22 +62,22 @@ export default function TakeawayPage() {
   useEffect(() => {
     const fetchBusinessInfo = async () => {
       if (!session?.user?.id) return;
-      
+
       try {
         const response = await fetch(`/api/business/info?userId=${session.user.id}`);
         if (response.ok) {
           const data = await response.json();
-                              
+
           // Set GST rate if available
           if (data.gstDetails?.taxRate) {
             const rate = parseFloat(data.gstDetails.taxRate);
             setGstRate(rate);
-                      } else {
-                      }
+          } else {
+          }
         } else {
-                  }
+        }
       } catch (error) {
-              }
+      }
     };
 
     fetchBusinessInfo();
@@ -106,7 +107,7 @@ export default function TakeawayPage() {
   useEffect(() => {
     const fetchMenu = async () => {
       if (!userId) return;
-      
+
       setLoading(true);
       try {
         const response = await fetch(`/api/menu?userId=${userId}`);
@@ -114,30 +115,30 @@ export default function TakeawayPage() {
           throw new Error('Failed to fetch menu');
         }
         const data = await response.json();
-        
+
         if (Array.isArray(data)) {
           setMenu(data);
-          
+
           // Extract unique categories
           const itemCategories = data
             .map(item => item.category)
             .filter(Boolean) // Remove any undefined/null categories
             .filter((value, index, self) => self.indexOf(value) === index); // Remove duplicates
-          
+
           // Create final categories array with 'all' at the beginning
           const uniqueCategories = ['all', ...itemCategories];
-          
+
           setCategories(uniqueCategories);
-          
+
           // Set default category to first available category if hideAllButton is true
           if (uniqueCategories.length > 1) {
             setSelectedCategory(uniqueCategories[0]);
           }
         } else {
-                    toast.error('Invalid menu data format');
+          toast.error('Invalid menu data format');
         }
       } catch (error) {
-                toast.error('Failed to load menu. Please try again.');
+        toast.error('Failed to load menu. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -152,19 +153,19 @@ export default function TakeawayPage() {
   // Filter menu items based on search, category, and section
   const filteredMenu = menu.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (item.description?.toLowerCase().includes(searchTerm.toLowerCase()) || '');
-    
-    const matchesCategory = selectedCategory === 'All' || 
-                           selectedCategory === 'all' || 
-                           item.category === selectedCategory;
-    
+      (item.description?.toLowerCase().includes(searchTerm.toLowerCase()) || '');
+
+    const matchesCategory = selectedCategory === 'All' ||
+      selectedCategory === 'all' ||
+      item.category === selectedCategory;
+
     const matchesSection = selectedSection === 'all' || item.section === selectedSection;
-    
+
     return matchesSearch && matchesCategory && matchesSection;
   });
 
   // Get sections with item counts for sidebar
-  const usedSections = sections.filter(section => 
+  const usedSections = sections.filter(section =>
     menu.some(item => item.section === section.name)
   );
 
@@ -180,19 +181,19 @@ export default function TakeawayPage() {
   const addToCart = (item, selectedSizeIndex = 0) => {
     // If item has multiple sizes, use the selected size's price
     const hasMultipleSizes = item.pricing && item.pricing.length > 1;
-    const selectedPrice = hasMultipleSizes 
-      ? item.pricing[selectedSizeIndex].price 
+    const selectedPrice = hasMultipleSizes
+      ? item.pricing[selectedSizeIndex].price
       : item.price;
-    
-    const selectedSize = hasMultipleSizes 
-      ? item.pricing[selectedSizeIndex].size 
+
+    const selectedSize = hasMultipleSizes
+      ? item.pricing[selectedSizeIndex].size
       : 'Regular';
 
     setCart(prevCart => {
       // Check if item with same ID and size already exists in cart
       const existingItemIndex = prevCart.findIndex(
-        cartItem => cartItem._id === item._id && 
-                   cartItem.selectedSize === selectedSize
+        cartItem => cartItem._id === item._id &&
+          cartItem.selectedSize === selectedSize
       );
 
       if (existingItemIndex >= 0) {
@@ -230,7 +231,7 @@ export default function TakeawayPage() {
 
   // Remove item from cart
   const removeFromCart = (itemId, size) => {
-    setCart(prevCart => 
+    setCart(prevCart =>
       prevCart.filter(item => !(item._id === itemId && item.selectedSize === size))
     );
   };
@@ -246,7 +247,7 @@ export default function TakeawayPage() {
   // Calculate GST amounts based on current cart total and GST rate
   const calculateGstDetails = () => {
     const isGstApplicable = gstRate > 0;
-    
+
     if (!isGstApplicable) {
       return {
         subtotal: cartTotal,
@@ -295,7 +296,7 @@ export default function TakeawayPage() {
       // Get the user ID from the session
       const userId = session.user?.id;
       if (!userId) {
-                throw new Error('Authentication failed. Please log in again.');
+        throw new Error('Authentication failed. Please log in again.');
       }
 
       // Add the user ID to the order data
@@ -331,13 +332,13 @@ export default function TakeawayPage() {
       localStorage.removeItem('pendingOrder');
       return await response.json();
     } catch (error) {
-            toast.error(error.message || 'Could not save order. Please try again.');
+      toast.error(error.message || 'Could not save order. Please try again.');
       throw error;
     }
   };
 
-  // Handle print bill
-  const handlePrintBill = async () => {
+  // Handle completing the order, with an option to print the bill
+  const handleCompleteOrder = async () => {
     if (cart.length === 0) {
       toast.error('Cart is empty');
       return;
@@ -346,8 +347,8 @@ export default function TakeawayPage() {
     try {
       // Calculate GST details based on business settings
       const gstDetails = calculateGstDetails();
-      
-                              
+
+
       // Build order items in the format expected by the API
       const orderItems = cart.map(item => ({
         menuItemId: item._id,
@@ -390,16 +391,16 @@ export default function TakeawayPage() {
       // Save order to database
       const savedOrderResponse = await saveTakeawayOrder(orderData);
       const savedOrder = savedOrderResponse.order;
-      
-                        
+
+
       if (!savedOrder?.billNumber) {
-                              }
+      }
 
       // Format the date and time for the bill
       const now = new Date();
-      const options = { 
-        year: 'numeric', 
-        month: 'short', 
+      const options = {
+        year: 'numeric',
+        month: 'short',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
@@ -440,58 +441,58 @@ export default function TakeawayPage() {
         }
       };
 
-      // Print the bill with the complete order data
-      await printBill('Takeaway', orderItems, session, printData);
-      
+      // Conditionally print the bill
+      if (printBillEnabled) {
+        await printBill('Takeaway', orderItems, session, printData);
+      }
+
       // Clear cart and form after successful print
       setCart([]);
       setCustomerName('');
       setCustomerPhone('');
       setIsCartOpen(false);
-      
+
       toast.success(`Order placed successfully! Bill #${savedOrder?.billNumber || 'Generated'}`);
     } catch (error) {
-            toast.error(error.message || 'Failed to process order. Please try again.');
+      toast.error(error.message || 'Failed to process order. Please try again.');
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 ">
+    <div className="min-h-screen bg-gray-50">
       <Header />
-      
-      <main className="container mx-auto px-4 py-20">
-        <div className="flex gap-6 h-[calc(100vh-6rem)]">
+
+      <main className="container mx-auto px-3 sm:px-4 md:px-6 pt-25">
+        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-6 min-h-[calc(100vh-8rem)] lg:h-[calc(100vh-6rem)]">
           {/* Left Sidebar - Sections */}
-          <div className="w-64 flex-shrink-0">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 h-full overflow-y-auto">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <div className="w-full lg:w-64 lg:flex-shrink-0 order-1 lg:order-1">
+            <div className="bg-white rounded-lg lg:rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 h-auto lg:h-full overflow-y-auto">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
                 <span>📂</span>
                 <span>Sections</span>
               </h3>
-              <div className="space-y-2">
+              <div className="flex lg:flex-col gap-2 lg:space-y-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
                 {sectionsWithCounts.map((section) => (
                   <button
                     key={section.name}
                     onClick={() => setSelectedSection(section.name)}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center justify-between ${
-                      selectedSection === section.name
+                    className={`flex-shrink-0 lg:w-full text-left px-3 py-2 sm:py-2.5 rounded-lg transition-colors flex items-center justify-between min-h-[44px] ${selectedSection === section.name
                         ? "bg-orange-100 text-orange-800 border border-orange-200"
                         : "hover:bg-gray-50 text-gray-700"
-                    }`}
+                      }`}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 sm:gap-2">
                       <span className="text-sm">
                         {section.name === "all" ? "📋" : section.icon || "📂"}
                       </span>
-                      <span className="font-medium text-sm">
+                      <span className="font-medium text-xs sm:text-sm whitespace-nowrap">
                         {section.displayName || section.name}
                       </span>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      selectedSection === section.name
+                    <span className={`text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full flex-shrink-0 ${selectedSection === section.name
                         ? "bg-orange-200 text-orange-800"
                         : "bg-gray-100 text-gray-600"
-                    }`}>
+                      }`}>
                       {section.count}
                     </span>
                   </button>
@@ -501,11 +502,11 @@ export default function TakeawayPage() {
           </div>
 
           {/* Middle - Menu Section */}
-          <div className="flex-1">
-            <div className="bg-white rounded-xl shadow-sm p-4 h-full overflow-y-auto">
+          <div className="flex-1 order-3 lg:order-2">
+            <div className="bg-white rounded-lg lg:rounded-xl shadow-sm p-3 sm:p-4 h-auto lg:h-full overflow-y-auto">
               {/* Search and Category Filter */}
-              <div className="mb-4">
-                <MenuSearch 
+              <div className="mb-3 sm:mb-4">
+                <MenuSearch
                   searchTerm={searchTerm}
                   setSearchTerm={setSearchTerm}
                   categories={takeawayCategories}
@@ -513,41 +514,51 @@ export default function TakeawayPage() {
                   setActiveCategory={setSelectedCategory}
                 />
               </div>
-              
+
               {/* Menu Items Grid */}
               {loading ? (
-                <div className="flex justify-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+                <div className="flex justify-center py-8 sm:py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-t-2 border-b-2 border-orange-500"></div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                   {filteredMenu.map(item => (
                     <div key={item._id} className="cursor-pointer" onClick={() => addToCart(item)}>
-                      <div className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow">
+                      <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-100">
                         <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium text-gray-900">{item.name}</h3>
-                            <p className="text-sm text-gray-500 mt-1">
-                              {item.pricing?.length > 1 
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-sm sm:text-base text-gray-900 truncate">{item.name}</h3>
+                            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                              {item.pricing?.length > 1
                                 ? `₹${item.pricing[0].price} - ₹${item.pricing[item.pricing.length - 1].price}`
                                 : `₹${item.price}`}
                             </p>
                           </div>
-                          {item.veg ? (
-                            <div className="w-5 h-5 border-2 border-green-600 rounded-sm flex items-center justify-center">
-                              <div className="w-3 h-3 bg-green-600 rounded-sm"></div>
-                            </div>
-                          ) : (
-                            <div className="w-5 h-5 border-2 border-red-600 rounded-sm flex items-center justify-center">
-                              <div className="w-3 h-3 bg-red-600 rounded-sm"></div>
-                            </div>
-                          )}
+                          <div className="flex-shrink-0 ml-2">
+                            {item.category === 'veg' ? (
+                              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-green-600 rounded-sm flex items-center justify-center">
+                                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-600 rounded-sm"></div>
+                              </div>
+                            ) : item.category === 'non-veg' ? (
+                              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-red-600 rounded-sm flex items-center justify-center">
+                                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-600 rounded-sm"></div>
+                              </div>
+                            ) : item.category === 'jain' ? (
+                              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-yellow-600 rounded-sm flex items-center justify-center">
+                                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-yellow-600 rounded-sm"></div>
+                              </div>
+                            ) : (
+                              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-blue-600 rounded-sm flex items-center justify-center">
+                                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-600 rounded-sm"></div>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        
+
                         {/* Size selector for items with multiple sizes */}
                         {item.pricing?.length > 1 && (
                           <div className="mt-2">
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-1.5 sm:gap-2">
                               {item.pricing.map((size, index) => (
                                 <button
                                   key={index}
@@ -555,7 +566,7 @@ export default function TakeawayPage() {
                                     e.stopPropagation();
                                     addToCart(item, index);
                                   }}
-                                  className="px-2 py-1 text-xs border rounded hover:bg-amber-50 hover:border-amber-200"
+                                  className="px-2 py-1 text-xs border rounded hover:bg-amber-50 hover:border-amber-200 min-h-[32px] flex items-center"
                                 >
                                   {size.size} - ₹{size.price}
                                 </button>
@@ -563,40 +574,40 @@ export default function TakeawayPage() {
                             </div>
                           </div>
                         )}
-                        
+
                         {!item.pricing?.length > 1 && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               addToCart(item);
                             }}
-                            className="mt-2 w-full py-1 text-sm bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors"
+                            className="mt-2 w-full py-2 text-xs sm:text-sm bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors min-h-[36px] flex items-center justify-center"
                           >
                             Add to Cart
                           </button>
                         )}
-                        
+
                         {item.description && (
-                          <p className="text-sm text-gray-500 mt-2 line-clamp-2">{item.description}</p>
+                          <p className="text-xs sm:text-sm text-gray-500 mt-2 line-clamp-2">{item.description}</p>
                         )}
-                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
           </div>
-          
+
           {/* Right Sidebar - Cart/Billing Section */}
-          <div className="w-80 flex-shrink-0">
-            <div className="bg-white rounded-xl shadow-sm p-6 h-full overflow-y-auto">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-800">Takeaway Order</h2>
-                <button 
+          <div className="w-full lg:w-80 lg:flex-shrink-0 order-2 lg:order-3">
+            <div className="bg-white rounded-lg lg:rounded-xl shadow-sm p-4 sm:p-5 lg:p-6 h-auto lg:h-full overflow-y-auto">
+              <div className="flex justify-between items-center mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-800">Takeaway Order</h2>
+                <button
                   onClick={() => setIsCartOpen(!isCartOpen)}
-                  className="md:hidden p-2 rounded-full hover:bg-gray-100"
+                  className="lg:hidden p-2 rounded-full hover:bg-gray-100 relative min-h-[44px] min-w-[44px] flex items-center justify-center"
                 >
-                  <FaShoppingCart className="text-orange-500 text-xl" />
+                  <FaShoppingCart className="text-orange-500 text-lg sm:text-xl" />
                   {cart.length > 0 && (
                     <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                       {cart.reduce((total, item) => total + item.quantity, 0)}
@@ -604,10 +615,10 @@ export default function TakeawayPage() {
                   )}
                 </button>
               </div>
-              
-              <div className={`${isCartOpen ? 'block' : 'hidden md:block'}`}>
+
+              <div className={`${isCartOpen ? 'block' : 'hidden lg:block'}`}>
                 {/* Customer Details */}
-                <div className="mb-6">
+                <div className="mb-4 sm:mb-6">
                   <h3 className="text-sm font-medium text-gray-700 mb-3">Customer Details</h3>
                   <div className="space-y-3">
                     <div>
@@ -616,7 +627,7 @@ export default function TakeawayPage() {
                         placeholder="Customer Name"
                         value={customerName}
                         onChange={(e) => setCustomerName(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        className="w-full px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm sm:text-base min-h-[44px]"
                       />
                     </div>
                     <div>
@@ -625,66 +636,66 @@ export default function TakeawayPage() {
                         placeholder="Phone Number"
                         value={customerPhone}
                         onChange={(e) => setCustomerPhone(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        className="w-full px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm sm:text-base min-h-[44px]"
                       />
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Cart Items */}
-                <div className="mb-6">
+                <div className="mb-4 sm:mb-6">
                   <div className="flex justify-between items-center mb-3">
                     <h3 className="text-sm font-medium text-gray-700">Order Items</h3>
-                    <span className="text-sm text-gray-500">{cart.length} items</span>
+                    <span className="text-xs sm:text-sm text-gray-500">{cart.length} items</span>
                   </div>
-                  
+
                   {cart.length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-4">Your cart is empty</p>
+                    <p className="text-sm text-gray-500 text-center py-6 sm:py-4">Your cart is empty</p>
                   ) : (
-                    <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
+                    <div className="space-y-3 sm:space-y-4 max-h-48 sm:max-h-64 overflow-y-auto pr-1 sm:pr-2">
                       {cart.map(item => (
-                        <div key={`${item._id}-${item.selectedSize}`} className="flex justify-between items-start border-b pb-3">
-                          <div>
-                            <h4 className="font-medium text-gray-900">
-                              {item.name} 
+                        <div key={`${item._id}-${item.selectedSize}`} className="flex justify-between items-start border-b pb-3 gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm sm:text-base text-gray-900 truncate">
+                              {item.name}
                               {item.selectedSize && item.selectedSize !== 'Regular' && (
                                 <span className="text-xs text-gray-500 ml-1">({item.selectedSize})</span>
                               )}
                             </h4>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-xs sm:text-sm text-gray-500">
                               ₹{item.price} x {item.quantity}
                             </p>
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
                             <div className="flex items-center border rounded-md">
-                              <button 
+                              <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   updateCartItemQuantity(item._id, item.quantity - 1, item.selectedSize);
                                 }}
-                                className="px-2 py-1 text-gray-600 hover:bg-gray-100"
+                                className="px-2 py-1 text-gray-600 hover:bg-gray-100 min-h-[32px] min-w-[32px] flex items-center justify-center"
                               >
                                 -
                               </button>
-                              <span className="px-2">{item.quantity}</span>
-                              <button 
+                              <span className="px-2 text-sm">{item.quantity}</span>
+                              <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   updateCartItemQuantity(item._id, item.quantity + 1, item.selectedSize);
                                 }}
-                                className="px-2 py-1 text-gray-600 hover:bg-gray-100"
+                                className="px-2 py-1 text-gray-600 hover:bg-gray-100 min-h-[32px] min-w-[32px] flex items-center justify-center"
                               >
                                 +
                               </button>
                             </div>
-                            <button 
+                            <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 removeFromCart(item._id, item.selectedSize);
                               }}
-                              className="text-gray-400 hover:text-red-500"
+                              className="text-gray-400 hover:text-red-500 min-h-[32px] min-w-[32px] flex items-center justify-center"
                             >
-                              <FaTimes />
+                              <FaTimes className="text-sm" />
                             </button>
                           </div>
                         </div>
@@ -692,31 +703,46 @@ export default function TakeawayPage() {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Order Summary */}
                 <div className="border-t pt-4">
                   <div className="flex justify-between mb-2">
-                    <span className="text-gray-600">Subtotal</span>
-                    <span>₹{cartTotal.toFixed(2)}</span>
+                    <span className="text-sm sm:text-base text-gray-600">Subtotal</span>
+                    <span className="text-sm sm:text-base">₹{cartTotal.toFixed(2)}</span>
                   </div>
                   {gstRate > 0 && (
                     <div className="flex justify-between mb-2">
-                      <span className="text-gray-600">GST ({gstRate}%)</span>
-                      <span>₹{calculateGST().toFixed(2)}</span>
+                      <span className="text-sm sm:text-base text-gray-600">GST ({gstRate}%)</span>
+                      <span className="text-sm sm:text-base">₹{calculateGST().toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between font-bold text-lg mt-4 pt-4 border-t">
+                  <div className="flex justify-between font-bold text-base sm:text-lg mt-4 pt-4 border-t">
                     <span>Total</span>
                     <span>₹{(cartTotal + calculateGST()).toFixed(2)}</span>
                   </div>
-                  
+
+                  {/* Print Bill Toggle */}
+                  <div className="flex items-center justify-between mt-4">
+                    <span className="text-sm sm:text-base text-gray-600 font-medium">Print Bill</span>
+                    <label htmlFor="print-toggle" className="inline-flex relative items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={printBillEnabled}
+                        onChange={() => setPrintBillEnabled(!printBillEnabled)}
+                        id="print-toggle"
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-orange-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                    </label>
+                  </div>
+
                   <button
-                    onClick={handlePrintBill}
+                    onClick={handleCompleteOrder}
                     disabled={cart.length === 0}
-                    className={`w-full mt-6 py-3 px-4 rounded-lg font-medium text-white flex items-center justify-center space-x-2 ${cart.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600'}`}
+                    className={`w-full mt-4 sm:mt-6 py-3 px-4 rounded-lg font-medium text-white flex items-center justify-center space-x-2 min-h-[48px] text-sm sm:text-base ${cart.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600'}`}
                   >
-                    <FaPrint />
-                    <span>Print & Complete Order</span>
+                    {printBillEnabled && <FaPrint className="text-sm" />}
+                    <span>{printBillEnabled ? 'Print & Complete Order' : 'Complete Order'}</span>
                   </button>
                 </div>
               </div>
