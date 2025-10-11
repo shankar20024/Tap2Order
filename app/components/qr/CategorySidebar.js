@@ -28,14 +28,15 @@ export default function SectionSidebar({
   const allSections = [{ name: 'All', icon: '🍽️', color: '#f59e0b' }, ...sections];
 
   return (
-    <div className="w-2/6 bg-white border-r border-gray-200 h-screen sticky top-0 overflow-hidden">
+    <div className="w-2/6 bg-white border-r border-gray-200 h-screen sticky top-0 flex flex-col">
       {/* Header */}
-      <div className="p-3 border-b border-gray-200 bg-gray-50">
+      <div className="p-3 border-b border-gray-200 bg-gray-50 flex-shrink-0">
         <h2 className="text-lg font-semibold text-gray-800">Our Menu</h2>
       </div>
 
       {/* Sections List */}
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto px-2 py-2 scrollbar-hide min-h-0">
+        <div className="pb-80">
         {allSections.map((section, index) => {
           const isActive = activeSection === section.name;
           const count = itemCounts[section.name] || 0;
@@ -73,6 +74,7 @@ export default function SectionSidebar({
             </>
           );
         })}
+        </div>
       </div>
     </div>
   );
