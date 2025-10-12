@@ -7,6 +7,8 @@ import { toast } from 'react-hot-toast';
 import Header from '../components/Header';
 import MenuCard from '../components/qr/MenuCard';
 import MenuSearch from '../components/qr/MenuSearch';
+import SectionSidebar from '../components/qr/CategorySidebar';
+import MenuGrid from '../components/qr/MenuGrid';
 import { FaShoppingCart, FaPrint, FaTimes } from 'react-icons/fa';
 import { printBill } from '../components/bill/PrintBill';
 
@@ -29,6 +31,8 @@ export default function TakeawayPage() {
   const [token, setToken] = useState('');
   const [gstRate, setGstRate] = useState(0);
   const [printBillEnabled, setPrintBillEnabled] = useState(true);
+  const [itemQuantities, setItemQuantities] = useState({});
+  const [selectedSizes, setSelectedSizes] = useState({});
 
   // Set userId from session when available
   useEffect(() => {
@@ -177,6 +181,49 @@ export default function TakeawayPage() {
     }))
   ];
 
+  // Quantity management functions for mobile UI
+  const incrementQuantity = (itemId) => {
+    setItemQuantities(prev => ({
+      ...prev,
+      [itemId]: (prev[itemId] || 0) + 1
+    }));
+  };
+
+  const decrementQuantity = (itemId) => {
+    setItemQuantities(prev => ({
+      ...prev,
+      [itemId]: Math.max((prev[itemId] || 0) - 1, 0)
+    }));
+  };
+
+  const handleSizeSelection = (itemId, sizeIndex) => {
+    setSelectedSizes(prev => ({
+      ...prev,
+      [itemId]: sizeIndex
+    }));
+  };
+
+  const getPriceForSize = (item, sizeIndex = 0) => {
+    if (item.pricing && item.pricing.length > 1) {
+      return item.pricing[sizeIndex]?.price || item.pricing[0].price;
+    }
+    return item.price;
+  };
+
+  const handleAddToCart = (item) => {
+    const quantity = itemQuantities[item._id] || 0;
+    if (quantity <= 0) return;
+    
+    const selectedSizeIndex = selectedSizes[item._id] || 0;
+    addToCart(item, selectedSizeIndex);
+    
+    // Reset quantity after adding to cart
+    setItemQuantities(prev => ({
+      ...prev,
+      [item._id]: 0
+    }));
+  };
+
   // Add item to cart
   const addToCart = (item, selectedSizeIndex = 0) => {
     // If item has multiple sizes, use the selected size's price
@@ -199,7 +246,7 @@ export default function TakeawayPage() {
       if (existingItemIndex >= 0) {
         // If exists, increase quantity
         const newCart = [...prevCart];
-        newCart[existingItemIndex].quantity += 0.5;
+        newCart[existingItemIndex].quantity += 1;
         return newCart;
       } else {
         // Otherwise add new item to cart
@@ -462,7 +509,8 @@ export default function TakeawayPage() {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="container mx-auto px-3 sm:px-4 md:px-6 pt-25">
+      {/* Desktop Layout - Hidden on Mobile */}
+      <main className="hidden lg:block container mx-auto px-3 sm:px-4 md:px-6 pt-25">
         <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-6 min-h-[calc(100vh-8rem)] lg:h-[calc(100vh-6rem)]">
           {/* Left Sidebar - Sections */}
           <div className="w-full lg:w-64 lg:flex-shrink-0 order-1 lg:order-1">
@@ -750,6 +798,228 @@ export default function TakeawayPage() {
           </div>
         </div>
       </main>
+
+      {/* Mobile Layout - Hidden on Desktop */}
+      <div className="lg:hidden h-screen bg-gray-50 overflow-hidden pt-20">
+        {/* Professional Header */}
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center shadow-sm">
+                  <span className="text-white text-lg">🥡</span>
+                </div>
+                <div>
+                  <h1 className="text-lg font-semibold text-gray-800">Takeaway Order</h1>
+                  <div className="flex items-center gap-2">
+                    <div className="px-2.5 py-1 bg-orange-100 rounded-lg border border-orange-200">
+                      <p className="text-xs font-medium text-orange-700">{cart.length} items</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsCartOpen(!isCartOpen)}
+                className="p-2 rounded-full hover:bg-gray-100 relative min-h-[44px] min-w-[44px] flex items-center justify-center"
+              >
+                <FaShoppingCart className="text-orange-500 text-xl" />
+                {cart.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {cart.reduce((total, item) => total + item.quantity, 0)}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <MenuSearch
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          orderPlaced={false}
+        />
+
+        {/* Main Layout with Sidebar */}
+        <div className="flex h-[calc(100vh-180px)]">
+          {/* Section Sidebar - 20% width */}
+          <SectionSidebar
+            sections={sections}
+            activeSection={selectedSection === 'all' ? 'All' : selectedSection}
+            setActiveSection={(section) => setSelectedSection(section === 'All' ? 'all' : section)}
+            orderPlaced={false}
+            filteredMenu={menu}
+          />
+
+          {/* Main Content Area - 80% width, Scrollable */}
+          <div className="flex-1 overflow-y-auto">
+            <MenuGrid
+              filteredMenu={filteredMenu}
+              loading={loading}
+              itemQuantities={itemQuantities}
+              selectedSizes={selectedSizes}
+              onSizeSelect={handleSizeSelection}
+              onQuantityIncrement={incrementQuantity}
+              onQuantityDecrement={decrementQuantity}
+              onAddToCart={handleAddToCart}
+              orderPlaced={false}
+              getPriceForSize={getPriceForSize}
+              activeSection={selectedSection === 'all' ? 'All' : selectedSection}
+            />
+          </div>
+        </div>
+
+        {/* Mobile Cart Overlay */}
+        {isCartOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50" onClick={() => setIsCartOpen(false)}>
+            <div 
+              className="absolute right-0 top-0 h-full w-full sm:w-96 bg-white shadow-2xl overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between z-10">
+                <h2 className="text-xl font-bold text-gray-800">Your Cart</h2>
+                <button
+                  onClick={() => setIsCartOpen(false)}
+                  className="p-2 rounded-full hover:bg-gray-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                >
+                  <FaTimes className="text-gray-600 text-xl" />
+                </button>
+              </div>
+
+              <div className="p-4">
+                {/* Customer Details */}
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-700 mb-3">Customer Details</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="Customer Name"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm min-h-[44px]"
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="tel"
+                        placeholder="Phone Number"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm min-h-[44px]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cart Items */}
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-sm font-medium text-gray-700">Order Items</h3>
+                    <span className="text-sm text-gray-500">{cart.length} items</span>
+                  </div>
+
+                  {cart.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-8">Your cart is empty</p>
+                  ) : (
+                    <div className="space-y-4 max-h-64 overflow-y-auto">
+                      {cart.map(item => (
+                        <div key={`${item._id}-${item.selectedSize}`} className="flex justify-between items-start border-b pb-3 gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm text-gray-900 truncate">
+                              {item.name}
+                              {item.selectedSize && item.selectedSize !== 'Regular' && (
+                                <span className="text-xs text-gray-500 ml-1">({item.selectedSize})</span>
+                              )}
+                            </h4>
+                            <p className="text-sm text-gray-500">
+                              ₹{item.price} x {item.quantity}
+                            </p>
+                          </div>
+                          <div className="flex items-center space-x-2 flex-shrink-0">
+                            <div className="flex items-center border rounded-md">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  updateCartItemQuantity(item._id, item.quantity - 1, item.selectedSize);
+                                }}
+                                className="px-2 py-1 text-gray-600 hover:bg-gray-100 min-h-[36px] min-w-[36px] flex items-center justify-center"
+                              >
+                                -
+                              </button>
+                              <span className="px-2 text-sm">{item.quantity}</span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  updateCartItemQuantity(item._id, item.quantity + 1, item.selectedSize);
+                                }}
+                                className="px-2 py-1 text-gray-600 hover:bg-gray-100 min-h-[36px] min-w-[36px] flex items-center justify-center"
+                              >
+                                +
+                              </button>
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeFromCart(item._id, item.selectedSize);
+                              }}
+                              className="text-gray-400 hover:text-red-500 min-h-[36px] min-w-[36px] flex items-center justify-center"
+                            >
+                              <FaTimes className="text-sm" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Order Summary */}
+                <div className="border-t pt-4">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm text-gray-600">Subtotal</span>
+                    <span className="text-sm">₹{cartTotal.toFixed(2)}</span>
+                  </div>
+                  {gstRate > 0 && (
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm text-gray-600">GST ({gstRate}%)</span>
+                      <span className="text-sm">₹{calculateGST().toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-lg mt-4 pt-4 border-t">
+                    <span>Total</span>
+                    <span>₹{(cartTotal + calculateGST()).toFixed(2)}</span>
+                  </div>
+
+                  {/* Print Bill Toggle */}
+                  <div className="flex items-center justify-between mt-4">
+                    <span className="text-sm text-gray-600 font-medium">Print Bill</span>
+                    <label htmlFor="mobile-print-toggle" className="inline-flex relative items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={printBillEnabled}
+                        onChange={() => setPrintBillEnabled(!printBillEnabled)}
+                        id="mobile-print-toggle"
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-orange-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                    </label>
+                  </div>
+
+                  <button
+                    onClick={handleCompleteOrder}
+                    disabled={cart.length === 0}
+                    className={`w-full mt-6 py-3 px-4 rounded-lg font-medium text-white flex items-center justify-center space-x-2 min-h-[48px] text-base ${cart.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600'}`}
+                  >
+                    {printBillEnabled && <FaPrint className="text-sm" />}
+                    <span>{printBillEnabled ? 'Print & Complete Order' : 'Complete Order'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

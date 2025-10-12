@@ -9,7 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@apollo/client": "^3.14.0",
+    "@apollo/server": "^4.12.2",
+    "@as-integrations/next": "^3.2.0",
     "@fontsource/dancing-script": "^5.2.5",
+    "@graphql-tools/schema": "^10.0.25",
     "@heroicons/react": "^2.2.0",
     "@vercel/analytics": "^1.5.0",
     "ably": "^2.9.0",
@@ -19,6 +23,8 @@
     "dotenv": "^16.5.0",
     "file-saver": "^2.0.5",
     "framer-motion": "^11.18.2",
+    "graphql": "^16.11.0",
+    "graphql-tag": "^2.12.6",
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^2.5.2",
     "jszip": "^3.10.1",

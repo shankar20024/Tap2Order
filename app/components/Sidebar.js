@@ -40,8 +40,7 @@ const navItems = [
 ];
 
 export default function Sidebar() {
-  const [isOpen, setIsOpen] = useState(false);
-  const { isCollapsed, setIsCollapsed } = useSidebar();
+  const { isCollapsed, setIsCollapsed, isMobileSidebarOpen, setIsMobileSidebarOpen } = useSidebar();
   const pathname = usePathname();
   const [isMobile, setIsMobile] = useState(false);
   const { data: session, status } = useSession();
@@ -64,7 +63,7 @@ export default function Sidebar() {
   }, []);
 
   const handleNavigation = () => {
-    if (isMobile) setIsOpen(false);
+    if (isMobile) setIsMobileSidebarOpen(false);
   };
 
   const sidebarVariants = {
@@ -79,28 +78,20 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile Hamburger */}
-      <motion.button
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="fixed top-8 left-4 z-[60] p-2 rounded-md bg-gradient-to-r from-amber-600 to-amber-500 text-white md:hidden "
-        initial={false}
-        animate={{ rotate: isOpen ? 90 : 0 }}
-        transition={{ duration: 0.3 }}
-        aria-label="Toggle Sidebar"
-      >
-        {isOpen ? <FaTimes size={18} /> : <FaBars size={18} />}
-      </motion.button>
-
       {/* Sidebar */}
       <AnimatePresence>
-        {(isOpen || !isMobile) && (
+        {(isMobileSidebarOpen || !isMobile) && (
           <motion.div
             initial="closed"
             animate="open"
             exit="closed"
             variants={sidebarVariants}
-            transition={{ type: 'tween', ease: 'easeInOut', duration: 0.3 }}
-            className={`fixed px-0 left-0 z-[45] ${isCollapsed && !isMobile ? 'w-16' : 'w-64'} bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-lg flex flex-col top-20 md:top-16 h-[calc(100vh-5rem)] md:h-[calc(100vh-4rem)] transition-all duration-300`}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className={`fixed px-0 left-0 z-[45] bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-lg flex flex-col top-20 md:top-16 h-[calc(100vh-5rem)] md:h-[calc(100vh-4rem)]`}
+            style={{
+              width: isCollapsed && !isMobile ? '64px' : '256px',
+              transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}
           >
             {/* Collapse/Expand Button - Desktop Only */}
             {!isMobile && (
@@ -117,8 +108,14 @@ export default function Sidebar() {
             
 
             {/* Nav Items - flex-1 makes this take remaining space and allows scrolling */}
-            <nav className={`flex-1 overflow-y-auto scrollbar-hide py-4 space-y-2 ${isCollapsed && !isMobile ? 'px-2' : 'px-4'}`} 
-                 style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
+            <motion.nav 
+              className="flex-1 overflow-y-auto scrollbar-hide py-4 space-y-2" 
+              animate={{
+                paddingLeft: isCollapsed && !isMobile ? '8px' : '16px',
+                paddingRight: isCollapsed && !isMobile ? '8px' : '16px'
+              }}
+              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+              style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
               <style jsx>{`
                 nav::-webkit-scrollbar {
                   display: none;
@@ -129,33 +126,56 @@ export default function Sidebar() {
                 return (
                   <Link key={item.path} href={item.path} onClick={handleNavigation}>
                     <motion.div
-                      whileHover={{ scale: 1.02 }}
+                      whileHover={{ scale: 1.02, x: 2 }}
                       whileTap={{ scale: 0.97 }}
-                      className={`flex items-center rounded-lg text-sm md:text-base font-medium transition-colors ${
-                        isCollapsed && !isMobile 
-                          ? 'justify-center p-2.5' 
-                          : 'gap-3 px-3 py-2.5'
-                      } ${
+                      animate={{
+                        justifyContent: isCollapsed && !isMobile ? 'center' : 'flex-start',
+                        padding: isCollapsed && !isMobile ? '10px' : '10px 12px'
+                      }}
+                      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                      className={`flex items-center rounded-lg text-sm md:text-base font-medium ${
                         isActive
                           ? 'bg-gradient-to-r from-amber-700 to-amber-600 text-white shadow-md'
                           : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
                       }`}
+                      style={{ gap: isCollapsed && !isMobile ? '0px' : '12px' }}
                       title={isCollapsed && !isMobile ? item.name : ''}
                     >
-                      <span className={`text-lg ${isActive ? 'text-white' : 'text-amber-400'}`}>
+                      <motion.span 
+                        className={`text-lg ${isActive ? 'text-white' : 'text-amber-400'}`}
+                        animate={{ scale: isCollapsed && !isMobile ? 1.1 : 1 }}
+                        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                      >
                         {item.icon}
-                      </span>
-                      {(!isCollapsed || isMobile) && (
-                        <span className="whitespace-nowrap">{item.name}</span>
-                      )}
+                      </motion.span>
+                      <AnimatePresence>
+                        {(!isCollapsed || isMobile) && (
+                          <motion.span 
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -10 }}
+                            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                            className="whitespace-nowrap"
+                          >
+                            {item.name}
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
                     </motion.div>
                   </Link>
                 );
               })}
-            </nav>
+            </motion.nav>
 
             {/* Sticky Logout Button */}
-            <div className={`sticky bottom-0 bg-gradient-to-b from-gray-800 to-gray-900 border-t border-gray-700 py-4 mt-auto ${isCollapsed && !isMobile ? 'px-2' : 'px-4'}`}>
+            <motion.div 
+              className="sticky bottom-0 bg-gradient-to-b from-gray-800 to-gray-900 border-t border-gray-700 py-4 mt-auto"
+              animate={{
+                paddingLeft: isCollapsed && !isMobile ? '8px' : '16px',
+                paddingRight: isCollapsed && !isMobile ? '8px' : '16px'
+              }}
+              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+            >
               {isCollapsed && !isMobile ? (
                 <div className="flex flex-col items-center space-y-2">
                   <Link href="/profile" title="Profile Settings" className="p-2 rounded-full text-gray-400 hover:text-amber-500 hover:bg-gray-700/50 transition-all duration-200">
@@ -175,16 +195,16 @@ export default function Sidebar() {
                   </Link>
                 </div>
               )}
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Overlay for Mobile */}
-      {isOpen && isMobile && (
+      {isMobileSidebarOpen && isMobile && (
         <motion.div
           className="fixed inset-0 bg-black bg-opacity-50 z-[40]"
-          onClick={() => setIsOpen(false)}
+          onClick={() => setIsMobileSidebarOpen(false)}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

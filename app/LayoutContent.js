@@ -45,13 +45,15 @@ function LayoutContentInner({ children }) {
   return (
     <div className="flex h-screen bg-gray-100">
       {showSidebar && <Sidebar />}
-      <main className={`flex-1 overflow-y-auto transition-all duration-300 ${
-        showSidebar 
-          ? isCollapsed 
-            ? 'md:ml-16' 
-            : 'md:ml-64' 
-          : ''
-      }`}>
+      <main 
+        className={`flex-1 overflow-y-auto transition-[margin-left] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] ${
+          showSidebar 
+            ? isCollapsed 
+              ? 'md:ml-16' 
+              : 'md:ml-64' 
+            : ''
+        }`}
+      >
         {children}
       </main>
     </div>

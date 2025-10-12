@@ -71,7 +71,7 @@ export default function SectionSidebar({
               </div> }
             </button>
             </div>}
-            </>
+           </>
           );
         })}
         </div>

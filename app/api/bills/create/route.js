@@ -90,7 +90,6 @@ export async function POST(request) {
     try {
       const userDoc = await User.findById(user.id);
       userGstRate = userDoc?.gstDetails?.taxRate || 0;
-      console.log('User GST rate from database:', userGstRate);
     } catch (error) {
       console.error('Error fetching user GST rate:', error);
     }
@@ -100,23 +99,12 @@ export async function POST(request) {
     const calculatedGst = userGstRate > 0 ? Math.round(calculatedSubtotal * (userGstRate / 100)) : 0;
     const calculatedTotal = calculatedSubtotal + calculatedGst;
     
-    console.log('GST Calculation:');
-    console.log('Items subtotal:', calculatedSubtotal);
-    console.log(`User GST rate: ${userGstRate}%`);
-    console.log('Calculated GST:', calculatedGst);
-    console.log('Calculated total:', calculatedTotal);
-    console.log('Received values - subtotal:', subtotal, 'gst:', gst, 'total:', total);
-
+   
     // Create bill with enhanced structure
     // Only use token number for billing app orders, not for takeaway/dashboard orders
     const shouldUseTokenNumber = orderType === 'billing' || (tokenNumber && tokenNumber > 0);
     const finalTokenNumber = shouldUseTokenNumber ? (tokenNumber || billCounter.counter) : null;
-    
-    console.log('Order type:', orderType);
-    console.log('Should use token number:', shouldUseTokenNumber);
-    console.log('Final token number:', finalTokenNumber);
-    console.log('Bill counter value:', billCounter.counter);
-    
+   
     const bill = new Bill({
       billNumber: finalBillNumber,
       tokenNumber: finalTokenNumber,

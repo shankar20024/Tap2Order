@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { connectDB } from '../../../lib/mongodb';
+import mongoose from 'mongoose';
 import Order from '../../../models/Order';
 import MenuItem from '../../../models/MenuItem';
 import Table from '../../../models/Table';
@@ -17,7 +18,7 @@ export async function GET(request) {
     await connectDB();
     
     const { searchParams } = new URL(request.url);
-    const period = parseInt(searchParams.get('period')) || 30;
+    const periodParam = searchParams.get('period') || '30';
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const category = searchParams.get('category');
@@ -25,23 +26,35 @@ export async function GET(request) {
     const status = searchParams.get('status');
     const paymentMethod = searchParams.get('paymentMethod');
 
-    const userId = session.user.id;
+    const userId = new mongoose.Types.ObjectId(session.user.id);
     
     // Build date filter
     let dateFilter = {};
+    let period = 30; // Default for chart generation
+    
     if (startDate && endDate) {
+      // Custom date range
       dateFilter = {
         createdAt: {
           $gte: new Date(startDate),
           $lte: new Date(endDate + 'T23:59:59.999Z')
         }
       };
-    } else {
+      // Calculate period from date range for charts
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      period = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    } else if (periodParam !== 'all') {
+      // Period filter (7, 30, 90 days)
+      period = parseInt(periodParam);
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - period);
       dateFilter = {
         createdAt: { $gte: daysAgo }
       };
+    } else {
+      // All time - no date restriction, use 365 days for chart display
+      period = 365;
     }
 
     // Build base match criteria
@@ -103,9 +116,17 @@ export async function GET(request) {
       // Completed orders in period
       Order.countDocuments({ ...finalMatch, status: 'completed' }),
       
-      // Total revenue in period
+      // Total revenue in period (served, completed, or paid orders)
       Order.aggregate([
-        { $match: { ...finalMatch, status: 'completed' } },
+        { $match: finalMatch },
+        { 
+          $match: {
+            $or: [
+              { status: { $in: ['served', 'completed'] } },
+              { paymentStatus: 'paid' }
+            ]
+          } 
+        },
         { $group: { _id: null, total: { $sum: '$totalAmount' } } }
       ]),
       
@@ -122,12 +143,19 @@ export async function GET(request) {
       Order.aggregate([
         { 
           $match: { 
-            userId, 
-            status: 'completed',
+            userId,
             createdAt: { 
               $gte: DateTime.now().startOf('day').toJSDate(),
               $lte: DateTime.now().endOf('day').toJSDate()
             }
+          }
+        },
+        { 
+          $match: {
+            $or: [
+              { status: { $in: ['served', 'completed'] } },
+              { paymentStatus: 'paid' }
+            ]
           }
         },
         { $group: { _id: null, total: { $sum: '$totalAmount' } } }
@@ -145,9 +173,17 @@ export async function GET(request) {
         { $group: { _id: '$orderType', count: { $sum: 1 } } }
       ]),
       
-      // Revenue by day (last 30 days)
+      // Revenue by day (last 30 days) - served, completed, or paid orders
       Order.aggregate([
-        { $match: { ...finalMatch, status: 'completed' } },
+        { $match: finalMatch },
+        { 
+          $match: {
+            $or: [
+              { status: { $in: ['served', 'completed'] } },
+              { paymentStatus: 'paid' }
+            ]
+          } 
+        },
         {
           $group: {
             _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
@@ -170,9 +206,17 @@ export async function GET(request) {
         { $sort: { _id: 1 } }
       ]),
       
-      // Top menu items
+      // Top menu items (served, completed, or paid orders)
       Order.aggregate([
-        { $match: { ...finalMatch, status: 'completed' } },
+        { $match: finalMatch },
+        { 
+          $match: {
+            $or: [
+              { status: { $in: ['served', 'completed'] } },
+              { paymentStatus: 'paid' }
+            ]
+          } 
+        },
         { $unwind: '$items' },
         {
           $group: {
@@ -191,33 +235,67 @@ export async function GET(request) {
       // Tables count
       Table.countDocuments({ userId }),
       
-      // Average order value
+      // Average order value (served, completed, or paid orders)
       Order.aggregate([
-        { $match: { ...finalMatch, status: 'completed' } },
+        { $match: finalMatch },
+        { 
+          $match: {
+            $or: [
+              { status: { $in: ['served', 'completed'] } },
+              { paymentStatus: 'paid' }
+            ]
+          } 
+        },
         { $group: { _id: null, avg: { $avg: '$totalAmount' } } }
       ]),
       
-      // Peak hours analysis
+      // Peak hours analysis (count all orders, revenue only from paid/served/completed)
       Order.aggregate([
         { $match: finalMatch },
         {
           $group: {
             _id: { $hour: '$createdAt' },
             count: { $sum: 1 },
-            revenue: { $sum: '$totalAmount' }
+            revenue: { 
+              $sum: {
+                $cond: [
+                  {
+                    $or: [
+                      { $in: ['$status', ['served', 'completed']] },
+                      { $eq: ['$paymentStatus', 'paid'] }
+                    ]
+                  },
+                  '$totalAmount',
+                  0
+                ]
+              }
+            }
           }
         },
         { $sort: { count: -1 } }
       ]),
       
-      // Customer metrics
+      // Customer metrics (count all orders, revenue only from paid/served/completed)
       Order.aggregate([
         { $match: finalMatch },
         {
           $group: {
             _id: '$customerInfo.phone',
             orders: { $sum: 1 },
-            totalSpent: { $sum: '$totalAmount' },
+            totalSpent: { 
+              $sum: {
+                $cond: [
+                  {
+                    $or: [
+                      { $in: ['$status', ['served', 'completed']] },
+                      { $eq: ['$paymentStatus', 'paid'] }
+                    ]
+                  },
+                  '$totalAmount',
+                  0
+                ]
+              }
+            },
             lastOrder: { $max: '$createdAt' }
           }
         },
@@ -231,19 +309,36 @@ export async function GET(request) {
         }
       ]),
       
-      // Payment methods
+      // Payment methods (served, completed, or paid orders)
       Order.aggregate([
-        { $match: { ...finalMatch, status: 'completed' } },
+        { $match: finalMatch },
+        { 
+          $match: {
+            $or: [
+              { status: { $in: ['served', 'completed'] } },
+              { paymentStatus: 'paid' }
+            ]
+          } 
+        },
         { $group: { _id: '$paymentMethod', count: { $sum: 1 }, revenue: { $sum: '$totalAmount' } } }
       ]),
       
-      // Monthly revenue (last 12 months)
+      // Monthly revenue - served, completed, or paid orders
       Order.aggregate([
         { 
-          $match: { 
-            userId, 
-            status: 'completed',
-            createdAt: { $gte: DateTime.now().minus({ months: 12 }).toJSDate() }
+          $match: periodParam === 'all' 
+            ? { userId }
+            : { 
+                userId,
+                createdAt: { $gte: DateTime.now().minus({ months: 12 }).toJSDate() }
+              }
+        },
+        { 
+          $match: {
+            $or: [
+              { status: { $in: ['served', 'completed'] } },
+              { paymentStatus: 'paid' }
+            ]
           }
         },
         {
@@ -259,10 +354,29 @@ export async function GET(request) {
         { $sort: { '_id.year': 1, '_id.month': 1 } }
       ]),
       
-      // Orders by table
+      // Orders by table (count all orders, revenue only from paid/served/completed)
       Order.aggregate([
         { $match: finalMatch },
-        { $group: { _id: '$tableNumber', count: { $sum: 1 }, revenue: { $sum: '$totalAmount' } } },
+        { 
+          $group: { 
+            _id: '$tableNumber', 
+            count: { $sum: 1 }, 
+            revenue: { 
+              $sum: {
+                $cond: [
+                  {
+                    $or: [
+                      { $in: ['$status', ['served', 'completed']] },
+                      { $eq: ['$paymentStatus', 'paid'] }
+                    ]
+                  },
+                  '$totalAmount',
+                  0
+                ]
+              }
+            }
+          } 
+        },
         { $sort: { count: -1 } }
       ])
     ]);
@@ -303,32 +417,97 @@ export async function GET(request) {
         data: ordersByType.length > 0 ? ordersByType.map(item => item.count) : [1]
       },
       
-      // Revenue Trends (Daily)
-      revenueTrend: {
-        labels: revenueByDay.length > 0 ? revenueByDay.map(item => DateTime.fromISO(item._id).toFormat('MMM dd')) : ['No Data'],
-        datasets: [
-          {
-            label: 'Revenue',
-            data: revenueByDay.length > 0 ? revenueByDay.map(item => item.revenue) : [0],
-            borderColor: '#f59e0b',
-            backgroundColor: 'rgba(245, 158, 11, 0.1)'
-          },
-          {
-            label: 'Orders',
-            data: revenueByDay.length > 0 ? revenueByDay.map(item => item.orders) : [0],
-            borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)'
-          }
-        ]
-      },
+      // Revenue Trends (Daily) - Only show dates with actual data
+      revenueTrend: (() => {
+        if (revenueByDay.length === 0) {
+          return {
+            labels: ['No Data'],
+            datasets: [
+              {
+                label: 'Revenue (₹)',
+                data: [0],
+                borderColor: 'rgb(99, 102, 241)',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                borderWidth: 3,
+                tension: 0.4
+              },
+              {
+                label: 'Orders',
+                data: [0],
+                borderColor: 'rgb(234, 88, 12)',
+                backgroundColor: 'rgba(234, 88, 12, 0.1)',
+                borderWidth: 3,
+                tension: 0.4
+              }
+            ]
+          };
+        }
+        
+        // Show only dates that have data
+        const dates = revenueByDay.map(item => 
+          DateTime.fromISO(item._id).toFormat('MMM dd, yyyy')
+        );
+        const revenues = revenueByDay.map(item => item.revenue);
+        const orders = revenueByDay.map(item => item.orders);
+        
+        return {
+          labels: dates,
+          datasets: [
+            {
+              label: 'Revenue (₹)',
+              data: revenues,
+              borderColor: 'rgb(99, 102, 241)',
+              backgroundColor: 'rgba(99, 102, 241, 0.15)',
+              borderWidth: 3,
+              pointRadius: 6,
+              pointHoverRadius: 8,
+              pointBackgroundColor: 'rgb(99, 102, 241)',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              tension: 0.4,
+              fill: true
+            },
+            {
+              label: 'Orders',
+              data: orders,
+              borderColor: 'rgb(234, 88, 12)',
+              backgroundColor: 'rgba(234, 88, 12, 0.15)',
+              borderWidth: 3,
+              pointRadius: 6,
+              pointHoverRadius: 8,
+              pointBackgroundColor: 'rgb(234, 88, 12)',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              tension: 0.4,
+              fill: true
+            }
+          ]
+        };
+      })(),
       
-      // Monthly Revenue (Bar Chart)
-      monthlyRevenue: {
-        labels: monthlyRevenue.length > 0 ? monthlyRevenue.map(item => 
-          DateTime.fromObject({ year: item._id.year, month: item._id.month }).toFormat('MMM yyyy')
-        ) : ['No Data'],
-        data: monthlyRevenue.length > 0 ? monthlyRevenue.map(item => item.revenue) : [0]
-      },
+      // Monthly Revenue (Bar Chart) - Only show months with actual data
+      monthlyRevenue: (() => {
+        if (monthlyRevenue.length === 0) {
+          return { 
+            labels: ['No Data'], 
+            data: [0] 
+          };
+        }
+        
+        // Show only months that have data
+        const months = monthlyRevenue.map(item => {
+          return DateTime.fromObject({ 
+            year: item._id.year, 
+            month: item._id.month 
+          }).toFormat('MMM yyyy');
+        });
+        const revenues = monthlyRevenue.map(item => item.revenue);
+        
+        return { 
+          labels: months, 
+          data: revenues 
+        };
+      })(),
       
       // Top Menu Items
       topMenuItems: topMenuItems.length > 0 ? topMenuItems.map(item => ({

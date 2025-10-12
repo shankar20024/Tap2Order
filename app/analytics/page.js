@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Header from '../components/Header';
-import ComingSoon from '../components/ComingSoon';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -16,6 +15,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler,
 } from 'chart.js';
 import { Line, Bar, Doughnut, Pie } from 'react-chartjs-2';
 import { 
@@ -43,7 +43,8 @@ ChartJS.register(
   ArcElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 export default function Analytics() {
@@ -53,9 +54,6 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [period, setPeriod] = useState('30');
-  
-  // Environment detection
-  const [isProduction, setIsProduction] = useState(false);
   
   // Filter states
   const [dateRange, setDateRange] = useState({
@@ -76,18 +74,6 @@ export default function Analytics() {
     paymentMethods: ['cash', 'card', 'upi', 'wallet']
   });
 
-  // Check environment on component mount
-  useEffect(() => {
-    const checkEnvironment = () => {
-      if (typeof window !== 'undefined') {
-        const hostname = window.location.hostname;
-        const isProductionDomain = hostname.includes('tap2orders.com');
-        setIsProduction(isProductionDomain);
-      }
-    };
-    
-    checkEnvironment();
-  }, []);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -103,8 +89,11 @@ export default function Analytics() {
   }, []);
 
   useEffect(() => {
-    fetchAnalytics();
+    if (session?.user?.id) {
+      fetchAnalytics();
+    }
   }, [session?.user?.id, period, dateRange, selectedCategory, selectedTable, selectedStatus, selectedPaymentMethod]);
+
 
   const fetchFilterOptions = async () => {
     try {
@@ -121,6 +110,7 @@ export default function Analytics() {
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
+      setError('');
       const params = new URLSearchParams({
         period: period.toString(),
         ...(dateRange.startDate && { startDate: dateRange.startDate }),
@@ -137,9 +127,12 @@ export default function Analytics() {
         const data = await response.json();
         setAnalytics(data);
       } else {
+        const errorData = await response.json();
+        console.error('❌ API Error:', errorData);
         setError('Failed to fetch analytics data');
       }
     } catch (error) {
+      console.error('❌ Fetch Error:', error);
       setError('Error loading analytics');
     } finally {
       setLoading(false);
@@ -256,51 +249,38 @@ export default function Analytics() {
     cutout: '60%'
   };
 
-  // Show coming soon for production environment
-  if (isProduction) {
-    return <ComingSoon feature="Analytics Dashboard" />;
-  }
-
-  if (status === 'loading' || loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center px-4">
-        <div className="text-center">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-12 sm:h-16 w-12 sm:w-16 border-4 border-purple-200 border-t-purple-600 mx-auto mb-4 sm:mb-6"></div>
-            <div className="absolute inset-0 rounded-full h-12 sm:h-16 w-12 sm:w-16 border-4 border-transparent border-r-pink-400 animate-ping mx-auto"></div>
-          </div>
-          <p className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">Loading Analytics...</p>
-          <p className="text-sm text-gray-500">Preparing your business insights</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 flex items-center justify-center px-4">
-        <div className="text-center bg-white p-6 sm:p-8 rounded-2xl shadow-xl max-w-md w-full">
-          <div className="text-red-500 text-4xl sm:text-6xl mb-4">⚠️</div>
-          <p className="text-red-600 mb-4 sm:mb-6 text-base sm:text-lg font-semibold">Error: {error}</p>
-          <button 
-            onClick={fetchAnalytics}
-            className="w-full px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all duration-300 transform hover:scale-105 shadow-lg text-sm sm:text-base"
-          >
-            Retry Loading
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!analytics) return null;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
       <Header />
       <div className="p-4 sm:p-6 max-w-7xl mx-auto mt-20">
-        {/* Header Section */}
-        <div className="mb-6 sm:mb-8">
+        
+        {/* Error State */}
+        {error && (
+          <div className="mb-8">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-red-200">
+              <div className="flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-red-500 text-5xl mb-4">⚠️</div>
+                  <p className="text-red-600 mb-4 text-lg font-semibold">Error: {error}</p>
+                  <button 
+                    onClick={fetchAnalytics}
+                    className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                  >
+                    🔄 Retry Loading
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        
+
+        {/* Analytics Content */}
+        {analytics && !error && (
+          <>
+            {/* Header Section */}
+            <div className="mb-6 sm:mb-8">
           <div className="flex flex-col space-y-4 mb-4 sm:mb-6">
             <div className="text-center sm:text-left">
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
@@ -341,6 +321,16 @@ export default function Analytics() {
                     }`}
                   >
                     📅 90 Days
+                  </button>
+                  <button
+                    onClick={() => setPeriod('all')}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                      period === 'all'
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md transform scale-105'
+                        : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
+                    }`}
+                  >
+                    🌐 All Time
                   </button>
                 </div>
               </div>
@@ -578,21 +568,107 @@ export default function Analytics() {
               <FaChartLine className="mr-3 text-blue-500" />
               Revenue & Orders Trend
             </h3>
-            <div className="h-80 sm:h-96 md:h-120 lg:h-140 xl:h-160">
-              <Line
-                data={{
-                  labels: analytics.revenueTrend.labels,
-                  datasets: analytics.revenueTrend.datasets.map((dataset, index) => ({
-                    ...dataset,
-                    borderWidth: 3,
-                    pointRadius: 5,
-                    pointHoverRadius: 8,
-                    fill: true,
-                    tension: 0.4
-                  }))
-                }}
-                options={lineOptions}
-              />
+            <div style={{ height: '400px', width: '100%', position: 'relative' }}>
+              {(() => {
+                const hasRealData = analytics.revenueTrend?.datasets?.some(d => 
+                  d.data?.some(val => val > 0)
+                );
+                
+                if (!hasRealData) {
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center p-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
+                        <div className="text-6xl mb-4">📈</div>
+                        <h3 className="text-xl font-bold text-gray-800 mb-2">No Revenue Data Yet</h3>
+                        <p className="text-gray-600 mb-4">Complete some paid orders to see trends</p>
+                        <div className="text-sm text-gray-500">
+                          <p>✓ {analytics.kpis.totalOrders} orders created</p>
+                          <p>✓ {analytics.kpis.completedOrders} orders completed</p>
+                          <p className="text-red-500 font-semibold mt-2">⚠️ No revenue recorded (totalAmount = 0)</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <Line
+                    key={`revenue-${period}`}
+                    data={{
+                      labels: analytics.revenueTrend.labels,
+                      datasets: analytics.revenueTrend.datasets
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      interaction: {
+                        mode: 'index',
+                        intersect: false,
+                      },
+                      plugins: {
+                        legend: {
+                          display: true,
+                          position: 'top',
+                          labels: {
+                            font: { size: 13, weight: '600' },
+                            padding: 15,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                          }
+                        },
+                        tooltip: {
+                          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                          padding: 12,
+                          titleFont: { size: 14, weight: 'bold' },
+                          bodyFont: { size: 13 },
+                          cornerRadius: 8,
+                          displayColors: true,
+                          callbacks: {
+                            label: function(context) {
+                              let label = context.dataset.label || '';
+                              if (label) {
+                                label += ': ';
+                              }
+                              if (context.parsed.y !== null) {
+                                if (context.dataset.label.includes('Revenue')) {
+                                  label += '₹' + context.parsed.y.toLocaleString('en-IN');
+                                } else {
+                                  label += context.parsed.y;
+                                }
+                              }
+                              return label;
+                            }
+                          }
+                        }
+                      },
+                      scales: {
+                        x: {
+                          grid: {
+                            display: false
+                          },
+                          ticks: {
+                            font: { size: 11 },
+                            maxRotation: 45,
+                            minRotation: 45
+                          }
+                        },
+                        y: {
+                          beginAtZero: true,
+                          grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                          },
+                          ticks: {
+                            font: { size: 11 },
+                            callback: function(value) {
+                              return '₹' + value.toLocaleString('en-IN');
+                            }
+                          }
+                        }
+                      }
+                    }}
+                  />
+                );
+              })()}
             </div>
           </div>
 
@@ -602,19 +678,124 @@ export default function Analytics() {
               <FaClock className="mr-3 text-orange-500" />
               Monthly Revenue
             </h3>
-            <div className="h-80 sm:h-96 md:h-120 lg:h-140 xl:h-160">
-              <Bar
-                data={{
-                  labels: analytics.monthlyRevenue.labels,
-                  datasets: [{
-                    data: analytics.monthlyRevenue.data,
-                    backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    borderRadius: 8,
-                    borderSkipped: false,
-                  }]
-                }}
-                options={barOptions}
-              />
+            <div style={{ height: '400px', width: '100%', position: 'relative' }}>
+              {(() => {
+                const hasRealData = analytics.monthlyRevenue?.data?.some(val => val > 0);
+                
+                if (!hasRealData) {
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center p-8 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl">
+                        <div className="text-6xl mb-4">📊</div>
+                        <h3 className="text-xl font-bold text-gray-800 mb-2">No Monthly Revenue</h3>
+                        <p className="text-gray-600 mb-4">Mark orders as paid to track monthly revenue</p>
+                        <div className="text-sm text-gray-500">
+                          <p>Tracking: {analytics.monthlyRevenue.labels.join(', ')}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <Bar
+                    key={`monthly-${period}`}
+                    data={{
+                      labels: analytics.monthlyRevenue.labels,
+                      datasets: [{
+                        label: 'Revenue (₹)',
+                        data: analytics.monthlyRevenue.data,
+                        backgroundColor: analytics.monthlyRevenue.labels.map((_, i) => {
+                          const colors = [
+                            'rgba(102, 126, 234, 0.8)',
+                            'rgba(118, 75, 162, 0.8)',
+                            'rgba(237, 100, 166, 0.8)',
+                            'rgba(255, 154, 158, 0.8)',
+                            'rgba(255, 183, 77, 0.8)',
+                            'rgba(129, 199, 132, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(139, 92, 246, 0.8)',
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(236, 72, 153, 0.8)',
+                          ];
+                          return colors[i % colors.length];
+                        }),
+                        borderColor: analytics.monthlyRevenue.labels.map((_, i) => {
+                          const colors = [
+                            'rgb(102, 126, 234)',
+                            'rgb(118, 75, 162)',
+                            'rgb(237, 100, 166)',
+                            'rgb(255, 154, 158)',
+                            'rgb(255, 183, 77)',
+                            'rgb(129, 199, 132)',
+                            'rgb(245, 158, 11)',
+                            'rgb(59, 130, 246)',
+                            'rgb(16, 185, 129)',
+                            'rgb(139, 92, 246)',
+                            'rgb(239, 68, 68)',
+                            'rgb(236, 72, 153)',
+                          ];
+                          return colors[i % colors.length];
+                        }),
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                      }]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          display: true,
+                          position: 'top',
+                          labels: {
+                            font: { size: 13, weight: '600' },
+                            padding: 15
+                          }
+                        },
+                        tooltip: {
+                          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                          padding: 12,
+                          titleFont: { size: 14, weight: 'bold' },
+                          bodyFont: { size: 13 },
+                          cornerRadius: 8,
+                          displayColors: true,
+                          callbacks: {
+                            label: function(context) {
+                              return 'Revenue: ₹' + context.parsed.y.toLocaleString('en-IN');
+                            }
+                          }
+                        }
+                      },
+                      scales: {
+                        x: {
+                          grid: {
+                            display: false
+                          },
+                          ticks: {
+                            font: { size: 12, weight: '500' }
+                          }
+                        },
+                        y: {
+                          beginAtZero: true,
+                          grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                          },
+                          ticks: {
+                            font: { size: 11 },
+                            callback: function(value) {
+                              return '₹' + value.toLocaleString('en-IN');
+                            }
+                          }
+                        }
+                      }
+                    }}
+                  />
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -627,32 +808,26 @@ export default function Analytics() {
               <FaClock className="mr-3 text-green-500" />
               Order Status Distribution
             </h3>
-            <div className="h-80 sm:h-96 md:h-120 lg:h-140 xl:h-160">
-              {analytics.orderStatus.data.length > 0 && analytics.orderStatus.data[0] !== 1 ? (
-                <Doughnut
-                  data={{
-                    labels: analytics.orderStatus.labels,
-                    datasets: [{
-                      data: analytics.orderStatus.data,
-                      backgroundColor: [
-                        '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#059669', '#ef4444'
-                      ],
-                      borderWidth: 3,
-                      borderColor: '#ffffff',
-                      hoverBorderWidth: 5
-                    }]
-                  }}
-                  options={doughnutOptions}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <div className="text-gray-400 text-6xl mb-4">📊</div>
-                    <p className="text-gray-500 text-lg font-semibold">No order data available</p>
-                    <p className="text-sm text-gray-400">Start taking orders to see analytics</p>
-                  </div>
-                </div>
-              )}
+            <div style={{ height: '350px', width: '100%', position: 'relative' }}>
+              <Doughnut
+                data={{
+                  labels: analytics.orderStatus?.labels || ['No Data'],
+                  datasets: [{
+                    data: analytics.orderStatus?.data || [1],
+                    backgroundColor: [
+                      '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#059669', '#ef4444'
+                    ],
+                    borderWidth: 3,
+                    borderColor: '#ffffff',
+                    hoverBorderWidth: 5
+                  }]
+                }}
+                options={{
+                  ...doughnutOptions,
+                  responsive: true,
+                  maintainAspectRatio: false
+                }}
+              />
             </div>
           </div>
 
@@ -662,32 +837,26 @@ export default function Analytics() {
               <FaCreditCard className="mr-3 text-pink-500" />
               Payment Methods
             </h3>
-            <div className="h-80 sm:h-96 md:h-120 lg:h-140 xl:h-160">
-              {analytics.paymentMethods.data.length > 0 && analytics.paymentMethods.data[0] !== 1 ? (
-                <Pie
-                  data={{
-                    labels: analytics.paymentMethods.labels,
-                    datasets: [{
-                      data: analytics.paymentMethods.data,
-                      backgroundColor: [
-                        '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'
-                      ],
-                      borderWidth: 3,
-                      borderColor: '#ffffff',
-                      hoverBorderWidth: 5
-                    }]
-                  }}
-                  options={doughnutOptions}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <div className="text-gray-400 text-6xl mb-4">💳</div>
-                    <p className="text-gray-500 text-lg font-semibold">No payment data</p>
-                    <p className="text-sm text-gray-400">Payment methods will show here</p>
-                  </div>
-                </div>
-              )}
+            <div style={{ height: '350px', width: '100%', position: 'relative' }}>
+              <Pie
+                data={{
+                  labels: analytics.paymentMethods?.labels || ['No Data'],
+                  datasets: [{
+                    data: analytics.paymentMethods?.data || [1],
+                    backgroundColor: [
+                      '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'
+                    ],
+                    borderWidth: 3,
+                    borderColor: '#ffffff',
+                    hoverBorderWidth: 5
+                  }]
+                }}
+                options={{
+                  ...doughnutOptions,
+                  responsive: true,
+                  maintainAspectRatio: false
+                }}
+              />
             </div>
           </div>
         </div>
@@ -722,24 +891,38 @@ export default function Analytics() {
             <FaClock className="mr-3 text-indigo-500" />
             Peak Hours Analysis
           </h3>
-          <div className="h-80 sm:h-96 md:h-120 lg:h-140 xl:h-160">
+          <div style={{ height: '400px', width: '100%', position: 'relative' }}>
             <Bar
               data={{
-                labels: analytics.peakHours.labels,
+                labels: analytics.peakHours?.labels || [],
                 datasets: [{
-                  data: analytics.peakHours.data,
-                  backgroundColor: analytics.peakHours.data.map(value => 
-                    value > Math.max(...analytics.peakHours.data) * 0.7 ? '#ef4444' :
-                    value > Math.max(...analytics.peakHours.data) * 0.4 ? '#f59e0b' : '#10b981'
-                  ),
+                  label: 'Orders',
+                  data: analytics.peakHours?.data || [],
+                  backgroundColor: (analytics.peakHours?.data || []).map(value => {
+                    const maxVal = Math.max(...(analytics.peakHours?.data || [1]));
+                    return value > maxVal * 0.7 ? '#ef4444' :
+                           value > maxVal * 0.4 ? '#f59e0b' : '#10b981';
+                  }),
+                  borderColor: (analytics.peakHours?.data || []).map(value => {
+                    const maxVal = Math.max(...(analytics.peakHours?.data || [1]));
+                    return value > maxVal * 0.7 ? '#dc2626' :
+                           value > maxVal * 0.4 ? '#d97706' : '#059669';
+                  }),
+                  borderWidth: 2,
                   borderRadius: 4,
                   borderSkipped: false,
                 }]
               }}
-              options={barOptions}
+              options={{
+                ...barOptions,
+                responsive: true,
+                maintainAspectRatio: false
+              }}
             />
+            </div>
           </div>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

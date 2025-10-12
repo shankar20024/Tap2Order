@@ -6,9 +6,10 @@ const SidebarContext = createContext();
 
 export function SidebarProvider({ children }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   return (
-    <SidebarContext.Provider value={{ isCollapsed, setIsCollapsed }}>
+    <SidebarContext.Provider value={{ isCollapsed, setIsCollapsed, isMobileSidebarOpen, setIsMobileSidebarOpen }}>
       {children}
     </SidebarContext.Provider>
   );
