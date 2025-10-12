@@ -4,7 +4,7 @@ import { Providers } from "./providers";
 import { Toaster } from 'react-hot-toast';  
 import { Analytics } from '@vercel/analytics/react';
 import LayoutContent from "./LayoutContent";
-
+import Script from 'next/script';
 
 
 const geistSans = Geist({
@@ -80,6 +80,20 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-36SB826X03"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-36SB826X03');
+          `}
+        </Script>
+
         <Providers>
           <Toaster position="top-right" />
           <LayoutContent>{children}</LayoutContent>

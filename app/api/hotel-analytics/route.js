@@ -427,17 +427,21 @@ export async function GET(request) {
                 label: 'Revenue (₹)',
                 data: [0],
                 borderColor: 'rgb(99, 102, 241)',
-                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                backgroundColor: 'rgb(99, 102, 241)',
                 borderWidth: 3,
-                tension: 0.4
+                tension: 0.4,
+                fill: false,
+                yAxisID: 'y'
               },
               {
                 label: 'Orders',
                 data: [0],
                 borderColor: 'rgb(234, 88, 12)',
-                backgroundColor: 'rgba(234, 88, 12, 0.1)',
+                backgroundColor: 'rgb(234, 88, 12)',
                 borderWidth: 3,
-                tension: 0.4
+                tension: 0.4,
+                fill: false,
+                yAxisID: 'y1'
               }
             ]
           };
@@ -457,29 +461,31 @@ export async function GET(request) {
               label: 'Revenue (₹)',
               data: revenues,
               borderColor: 'rgb(99, 102, 241)',
-              backgroundColor: 'rgba(99, 102, 241, 0.15)',
+              backgroundColor: 'rgb(99, 102, 241)',
               borderWidth: 3,
-              pointRadius: 6,
-              pointHoverRadius: 8,
+              pointRadius: 5,
+              pointHoverRadius: 7,
               pointBackgroundColor: 'rgb(99, 102, 241)',
               pointBorderColor: '#fff',
               pointBorderWidth: 2,
               tension: 0.4,
-              fill: true
+              fill: false,
+              yAxisID: 'y'
             },
             {
               label: 'Orders',
               data: orders,
               borderColor: 'rgb(234, 88, 12)',
-              backgroundColor: 'rgba(234, 88, 12, 0.15)',
+              backgroundColor: 'rgb(234, 88, 12)',
               borderWidth: 3,
-              pointRadius: 6,
-              pointHoverRadius: 8,
+              pointRadius: 5,
+              pointHoverRadius: 7,
               pointBackgroundColor: 'rgb(234, 88, 12)',
               pointBorderColor: '#fff',
               pointBorderWidth: 2,
               tension: 0.4,
-              fill: true
+              fill: false,
+              yAxisID: 'y1'
             }
           ]
         };

@@ -274,7 +274,15 @@ export default function Analytics() {
           </div>
         )}
 
-        
+        {/* Loading State */}
+        {loading && !analytics && !error && (
+          <div className="flex justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-amber-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading analytics...</p>
+            </div>
+          </div>
+        )}
 
         {/* Analytics Content */}
         {analytics && !error && (
@@ -653,7 +661,11 @@ export default function Analytics() {
                           }
                         },
                         y: {
+                          type: 'linear',
+                          display: true,
+                          position: 'left',
                           beginAtZero: true,
+                          grace: '30%',
                           grid: {
                             color: 'rgba(0, 0, 0, 0.05)'
                           },
@@ -661,6 +673,41 @@ export default function Analytics() {
                             font: { size: 11 },
                             callback: function(value) {
                               return '₹' + value.toLocaleString('en-IN');
+                            }
+                          },
+                          title: {
+                            display: true,
+                            text: 'Revenue (₹)',
+                            color: 'rgb(99, 102, 241)',
+                            font: {
+                              size: 12,
+                              weight: 'bold'
+                            }
+                          }
+                        },
+                        y1: {
+                          type: 'linear',
+                          display: true,
+                          position: 'right',
+                          beginAtZero: true,
+                          grace: '30%',
+                          grid: {
+                            drawOnChartArea: false
+                          },
+                          ticks: {
+                            font: { size: 11 },
+                            stepSize: 1,
+                            callback: function(value) {
+                              return Math.round(value);
+                            }
+                          },
+                          title: {
+                            display: true,
+                            text: 'Orders',
+                            color: 'rgb(234, 88, 12)',
+                            font: {
+                              size: 12,
+                              weight: 'bold'
                             }
                           }
                         }

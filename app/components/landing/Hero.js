@@ -7,7 +7,7 @@ import { FaArrowRight } from 'react-icons/fa';
 
 export default function Hero({ onGetStartedClick }) {
   return (
-    <section id="hero" className="relative w-full min-h-screen flex items-center justify-center bg-white overflow-hidden pt-20">
+    <section id="hero" className="relative w-full min-h-screen flex items-center justify-center bg-white overflow-hidden pt-38 md:pt-20">
       <div className="absolute inset-0 z-0">
         <motion.div
           className="absolute -top-20 -left-20 w-96 h-96 bg-amber-100/50 rounded-full filter blur-3xl opacity-70"
@@ -22,7 +22,7 @@ export default function Hero({ onGetStartedClick }) {
       </div>
 
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 md:gap-8 gap-2 items-center">
           {/* Text Content */}
           <motion.div
             className="text-center lg:text-left"
