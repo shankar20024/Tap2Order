@@ -14,7 +14,8 @@ export default function MenuCard({
   onQuantityDecrement,
   onAddToCart,
   orderPlaced = false,
-  getPriceForSize 
+  getPriceForSize,
+  clickToAdd = false
 }) {
   const currentPrice = getPriceForSize(item, selectedSizeIndex);
   const isAvailable = item.available;
@@ -34,10 +35,39 @@ export default function MenuCard({
     }
   };
 
+  // Handle card click in clickToAdd mode
+  const handleCardClick = () => {
+    if (clickToAdd && isAvailable && !orderPlaced) {
+      // Only add directly if no multiple sizes
+      const hasMultipleSizes = item.pricing && item.pricing.length > 1;
+      if (!hasMultipleSizes) {
+        // Direct add with quantity 1
+        onAddToCart(item, 1);
+      }
+      // For multiple sizes, user must click size button
+    }
+  };
+
+  // Handle size click - wraps size selection for clickToAdd mode
+  const handleSizeClick = (itemId, sizeIndex) => {
+    if (clickToAdd && isAvailable && !orderPlaced) {
+      // ClickToAdd mode: Select size and add immediately (single tap)
+      onSizeSelect(itemId, sizeIndex);
+      // Direct add with quantity 1 and correct size index
+      onAddToCart(item, 1, sizeIndex);
+    } else {
+      // Normal mode: Just select size
+      onSizeSelect(itemId, sizeIndex);
+    }
+  };
+
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden 
+    <div 
+      onClick={handleCardClick}
+      className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden 
                    hover:shadow-md transition-shadow duration-200 
-                   ${!isAvailable ? 'opacity-60' : ''}`}>
+                   ${!isAvailable ? 'opacity-60' : ''}
+                   ${clickToAdd && isAvailable && !orderPlaced ? 'cursor-pointer hover:border-orange-300' : ''}`}>
       
       {/* Compact Card Content */}
       <div className="p-3">
@@ -89,7 +119,7 @@ export default function MenuCard({
           <SizeSelector
             item={item}
             selectedSizeIndex={selectedSizeIndex}
-            onSizeSelect={onSizeSelect}
+            onSizeSelect={clickToAdd ? handleSizeClick : onSizeSelect}
             disabled={orderPlaced || !isAvailable}
           />
         </div>
@@ -106,32 +136,42 @@ export default function MenuCard({
 
         {/* Compact Actions */}
         {isAvailable ? (
-          <div className="flex items-center justify-between gap-2">
-            {/* Compact Quantity Selector */}
-            <QuantitySelector
-              quantity={quantity}
-              onIncrement={onQuantityIncrement}
-              onDecrement={onQuantityDecrement}
-              disabled={orderPlaced}
-              itemId={item._id}
-              itemName={item.name}
-            />
+          clickToAdd ? (
+            // Simple mode - just show tap to add message
+            <div className="text-center py-2">
+              <div className="text-xs text-gray-500 font-medium">
+                {item.pricing && item.pricing.length > 1 ? 'Tap size to add' : 'Tap to add'}
+              </div>
+            </div>
+          ) : (
+            // Default mode - show quantity selector and add button
+            <div className="flex items-center justify-between gap-2">
+              {/* Compact Quantity Selector */}
+              <QuantitySelector
+                quantity={quantity}
+                onIncrement={onQuantityIncrement}
+                onDecrement={onQuantityDecrement}
+                disabled={orderPlaced}
+                itemId={item._id}
+                itemName={item.name}
+              />
 
-            {/* Compact Add Button */}
-            <button
-              onClick={quantity > 0 && !orderPlaced ? () => onAddToCart(item) : handleDisabledClick}
-              disabled={false} 
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-medium 
-                       text-xs transition-colors ${
-                quantity > 0 && !orderPlaced
-                  ? 'bg-orange-500 hover:bg-orange-600 text-white'
-                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              <PlusIcon className="w-3 h-3" />
-              <span>Add{quantity > 0 ? ` (${quantity})` : ''}</span>
-            </button>
-          </div>
+              {/* Compact Add Button */}
+              <button
+                onClick={quantity > 0 && !orderPlaced ? () => onAddToCart(item) : handleDisabledClick}
+                disabled={false} 
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-medium 
+                         text-xs transition-colors ${
+                  quantity > 0 && !orderPlaced
+                    ? 'bg-orange-500 hover:bg-orange-600 text-white'
+                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                <PlusIcon className="w-3 h-3" />
+                <span>Add{quantity > 0 ? ` (${quantity})` : ''}</span>
+              </button>
+            </div>
+          )
         ) : (
           <button
             disabled

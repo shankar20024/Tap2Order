@@ -16,7 +16,10 @@ export default function SizeSelector({
       {item.pricing.map((pricing, index) => (
         <button
           key={index}
-          onClick={() => onSizeSelect(item._id, index)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSizeSelect(item._id, index);
+          }}
           className={`px-2 py-1 text-xs font-medium rounded border transition-colors 
                    flex items-center justify-center whitespace-nowrap ${
             selectedSizeIndex === index

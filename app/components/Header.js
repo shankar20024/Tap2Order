@@ -37,9 +37,9 @@ export default function Header({ className = "", className2 = "" }) {
   }, []);
 
   return (
-    <div className="sticky top-0 z-50 w-full">
+    <div className="sticky top-0 z-50 w-full overflow-hidden">
       <header
-        className={`fixed w-full left-1/2 transform -translate-x-1/2 top-0 px-4 sm:px-6 py-3 sm:py-4 bg-white shadow-md rounded-b-lg ${className2}`}
+        className={`fixed w-full left-0 top-0 px-4 sm:px-6 py-3 sm:py-4 bg-white shadow-md rounded-b-lg ${className2}`}
       >
         <div className={`flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0 ${className}`}>
 

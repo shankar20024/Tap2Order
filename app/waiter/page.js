@@ -1037,7 +1037,7 @@ export default function WaiterDashboard() {
                     {item.quantity}
                   </span>
                   <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <span className="text-gray-900 truncate max-w-[200px] sm:max-w-[160px] lg:max-w-[200px]" title={item.name}>
+                    <span className="text-gray-900 break-words" title={item.name}>
                       {item.name}
                     </span>
                     {item.size && (
@@ -1258,7 +1258,7 @@ export default function WaiterDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 w-full overflow-x-hidden">
       {loading ? (
         <LoadingSpinner />
       ) : (
@@ -1579,7 +1579,7 @@ export default function WaiterDashboard() {
                         </div>
 
                         {/* Menu Items with Section Sidebar */}
-                        <div className="flex h-[800px]">
+                        <div className="flex flex-col sm:flex-row h-auto sm:h-[600px] md:h-[700px] lg:h-[800px]">
                           {/* Section Sidebar */}
                           <SectionSidebar
                             sections={sections}

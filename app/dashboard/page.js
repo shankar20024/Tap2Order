@@ -45,7 +45,7 @@ const QuickActions = ({ onRefresh, onViewHistory, onManageTables, onViewAnalytic
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className={`bg-white rounded-3xl shadow-2xl border-0 overflow-hidden ${className} backdrop-blur-lg scale-90`}>
+    <div className={`bg-white rounded-2xl sm:rounded-3xl shadow-lg sm:shadow-2xl border-0 overflow-hidden ${className} backdrop-blur-lg w-full`}>
       <div 
         className="bg-gradient-to-r from-slate-800 via-gray-900 to-black px-4 sm:px-6 py-4 border-b-0 cursor-pointer hover:from-slate-700 hover:via-gray-800 hover:to-gray-900 transition-all duration-300"
         onClick={() => setIsExpanded(!isExpanded)}
@@ -66,8 +66,8 @@ const QuickActions = ({ onRefresh, onViewHistory, onManageTables, onViewAnalytic
       </div>
     
       {isExpanded && (
-        <div className="p-4 sm:p-6 bg-gradient-to-br from-gray-50 to-blue-50">
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="p-3 xs:p-4 sm:p-6 bg-gradient-to-br from-gray-50 to-blue-50">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 xs:gap-3 sm:gap-4">
         <button
           onClick={onRefresh}
           className="group flex flex-col items-center p-4 sm:p-5 rounded-2xl border-0 
@@ -865,7 +865,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 w-full overflow-x-hidden">
       <Header title="Dashboard" />
       {isExpanded && (
         <div className="fixed inset-0 bg-white z-[70] overflow-auto">
@@ -931,25 +931,25 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-      <main className="p-4 sm:p-6 lg:p-8">
+      <main className="p-3 xs:p-4 sm:p-6 lg:p-8 w-full max-w-full">
         {/* Modern Dashboard Header */}
-        <div className="mb-2 mt-20 sm:mt-16 lg:mt-16">
-          <div className="flex items-start gap-4">
+        <div className="mb-2 mt-20 sm:mt-16 lg:mt-16 w-full max-w-full">
+          <div className="flex items-start gap-2 xs:gap-3 sm:gap-4">
             {/* Icon Container */}
-            <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-orange-600 p-3 rounded-2xl shadow-lg flex-shrink-0">
-              <FaUtensils className="text-white text-2xl" />
+            <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-orange-600 p-2 xs:p-2.5 sm:p-3 rounded-xl sm:rounded-2xl shadow-lg flex-shrink-0">
+              <FaUtensils className="text-white text-lg xs:text-xl sm:text-2xl" />
             </div>
             
             {/* Content */}
             <div className="flex-1 min-w-0">
               <div className="mb-1">
-                <p className="text-lg text-gray-600 mb-1">Welcome back,</p>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 leading-tight">
+                <p className="text-sm xs:text-base sm:text-lg text-gray-600 mb-1">Welcome back,</p>
+                <h1 className="text-xl xs:text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 leading-tight break-words">
                   {businessName}
                 </h1>
               </div>
               
-              <p className="text-gray-600 text-base mb-3">
+              <p className="text-gray-600 text-xs xs:text-sm sm:text-base mb-2 xs:mb-3">
                 Manage your orders and operations efficiently
               </p>
             </div>
@@ -974,16 +974,16 @@ export default function Dashboard() {
         </div>
 
         {/* Table Management Grid */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-800 flex items-center"><FaTable className="mr-2 text-blue-600"/>Tables</h2>
-            <div className="text-xs text-gray-500">{Object.keys(groupOrdersByTable(orders)).length} active</div>
+        <div className="mb-8 w-full max-w-full">
+          <div className="flex items-center justify-between mb-3 xs:mb-4">
+            <h2 className="text-base xs:text-lg sm:text-xl font-bold text-gray-800 flex items-center"><FaTable className="mr-1 xs:mr-2 text-sm xs:text-base sm:text-lg text-blue-600"/>Tables</h2>
+            <div className="text-[10px] xs:text-xs sm:text-sm text-gray-500">{Object.keys(groupOrdersByTable(orders)).length} active</div>
           </div>
-          <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 p-8 sm:p-6 lg:p-6 md:p-6 min-h-[300px] h-auto overflow-hidden">
+          <div className="relative bg-white rounded-lg xs:rounded-xl shadow-md sm:shadow-lg border border-gray-200 p-3 xs:p-4 sm:p-6 md:p-6 lg:p-6 min-h-[200px] xs:min-h-[250px] sm:min-h-[300px] h-auto overflow-hidden w-full max-w-full">
             {/* Expand Icon */}
             <button
               onClick={() => setIsExpanded(true)}
-              className="absolute top-4 right-4 w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center group z-10"
+              className="absolute top-2 right-2 xs:top-3 xs:right-3 sm:top-4 sm:right-4 w-7 h-7 xs:w-8 xs:h-8 bg-gray-100 hover:bg-gray-200 rounded-md xs:rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center group z-10"
               title="Expand to full screen"
             >
               <FaExpand className="text-sm text-gray-600 group-hover:text-blue-600 transition-colors" />
@@ -1003,7 +1003,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-3 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2 xs:gap-3 sm:gap-6 md:gap-6 lg:gap-10 auto-rows-max">
+              <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2 xs:gap-3 sm:gap-4 md:gap-5 lg:gap-6 auto-rows-max w-full">
                 {Object.keys(groupOrdersByTable(orders)).map((tn) => {
               const ordersForTable = groupOrdersByTable(orders)[tn];
               

@@ -554,7 +554,7 @@ export default function MenuPage() {
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       <Header className=""/> 
 
-      <div className="min-h-screen bg-gray-50 relative w-full mt-20 xs:mt-18 sm:mt-20 md:mt-21 lg:mt-18">
+      <div className="min-h-screen bg-gray-50 relative w-full overflow-x-hidden mt-20 xs:mt-18 sm:mt-20 md:mt-21 lg:mt-18">
         {/* Header - Ultra Responsive */}
         <div className="bg-white border-b border-gray-200 
           py-3 xs:py-4 sm:py-5 md:py-6 
@@ -630,7 +630,7 @@ export default function MenuPage() {
         </div>
 
         {/* Main Content Container - Ultra Responsive */}
-        <div className="flex flex-col xl:flex-row">
+        <div className="flex flex-col xl:flex-row w-full max-w-full">
           {/* Enhanced Menu Section */}
           <div className="flex-1 bg-white">
             {/* Search and Filter Section - Mobile First */}

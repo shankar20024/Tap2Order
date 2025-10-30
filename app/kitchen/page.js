@@ -293,7 +293,7 @@ export default function KitchenPage() {
   const readyItems = getAllReadyItems();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gray-50 w-full overflow-x-hidden">
       {/* Mobile-First Header */}
       <div className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="px-3 sm:px-4 md:px-6 py-3">
@@ -399,7 +399,7 @@ export default function KitchenPage() {
                     <span className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs font-medium">
                       {item.quantity}
                     </span>
-                    <span className="font-medium text-gray-900 text-sm sm:text-base truncate flex-1">{item.name}</span>
+                    <span className="font-medium text-gray-900 text-sm sm:text-base break-words flex-1">{item.name}</span>
                   </div>
                   
                   <div className="flex items-center gap-1 sm:gap-2 ml-7 sm:ml-8">
@@ -471,7 +471,7 @@ export default function KitchenPage() {
                     <span className="w-5 h-5 sm:w-6 sm:h-6 bg-green-100 rounded-full flex items-center justify-center text-xs font-medium text-green-700">
                       {item.quantity}
                     </span>
-                    <span className="font-medium text-gray-900 text-sm sm:text-base truncate flex-1">{item.name}</span>
+                    <span className="font-medium text-gray-900 text-sm sm:text-base break-words flex-1">{item.name}</span>
                   </div>
                   
                   <div className="flex items-center gap-1 sm:gap-2 ml-7 sm:ml-8">

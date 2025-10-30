@@ -1,10 +1,20 @@
 @import "tailwindcss";
 
+/* Prevent browser zoom issues */
+* {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial,  sans-serif;
+  zoom: reset;
+  -moz-transform: scale(1);
+  -webkit-transform: scale(1);
+  transform: scale(1);
 }
 button {
   cursor: pointer;

@@ -308,7 +308,7 @@ export default function TablePage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 ">
+    <div className="min-h-screen bg-gray-50 w-full overflow-x-hidden">
       <Header className="w-full" className2="bg-white shadow-md" />
       <main className="container mx-auto px-4 py-8 mt-18">
         <Toaster position="top-right" />
@@ -397,8 +397,8 @@ export default function TablePage() {
         </div>
 
         {/* Table Status Summary */}
-        <div className="mt-6 space-y-6 md:mb-6">
-          <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-6 w-full mx-auto sm:scale-100 scale-[0.95] md:transform-none transform origin-top">
+        <div className="mt-20 sm:mt-16 w-full max-w-full">
+          <div className="mb-8 bg-white bg-opacity-90 rounded-lg shadow-lg p-6 w-full mx-auto sm:scale-100 scale-[0.95] md:transform-none transform origin-top">
             <h2 className="text-3xl font-semibold text-amber-800 mb-4">Table Status</h2>
             <div className="flex flex-wrap sm:flex-nowrap gap-4">
               <div className="flex-1 bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">

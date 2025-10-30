@@ -87,9 +87,10 @@ export default function Sidebar() {
             exit="closed"
             variants={sidebarVariants}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className={`fixed px-0 left-0 z-[45] bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-lg flex flex-col top-20 md:top-16 h-[calc(100vh-5rem)] md:h-[calc(100vh-4rem)]`}
+            className={`fixed px-0 left-0 z-[45] bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-lg flex flex-col top-20 md:top-16 h-[calc(100vh-5rem)] md:h-[calc(100vh-4rem)] overflow-hidden`}
             style={{
-              width: isCollapsed && !isMobile ? '64px' : '256px',
+              width: isCollapsed && !isMobile ? '64px' : isMobile ? '256px' : '256px',
+              maxWidth: '100vw',
               transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
           >

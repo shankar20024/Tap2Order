@@ -141,23 +141,23 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 w-full overflow-x-hidden flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-amber-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-gray-900 text-gray-100">
+    <div className="flex h-screen bg-gray-900 text-gray-100 overflow-x-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-900 p-4 sm:p-6 mt-15">
-          <div className="bg-gray-800 rounded-2xl shadow-lg p-6 sm:p-8 max-w-4xl mx-auto">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-900 p-3 xs:p-4 sm:p-6 mt-15 w-full max-w-full">
+          <div className="bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg p-4 xs:p-5 sm:p-6 md:p-8 max-w-4xl mx-auto w-full">
             {/* Header */}
-            <div className="bg-gray-800 shadow-sm border-b border-gray-700">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between items-center py-6">
+            <div className="bg-gray-800 shadow-sm border-b border-gray-700 w-full">
+              <div className="py-4 xs:py-5 sm:py-6 w-full">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
                   <div>
                     <h1 className="text-3xl font-bold text-white">Profile Settings</h1>
                     <p className="text-gray-400 mt-1">Manage your business information and compliance details</p>

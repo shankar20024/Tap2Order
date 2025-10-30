@@ -53,11 +53,15 @@ export async function GET() {
             timestamp: user.createdAt ? new Date(user.createdAt).toLocaleString() : 'Unknown date'
         }));
 
+        // Get active users count
+        const activeUsers = await User.countDocuments({ role: 'user', isActive: { $ne: false } });
+
         const responseData = {
             totalUsers,
             totalAdmins,
+            activeUsers,
+            totalTables: totalTablesCreated,
             totalTablesAllowed,
-            totalTablesCreated,
             tablesUsage,
             recentActivity: formattedActivity
         };

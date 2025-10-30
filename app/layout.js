@@ -18,7 +18,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  metadataBase: new URL('https://tap2orders.com'), 
+  metadataBase: new URL('https://tap2orders.com'),
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
   title: {
     template: '%s | Tap2Orders',
     default: 'Tap2Orders - Your digital menu and ordering solution',

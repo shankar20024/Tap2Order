@@ -69,16 +69,26 @@ export async function POST(req) {
 
     await newUser.save();
     
-    const responseData = { 
-      message: "User registered successfully"
-    };
+    // Return the created user object for local state update
+    const userObject = newUser.toObject();
     
-    // Only include hotelCode in response if it was generated
-    if (hotelCode) {
-      responseData.hotelCode = hotelCode;
-    }
-    
-    return new Response(JSON.stringify(responseData), { 
+    return new Response(JSON.stringify({
+      message: "User registered successfully",
+      _id: userObject._id,
+      name: userObject.name,
+      email: userObject.email,
+      role: userObject.role,
+      tableLimit: userObject.tableLimit,
+      staffLimit: userObject.staffLimit,
+      businessName: userObject.businessName,
+      businessType: userObject.businessType,
+      phone: userObject.phone,
+      hotelPhone: userObject.hotelPhone,
+      hotelCode: userObject.hotelCode,
+      isActive: userObject.isActive !== false,
+      address: userObject.address,
+      createdAt: userObject.createdAt
+    }), { 
       status: 201,
       headers: { 'Content-Type': 'application/json' }
     });

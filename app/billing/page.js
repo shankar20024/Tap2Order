@@ -577,18 +577,35 @@ export default function BillingPage() {
     return item.price;
   };
 
-  const handleAddToCart = (item) => {
-    const quantity = itemQuantities[item._id] || 0;
+  const handleAddToCart = (item, forceQuantity = null, forceSizeIndex = null) => {
+    const quantity = forceQuantity !== null ? forceQuantity : (itemQuantities[item._id] || 0);
     if (quantity <= 0) return;
     
-    const selectedSizeIndex = selectedSizes[item._id] || 0;
-    addToCart(item, selectedSizeIndex);
+    const selectedSizeIndex = forceSizeIndex !== null ? forceSizeIndex : (selectedSizes[item._id] || 0);
     
-    // Reset quantity after adding to cart
-    setItemQuantities(prev => ({
-      ...prev,
-      [item._id]: 0
-    }));
+    // If forceQuantity is provided, set it first
+    if (forceQuantity !== null) {
+      setItemQuantities(prev => ({
+        ...prev,
+        [item._id]: forceQuantity
+      }));
+      // Add to cart with a small delay to ensure state updates
+      setTimeout(() => {
+        addToCart(item, selectedSizeIndex);
+        // Reset quantity after adding
+        setItemQuantities(prev => ({
+          ...prev,
+          [item._id]: 0
+        }));
+      }, 10);
+    } else {
+      addToCart(item, selectedSizeIndex);
+      // Reset quantity after adding to cart
+      setItemQuantities(prev => ({
+        ...prev,
+        [item._id]: 0
+      }));
+    }
   };
 
   // Filter menu based on search term
@@ -606,113 +623,70 @@ export default function BillingPage() {
       {/* Desktop Layout - Hidden on Mobile */}
       <main className="hidden lg:block container mx-auto px-3 sm:px-4 md:px-6 lg:px-2 pt-25 sm:py-20">
         <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-3 min-h-[calc(100vh-8rem)] lg:h-[calc(100vh-5rem)]">
-          {/* Left Sidebar - Sections */}
+          {/* Left Sidebar - Sections using SectionSidebar component */}
           <div className="w-full lg:w-48 lg:flex-shrink-0 order-1 lg:order-1">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-3 h-auto lg:h-full overflow-y-auto">
-              <h3 className="text-base sm:text-lg lg:text-base font-semibold text-gray-800 mb-3 sm:mb-4 lg:mb-3 flex items-center gap-2">
-                <span>📂</span>
-                <span>Sections ({sectionsWithCounts.length})</span>
-              </h3>
-              
-              {sectionsWithCounts.length === 0 && (
-                <div className="text-center py-4">
-                  <p className="text-gray-500 text-sm">No sections available</p>
-                  <p className="text-xs text-gray-400 mt-1">Add sections from Menu page</p>
-                </div>
-              )}
-              
-              <div className="flex lg:flex-col gap-2 lg:space-y-1 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-auto lg:h-full overflow-hidden">
+              <div className="p-3 border-b border-gray-200 bg-gray-50">
+                <h3 className="text-base font-semibold text-gray-800">Sections</h3>
+              </div>
+              <div className="overflow-y-auto px-2 py-2 h-[calc(100%-3rem)]">
                 {sectionsWithCounts.map((section) => (
                   <button
                     key={section.name}
                     onClick={() => setSelectedSection(section.name)}
-                    className={`flex-shrink-0 lg:w-full text-left px-3 py-2 sm:py-2.5 lg:px-2 lg:py-2 rounded-lg lg:rounded-md transition-colors flex items-center justify-between min-h-[44px] lg:min-h-[36px] ${
+                    className={`w-full p-2 rounded-lg text-left transition-all duration-200 mb-1 ${
                       selectedSection === section.name
-                        ? "bg-blue-100 text-blue-800 border border-blue-200"
-                        : "hover:bg-gray-50 text-gray-700"
+                        ? "bg-blue-500 text-white shadow-md"
+                        : "bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200"
                     }`}
                   >
-                    <div className="flex items-center gap-1 sm:gap-2">
-                      <span className="text-sm">
-                        {section.name === "all" ? "📋" : section.icon || "📂"}
-                      </span>
-                      <span className="font-medium text-xs sm:text-sm lg:text-sm whitespace-nowrap">
-                        {section.displayName || section.name}
-                      </span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">
+                          {section.name === "all" ? "📋" : section.icon || "📂"}
+                        </span>
+                        <div className={`font-medium text-xs ${
+                          selectedSection === section.name ? "text-white" : "text-gray-800"
+                        }`}>
+                          {section.displayName || section.name}
+                        </div>
+                      </div>
                     </div>
-                    <span className={`text-xs px-1.5 sm:px-2 lg:px-2 py-0.5 sm:py-1 lg:py-1 rounded-full flex-shrink-0 ${
-                      selectedSection === section.name
-                        ? "bg-blue-200 text-blue-800"
-                        : "bg-gray-100 text-gray-600"
-                    }`}>
-                      {section.count}
-                    </span>
                   </button>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Middle - Menu Items */}
+          {/* Middle - Menu Items using MenuGrid component */}
           <div className="flex-1 order-3 lg:order-2">
-            <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 lg:p-3 h-auto lg:h-full overflow-y-auto">
-              <h2 className="text-base sm:text-lg lg:text-lg font-bold text-gray-800 mb-3 sm:mb-4 lg:mb-3">
-                Menu Items 
-                <span className="text-xs text-gray-500 ml-2">
-                  ({menu.length} total, {filteredMenu.length} filtered)
-                </span>
-              </h2>
-              
-              {/* Debug Info */}
-              {!loading && menu.length === 0 && (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">No menu items found.</p>
-                  <p className="text-sm text-gray-400 mt-2">Please add items from Menu page first.</p>
-                </div>
-              )}
-              
-              {/* Menu Items Grid */}
-              {filteredMenu.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-2">
-                  {filteredMenu.map(item => (
-                    <div key={item._id} className="bg-gray-50 rounded-lg lg:rounded-md p-3 sm:p-4 lg:p-2 hover:shadow-md transition-shadow border border-gray-100">
-                      <div className="flex justify-between items-start mb-2 lg:mb-1">
-                        <h3 className="font-medium text-gray-800 text-sm sm:text-base lg:text-xs leading-tight truncate flex-1 mr-2">{item.name}</h3>
-                        <div className={`w-4 h-4 sm:w-5 sm:h-5 lg:w-3 lg:h-3 rounded-full flex-shrink-0 ${
-                          item.category === 'veg' ? 'bg-green-500' : 
-                          item.category === 'non-veg' ? 'bg-red-500' : 'bg-yellow-500'
-                        }`}></div>
-                      </div>
-                      
-                      {item.pricing && item.pricing.length > 1 ? (
-                        <div className="space-y-1 lg:space-y-0.5">
-                          {item.pricing.map((size, index) => (
-                            <button
-                              key={index}
-                              onClick={() => addToCart(item, index)}
-                              className="w-full text-left px-2 py-1.5 lg:px-1.5 lg:py-0.5 text-xs sm:text-sm lg:text-xs border rounded hover:bg-blue-50 hover:border-blue-200 flex justify-between min-h-[36px] lg:min-h-[28px] items-center"
-                            >
-                              <span>{size.size}</span>
-                              <span>₹{size.price}</span>
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => addToCart(item)}
-                          className="w-full mt-2 lg:mt-1 py-2 lg:py-1 text-xs sm:text-sm lg:text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors min-h-[36px] lg:min-h-[28px] flex items-center justify-center"
-                        >
-                          Add - ₹{item.price}
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">No items match the current filter.</p>
-                </div>
-              )}
+            <div className="bg-white rounded-lg shadow-sm h-auto lg:h-full overflow-y-auto">
+              {/* Search Bar */}
+              <div className="px-3 py-3 border-b border-gray-200">
+                <MenuSearch
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  orderPlaced={false}
+                />
+              </div>
+
+              {/* Menu Grid */}
+              <div className="overflow-y-auto h-[calc(100%-4rem)]">
+                <MenuGrid
+                  filteredMenu={searchFilteredMenu}
+                  loading={loading}
+                  itemQuantities={itemQuantities}
+                  selectedSizes={selectedSizes}
+                  onSizeSelect={handleSizeSelection}
+                  onQuantityIncrement={incrementQuantity}
+                  onQuantityDecrement={decrementQuantity}
+                  onAddToCart={handleAddToCart}
+                  orderPlaced={false}
+                  getPriceForSize={getPriceForSize}
+                  activeSection={selectedSection === 'all' ? 'All' : selectedSection}
+                  clickToAdd={true}
+                />
+              </div>
             </div>
           </div>
 
@@ -835,7 +809,7 @@ export default function BillingPage() {
                     {cart.map((item, index) => (
                       <div key={`${item._id}-${item.selectedSize}`} className="flex items-center justify-between bg-gray-50 p-3 lg:p-1.5 rounded-lg lg:rounded gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm sm:text-base lg:text-xs font-medium leading-tight truncate">{item.name}</p>
+                          <p className="text-sm sm:text-base lg:text-xs font-medium leading-tight break-words">{item.name}</p>
                           <p className="text-xs sm:text-sm lg:text-xs text-gray-600">{item.selectedSize} - ₹{item.price}</p>
                         </div>
                         <div className="flex items-center gap-1 sm:gap-2 lg:gap-1 flex-shrink-0">
@@ -1169,7 +1143,7 @@ export default function BillingPage() {
                       {cart.map((item) => (
                         <div key={`${item._id}-${item.selectedSize}`} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium leading-tight truncate">{item.name}</p>
+                            <p className="text-sm font-medium leading-tight break-words">{item.name}</p>
                             <p className="text-xs text-gray-600">{item.selectedSize} - ₹{item.price}</p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">

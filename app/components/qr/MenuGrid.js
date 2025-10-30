@@ -5,17 +5,18 @@ import { motion } from "framer-motion";
 import MenuCard from "./MenuCard";
 
 export default function MenuGrid({ 
-  filteredMenu = [], 
-  loading = false,
-  itemQuantities = {},
-  selectedSizes = {},
+  filteredMenu, 
+  loading,
+  itemQuantities,
+  selectedSizes,
   onSizeSelect,
   onQuantityIncrement,
   onQuantityDecrement,
   onAddToCart,
-  orderPlaced = false,
+  orderPlaced,
   getPriceForSize,
-  activeSection = 'All'
+  activeSection,
+  clickToAdd = false
 }) {
   const [vegFilter, setVegFilter] = useState(true);
   const [nonVegFilter, setNonVegFilter] = useState(true);
@@ -179,7 +180,7 @@ export default function MenuGrid({
       </motion.div>
 
       {/* Simple Grid Container - No Animations */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 pb-50">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3 gap-4 pb-50">
         {categoryFilteredMenu.map((item) => {
           const quantity = itemQuantities[item._id] || 0;
           const selectedSizeIndex = selectedSizes[item._id] || 0;
@@ -196,6 +197,7 @@ export default function MenuGrid({
                 onAddToCart={onAddToCart}
                 orderPlaced={orderPlaced}
                 getPriceForSize={getPriceForSize}
+                clickToAdd={clickToAdd}
               />
             </div>
           );

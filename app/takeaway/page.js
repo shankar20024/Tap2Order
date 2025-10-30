@@ -210,18 +210,35 @@ export default function TakeawayPage() {
     return item.price;
   };
 
-  const handleAddToCart = (item) => {
-    const quantity = itemQuantities[item._id] || 0;
+  const handleAddToCart = (item, forceQuantity = null, forceSizeIndex = null) => {
+    const quantity = forceQuantity !== null ? forceQuantity : (itemQuantities[item._id] || 0);
     if (quantity <= 0) return;
     
-    const selectedSizeIndex = selectedSizes[item._id] || 0;
-    addToCart(item, selectedSizeIndex);
+    const selectedSizeIndex = forceSizeIndex !== null ? forceSizeIndex : (selectedSizes[item._id] || 0);
     
-    // Reset quantity after adding to cart
-    setItemQuantities(prev => ({
-      ...prev,
-      [item._id]: 0
-    }));
+    // If forceQuantity is provided, set it first
+    if (forceQuantity !== null) {
+      setItemQuantities(prev => ({
+        ...prev,
+        [item._id]: forceQuantity
+      }));
+      // Add to cart with a small delay to ensure state updates
+      setTimeout(() => {
+        addToCart(item, selectedSizeIndex);
+        // Reset quantity after adding
+        setItemQuantities(prev => ({
+          ...prev,
+          [item._id]: 0
+        }));
+      }, 10);
+    } else {
+      addToCart(item, selectedSizeIndex);
+      // Reset quantity after adding to cart
+      setItemQuantities(prev => ({
+        ...prev,
+        [item._id]: 0
+      }));
+    }
   };
 
   // Add item to cart
@@ -510,139 +527,72 @@ export default function TakeawayPage() {
       <Header />
 
       {/* Desktop Layout - Hidden on Mobile */}
-      <main className="hidden lg:block container mx-auto px-3 sm:px-4 md:px-6 pt-25">
-        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-6 min-h-[calc(100vh-8rem)] lg:h-[calc(100vh-6rem)]">
-          {/* Left Sidebar - Sections */}
-          <div className="w-full lg:w-64 lg:flex-shrink-0 order-1 lg:order-1">
-            <div className="bg-white rounded-lg lg:rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 h-auto lg:h-full overflow-y-auto">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
-                <span>📂</span>
-                <span>Sections</span>
-              </h3>
-              <div className="flex lg:flex-col gap-2 lg:space-y-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
+      <main className="hidden lg:block container mx-auto px-3 sm:px-4 md:px-6 lg:px-2 pt-25 sm:py-20">
+        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-3 min-h-[calc(100vh-8rem)] lg:h-[calc(100vh-5rem)]">
+          {/* Left Sidebar - Sections using similar structure as mobile */}
+          <div className="w-full lg:w-48 lg:flex-shrink-0 order-1 lg:order-1">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-auto lg:h-full overflow-hidden">
+              <div className="p-3 border-b border-gray-200 bg-gray-50">
+                <h3 className="text-base font-semibold text-gray-800">Sections</h3>
+              </div>
+              <div className="overflow-y-auto px-2 py-2 h-[calc(100%-3rem)]">
                 {sectionsWithCounts.map((section) => (
                   <button
                     key={section.name}
                     onClick={() => setSelectedSection(section.name)}
-                    className={`flex-shrink-0 lg:w-full text-left px-3 py-2 sm:py-2.5 rounded-lg transition-colors flex items-center justify-between min-h-[44px] ${selectedSection === section.name
-                        ? "bg-orange-100 text-orange-800 border border-orange-200"
-                        : "hover:bg-gray-50 text-gray-700"
-                      }`}
+                    className={`w-full p-2 rounded-lg text-left transition-all duration-200 mb-1 ${
+                      selectedSection === section.name
+                        ? "bg-orange-500 text-white shadow-md"
+                        : "bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200"
+                    }`}
                   >
-                    <div className="flex items-center gap-1 sm:gap-2">
-                      <span className="text-sm">
-                        {section.name === "all" ? "📋" : section.icon || "📂"}
-                      </span>
-                      <span className="font-medium text-xs sm:text-sm whitespace-nowrap">
-                        {section.displayName || section.name}
-                      </span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">
+                          {section.name === "all" ? "" : section.icon || ""}
+                        </span>
+                        <div className={`font-medium text-xs ${
+                          selectedSection === section.name ? "text-white" : "text-gray-800"
+                        }`}>
+                          {section.displayName || section.name}
+                        </div>
+                      </div>
                     </div>
-                    <span className={`text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full flex-shrink-0 ${selectedSection === section.name
-                        ? "bg-orange-200 text-orange-800"
-                        : "bg-gray-100 text-gray-600"
-                      }`}>
-                      {section.count}
-                    </span>
                   </button>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Middle - Menu Section */}
+          {/* Middle - Menu Section using MenuGrid component */}
           <div className="flex-1 order-3 lg:order-2">
-            <div className="bg-white rounded-lg lg:rounded-xl shadow-sm p-3 sm:p-4 h-auto lg:h-full overflow-y-auto">
-              {/* Search and Category Filter */}
-              <div className="mb-3 sm:mb-4">
+            <div className="bg-white rounded-lg shadow-sm h-auto lg:h-full overflow-y-auto">
+              {/* Search Bar */}
+              <div className="px-3 py-3 border-b border-gray-200">
                 <MenuSearch
                   searchTerm={searchTerm}
                   setSearchTerm={setSearchTerm}
-                  categories={takeawayCategories}
-                  activeCategory={selectedCategory}
-                  setActiveCategory={setSelectedCategory}
+                  orderPlaced={false}
                 />
               </div>
 
-              {/* Menu Items Grid */}
-              {loading ? (
-                <div className="flex justify-center py-8 sm:py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-t-2 border-b-2 border-orange-500"></div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
-                  {filteredMenu.map(item => (
-                    <div key={item._id} className="cursor-pointer" onClick={() => addToCart(item)}>
-                      <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-100">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-sm sm:text-base text-gray-900 truncate">{item.name}</h3>
-                            <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                              {item.pricing?.length > 1
-                                ? `₹${item.pricing[0].price} - ₹${item.pricing[item.pricing.length - 1].price}`
-                                : `₹${item.price}`}
-                            </p>
-                          </div>
-                          <div className="flex-shrink-0 ml-2">
-                            {item.category === 'veg' ? (
-                              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-green-600 rounded-sm flex items-center justify-center">
-                                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-600 rounded-sm"></div>
-                              </div>
-                            ) : item.category === 'non-veg' ? (
-                              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-red-600 rounded-sm flex items-center justify-center">
-                                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-600 rounded-sm"></div>
-                              </div>
-                            ) : item.category === 'jain' ? (
-                              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-yellow-600 rounded-sm flex items-center justify-center">
-                                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-yellow-600 rounded-sm"></div>
-                              </div>
-                            ) : (
-                              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-blue-600 rounded-sm flex items-center justify-center">
-                                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-600 rounded-sm"></div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Size selector for items with multiple sizes */}
-                        {item.pricing?.length > 1 && (
-                          <div className="mt-2">
-                            <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                              {item.pricing.map((size, index) => (
-                                <button
-                                  key={index}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    addToCart(item, index);
-                                  }}
-                                  className="px-2 py-1 text-xs border rounded hover:bg-amber-50 hover:border-amber-200 min-h-[32px] flex items-center"
-                                >
-                                  {size.size} - ₹{size.price}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {!item.pricing?.length > 1 && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              addToCart(item);
-                            }}
-                            className="mt-2 w-full py-2 text-xs sm:text-sm bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors min-h-[36px] flex items-center justify-center"
-                          >
-                            Add to Cart
-                          </button>
-                        )}
-
-                        {item.description && (
-                          <p className="text-xs sm:text-sm text-gray-500 mt-2 line-clamp-2">{item.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* Menu Grid */}
+              <div className="overflow-y-auto h-[calc(100%-4rem)]">
+                <MenuGrid
+                  filteredMenu={filteredMenu}
+                  loading={loading}
+                  itemQuantities={itemQuantities}
+                  selectedSizes={selectedSizes}
+                  onSizeSelect={handleSizeSelection}
+                  onQuantityIncrement={incrementQuantity}
+                  onQuantityDecrement={decrementQuantity}
+                  onAddToCart={handleAddToCart}
+                  orderPlaced={false}
+                  getPriceForSize={getPriceForSize}
+                  activeSection={selectedSection === 'all' ? 'All' : selectedSection}
+                  clickToAdd={true}
+                />
+              </div>
             </div>
           </div>
 
@@ -704,7 +654,7 @@ export default function TakeawayPage() {
                       {cart.map(item => (
                         <div key={`${item._id}-${item.selectedSize}`} className="flex justify-between items-start border-b pb-3 gap-2">
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-sm sm:text-base text-gray-900 truncate">
+                            <h4 className="font-medium text-sm sm:text-base text-gray-900 break-words">
                               {item.name}
                               {item.selectedSize && item.selectedSize !== 'Regular' && (
                                 <span className="text-xs text-gray-500 ml-1">({item.selectedSize})</span>
@@ -926,7 +876,7 @@ export default function TakeawayPage() {
                       {cart.map(item => (
                         <div key={`${item._id}-${item.selectedSize}`} className="flex justify-between items-start border-b pb-3 gap-2">
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-sm text-gray-900 truncate">
+                            <h4 className="font-medium text-sm text-gray-900 break-words">
                               {item.name}
                               {item.selectedSize && item.selectedSize !== 'Regular' && (
                                 <span className="text-xs text-gray-500 ml-1">({item.selectedSize})</span>
