@@ -1,11 +1,16 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { connectDB } from "@/lib/mongodb";
 import { User } from "../../../../models/User";
 import jwt from "jsonwebtoken";
 
 export const authOptions = {
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    }),
     Credentials({
       async authorize(credentials) {
         // Staff token based auth
@@ -60,17 +65,42 @@ export const authOptions = {
     }),
   ],
 
+  pages: {
+    signIn: '/login', // Your login page path
+    error: '/login', // Redirect to login on error
+  },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.name = user.name;
-        if (typeof user.businessName !== 'undefined') {
-          token.businessName = user.businessName;
-        }
-        if (user.isStaff) {
-          token.isStaff = true;
+    async jwt({ token, user, account }) {
+      // Initial sign in
+      if (account && user) {
+        // For Google OAuth
+        if (account.provider === 'google') {
+          await connectDB();
+          // Check if user exists in your database
+          let dbUser = await User.findOne({ email: user.email });
+          
+          // If user doesn't exist, create a new user
+          if (!dbUser) {
+            dbUser = await User.create({
+              name: user.name,
+              email: user.email,
+              role: 'user', // Default role
+              isActive: true,
+              // Add other default fields as needed
+            });
+          }
+          
+          // Update token with user data from database
+          token.id = dbUser._id;
+          token.role = dbUser.role;
+          token.isStaff = dbUser.isStaff || false;
+          token.hotelOwner = dbUser.hotelOwner;
+          token.hotelCode = dbUser.hotelCode;
+        } else {
+          // For credentials login
+          token.id = user.id;
+          token.role = user.role;
+          token.isStaff = user.isStaff;
           token.staffId = user.staffId;
           token.hotelOwner = user.hotelOwner;
           token.hotelCode = user.hotelCode;

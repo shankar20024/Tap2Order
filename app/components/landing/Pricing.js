@@ -92,104 +92,77 @@ export default function Pricing({ onStartTrialClick, onContactSalesClick }) {
   };
 
   return (
-    <section id="pricing" className="py-20 bg-gradient-to-br from-gray-50 to-white">
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="pricing" className="py-24 sm:py-32 bg-white">
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
         {/* Section Header */}
-        <motion.div
-          className="text-center mb-16"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-        >
+        <div className="text-center mb-20 max-w-3xl mx-auto">
           <motion.div
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-100 to-orange-100 px-6 py-3 rounded-full border border-amber-200 mb-6"
-            whileHover={{ scale: 1.05 }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
           >
-            <FaCrown className="text-amber-500" />
-            <span className="text-amber-700 font-medium">Simple Pricing</span>
+            <span className="inline-block text-sm font-semibold text-amber-600 mb-4 tracking-wide uppercase">
+              Pricing
+            </span>
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 tracking-tight leading-tight">
+              Choose Your
+              <span className="block mt-1">Perfect Plan</span>
+            </h2>
+            <p className="mt-6 text-lg text-gray-600 leading-relaxed">
+              Start with our free trial and scale as you grow. No setup fees or hidden costs.
+            </p>
           </motion.div>
-          
-          <h2 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-6">
-            Choose Your Perfect Plan
-          </h2>
-          
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Start with our free trial and scale as you grow. All plans include core features 
-            with no setup fees or hidden costs.
-          </p>
-        </motion.div>
+        </div>
 
         {/* Pricing Cards */}
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 relative"
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 mb-20 relative"
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true }}
+          viewport={{ once: true, margin: "-100px" }}
         >
           {plans.map((plan, index) => (
             <motion.div
               key={index}
               variants={itemVariants}
-              className={`relative bg-gradient-to-br ${plan.bgColor} rounded-2xl border border-white/50 shadow-lg hover:shadow-2xl transition-all duration-500 overflow-visible group ${plan.popular ? 'ring-2 ring-amber-400 scale-105 mt-8' : ''}`}
-              whileHover={{ 
-                scale: plan.popular ? 1.08 : 1.05,
-                y: -5
-              }}
+              className={`relative bg-white rounded-3xl border transition-all duration-300 overflow-visible group ${plan.popular ? 'border-amber-500/50 shadow-xl shadow-amber-500/10' : 'border-gray-200/60 hover:border-gray-300 hover:shadow-xl hover:shadow-gray-900/5'}`}
+              whileHover={{ y: -6 }}
             >
               {/* Popular Badge */}
               {plan.popular && (
-                <motion.div
-                  className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-20"
-                  initial={{ scale: 0 }}
-                  whileInView={{ scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.2 + 0.3 }}
-                >
-                  <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg whitespace-nowrap">
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-20">
+                  <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-5 py-1.5 rounded-full text-xs font-semibold shadow-lg">
                     Most Popular
                   </div>
-                </motion.div>
+                </div>
               )}
 
-              {/* Background Pattern */}
-              <div className="absolute inset-0 opacity-5">
-                <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/20 to-transparent transform rotate-12 translate-x-1/4"></div>
-              </div>
-
-              <div className="relative p-8">
+              <div className="relative p-8 lg:p-10">
                 {/* Plan Header */}
                 <div className="text-center mb-8">
-                  <motion.div
-                    className={`inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r ${plan.color} rounded-xl mb-4 shadow-lg`}
-                    whileHover={{ rotate: 360, scale: 1.1 }}
-                    transition={{ duration: 0.6 }}
-                  >
-                    <plan.icon className="text-2xl text-white" />
-                  </motion.div>
+                  <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl mb-5 shadow-lg shadow-amber-500/20">
+                    <plan.icon className="text-xl text-white" />
+                  </div>
                   
-                  <h3 className="text-2xl font-bold text-gray-800 mb-2">{plan.name}</h3>
-                  <p className="text-gray-600 text-sm mb-4">{plan.description}</p>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2 tracking-tight">{plan.name}</h3>
+                  <p className="text-gray-600 text-sm mb-6 leading-relaxed">{plan.description}</p>
                   
                   <div className="flex items-baseline justify-center gap-1">
-                    <span className={`text-4xl font-bold bg-gradient-to-r ${plan.color} bg-clip-text text-transparent`}>
+                    <span className="text-5xl font-bold text-gray-900">
                       {plan.price}
                     </span>
-                    <span className="text-gray-500 text-lg">{plan.period}</span>
+                    <span className="text-gray-500 text-base font-medium">{plan.period}</span>
                   </div>
                 </div>
 
                 {/* Features List */}
-                <div className="space-y-3 mb-8">
+                <div className="space-y-4 mb-8 pt-6 border-t border-gray-100">
                   {plan.features.map((feature, featureIndex) => (
-                    <motion.div
+                    <div
                       key={featureIndex}
                       className="flex items-center gap-3"
-                      initial={{ opacity: 0, x: -20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.3, delay: index * 0.1 + featureIndex * 0.05 }}
                     >
                       <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${
                         feature.included 
@@ -202,72 +175,66 @@ export default function Pricing({ onStartTrialClick, onContactSalesClick }) {
                           <FaTimes size={12} />
                         )}
                       </div>
-                      <span className={`text-sm ${
+                      <span className={`text-sm leading-relaxed ${
                         feature.included ? 'text-gray-700' : 'text-gray-400'
                       }`}>
                         {feature.text}
                       </span>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
 
                 {/* CTA Button */}
                 <motion.button
-                  className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
+                  className={`w-full py-4 px-6 rounded-2xl font-semibold text-base transition-all duration-200 ${
                     plan.popular
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-xl hover:shadow-2xl'
-                      : 'border-2 border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl'
+                      : 'bg-gray-900 hover:bg-gray-800 text-white shadow-sm hover:shadow-md'
                   }`}
-                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={plan.name === 'Enterprise' ? onContactSalesClick : onStartTrialClick}
                 >
-                  {plan.name === 'Enterprise' ? '📞 Contact Sales' : '🚀 Start Free Trial'}
+                  {plan.name === 'Enterprise' ? 'Contact Sales' : 'Start Free Trial'}
                 </motion.button>
               </div>
-
-              {/* Hover Glow Effect */}
-              <motion.div
-                className={`absolute inset-0 bg-gradient-to-r ${plan.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500 rounded-2xl`}
-                initial={{ scale: 0 }}
-                whileHover={{ scale: 1 }}
-                transition={{ duration: 0.3 }}
-              />
+              
+              {/* Hover accent */}
+              <div className="absolute bottom-0 left-8 right-8 h-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
             </motion.div>
           ))}
         </motion.div>
 
-        {/* FAQ Section */}
+        {/* Bottom CTA */}
         <motion.div
-          className="text-center"
-          initial={{ opacity: 0, y: 30 }}
+          className="text-center max-w-3xl mx-auto"
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8, delay: 0.3 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-8 border border-amber-100">
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">
-              Questions About Pricing?
+          <div className="bg-gray-50 rounded-3xl p-10 lg:p-12 border border-gray-200/60">
+            <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 tracking-tight">
+              Still have questions?
             </h3>
-            <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-              All plans include a 14-day free trial, no setup fees, and you can cancel anytime. 
-              Need a custom solution? Our enterprise team is here to help.
+            <p className="text-gray-600 mb-8 max-w-xl mx-auto leading-relaxed">
+              All plans include a 14-day free trial with no setup fees. Need a custom solution? Our team is here to help.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <motion.button
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300"
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
+                className="inline-flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-8 py-4 rounded-2xl font-semibold shadow-sm hover:shadow-md transition-all duration-200"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={onContactSalesClick}
               >
-                📞 Contact Sales
+                Contact Sales
               </motion.button>
               
               <motion.button
-                className="border-2 border-amber-500 text-amber-600 hover:bg-amber-50 px-6 py-3 rounded-lg font-semibold transition-all duration-300"
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
+                className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 px-6 py-4 rounded-2xl hover:bg-gray-100/80 font-medium transition-all duration-200"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
                 View FAQ
               </motion.button>

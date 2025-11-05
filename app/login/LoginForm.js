@@ -1,7 +1,7 @@
 "use client";
-import { signIn } from "next-auth/react";
+import { signIn, getProviders } from "next-auth/react";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import PasswordInput from "../components/PasswordInput";
 import Logo from "../components/Logo";
 import { ToastContainer, toast } from "react-toastify";
@@ -18,9 +18,39 @@ export default function LoginForm() {
   const [showHotelDropdown, setShowHotelDropdown] = useState(false);
   const [loadingHotels, setLoadingHotels] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [providers, setProviders] = useState(null);
   const [activeTab, setActiveTab] = useState("admin"); // "admin" or "staff"
   const router = useRouter();
+  const searchParams = useSearchParams();
   const hotelInputRef = useRef(null);
+
+  // Check for OAuth callback error
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (error === 'OAuthCallback') {
+      toast.error('You are not registered. Please sign up first.', {
+        position: 'top-right',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
+      // Clear the error from URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [searchParams]);
+
+  // Fetch auth providers on component mount
+  useEffect(() => {
+    const fetchProviders = async () => {
+      const res = await getProviders();
+      setProviders(res);
+    };
+    fetchProviders();
+  }, []);
 
   // Fetch hotels when staff tab is activated
   useEffect(() => {
@@ -377,10 +407,53 @@ export default function LoginForm() {
                           />
                         </div>
 
+                        {/* Divider with "or" text */}
+                        <div className="relative my-6">
+                          <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-300"></div>
+                          </div>
+                          <div className="relative flex justify-center text-sm">
+                            <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                          </div>
+                        </div>
+
+                        {/* Google Sign In Button */}
+                        <button
+  type="button"
+  onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+  className="relative w-full flex items-center justify-center gap-3 py-2.5 px-4 border-2 border-black rounded-full font-medium bg-white hover:bg-white/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 overflow-hidden group"
+>
+  <div className="relative z-10 flex items-center">
+    <svg 
+      className="w-5 h-5"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
+        <path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.28426 53.749 C -8.52426 55.229 -9.42452 56.479 -10.7842 57.329 L -10.7842 60.529 L -6.82477 60.529 C -4.56475 58.449 -3.264 55.199 -3.264 51.509 Z"/>
+        <path fill="#34A853" d="M -14.754 63.239 C -11.514 63.239 -8.80451 62.159 -6.82477 60.529 L -10.7842 57.329 C -11.7642 58.049 -13.074 58.489 -14.754 58.489 C -17.444 58.489 -19.654 56.579 -20.414 54.119 L -24.4608 54.129 L -24.4608 57.439 C -22.481 61.429 -18.964 63.239 -14.754 63.239 Z"/>
+        <path fill="#FBBC05" d="M -20.414 54.119 C -20.664 53.359 -20.814 52.559 -20.814 51.739 C -20.814 50.919 -20.664 50.119 -20.404 49.359 L -20.404 46.049 L -24.4608 46.049 C -25.2808 47.669 -25.754 49.649 -25.754 51.739 C -25.754 53.829 -25.2808 55.809 -24.4608 57.429 L -20.414 54.119 Z"/>
+        <path fill="#EA4335" d="M -14.754 45.049 C -12.984 45.049 -11.404 45.589 -10.064 46.619 L -6.82477 43.909 C -8.89475 42.019 -11.604 40.989 -14.754 40.989 C -18.964 40.989 -22.481 42.929 -24.4608 46.059 L -20.404 49.359 C -19.654 46.869 -17.444 45.049 -14.754 45.049 Z"/>
+      </g>
+    </svg>
+    <span className="ml-2 group-hover:text-white transition-colors duration-300">Continue with Google</span>
+  </div>
+  
+  {/* Animated wave effect */}
+  <div className="absolute inset-0 overflow-hidden">
+    <div className="absolute top-1/2 left-0 w-full h-0 pb-[100%] -translate-y-1/2 scale-0 group-hover:scale-150 transition-transform duration-1000 origin-center">
+      <div className="absolute inset-0 bg-[#EB4335] opacity-0 group-hover:opacity-100 group-hover:animate-[wave_2s_ease-in-out_forwards]"></div>
+      <div className="absolute inset-0 bg-[#FBBC05] opacity-0 group-hover:opacity-100 group-hover:animate-[wave_2s_0.3s_ease-in-out_forwards]"></div>
+      <div className="absolute inset-0 bg-[#34A853] opacity-0 group-hover:opacity-100 group-hover:animate-[wave_2s_0.6s_ease-in-out_forwards]"></div>
+      <div className="absolute inset-0 bg-[#4285F4] opacity-0 group-hover:opacity-100 group-hover:animate-[wave_2s_0.9s_ease-in-out_forwards]"></div>
+    </div>
+  </div>
+</button>
+
                         <button
                           type="submit"
                           disabled={loading}
-                          className={`w-full py-2.5 sm:py-3 md:py-4 px-6 rounded-lg sm:rounded-xl font-semibold text-white transition-all duration-300 transform text-sm sm:text-base ${
+                          className={`w-full py-2.5 sm:py-3 md:py-4 px-6 rounded-lg sm:rounded-xl font-semibold text-white transition-all duration-300 transform text-sm sm:text-base mt-4 ${
                             loading 
                               ? "bg-gray-400 cursor-not-allowed" 
                               : "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 hover:scale-105 hover:shadow-xl"
@@ -400,6 +473,12 @@ export default function LoginForm() {
                             </div>
                           )}
                         </button>
+                        {/* Contact Information */}
+<div className="mt-4 text-center text-sm text-gray-600">
+  Sign up by contacting us at <br/> 
+  <a href="tel:7558776795" className="text-blue-600 hover:underline">7558776795</a> or  
+  <a href="mailto:info.tap2order@gmail.com" className="text-blue-600 hover:underline"> info.tap2order@gmail.com</a>
+</div>
                       </div>
                     </form>
                   )}

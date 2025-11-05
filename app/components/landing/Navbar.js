@@ -1,56 +1,76 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaArrowRight } from 'react-icons/fa';
 import Logo from '../Logo';
 
 export default function Navbar({ onContactClick }) {
   const navItems = ['Features', 'How it Works', 'Testimonials', 'Pricing', 'Contact'];
+  const [isTop, setIsTop] = useState(true);
+
+  useEffect(() => {
+    const handleScroll = () => setIsTop(window.scrollY < 50);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <motion.nav
-      className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200"
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
+      className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] w-[95%] max-w-6xl transition-all duration-500"
+      initial={{ y: -100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-20">
-        {/* Logo */}
-        <motion.div
-          className="flex-shrink-0"
-          transition={{ type: 'spring', stiffness: 300 }}
-        >
-          <a href="#" className="flex flex-col items-center gap-2">
-              <Logo className="text-3xl" />
-                <span className="text-xs text-amber-600 font-medium -mt-1">Smart Restaurant Solutions</span>
-          </a>
-        </motion.div>
-
-        {/* Desktop Navigation */}
-        <div className="flex items-center gap-8">
-          <div className="hidden lg:flex items-center gap-8">
-            {navItems.map((item) => (
-              <a
-                key={item}
-                href={item === 'Contact' ? '#' : `#${item.toLowerCase().replace(/\s+/g, '-')}`}
-                onClick={item === 'Contact' ? (e) => { e.preventDefault(); onContactClick(); } : undefined}
-                className="text-gray-600 hover:text-amber-700 transition-colors duration-300 font-medium relative group cursor-pointer"
-              >
-                {item}
-                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-amber-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out"></span>
-              </a>
-            ))}
-          </div>
-
-          {/* Login Button */}
-          <motion.button
-            className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-5 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
-            whileTap={{ scale: 0.98 }}
-            onClick={() => window.location.href = '/login'}
+      {/* Navbar container with dynamic background */}
+      <div
+        className={`relative border border-white/30 rounded-2xl shadow-2xl shadow-gray-900/10 
+          ${isTop
+            ? 'bg-gradient-to-r from-orange-100 via-white to-gray-200'
+            : 'bg-white/25 backdrop-blur-3xl'
+          }`}
+      >
+        <div className="px-6 sm:px-8 flex items-center justify-between h-16 sm:h-18">
+          {/* Logo */}
+          <motion.div
+            className="flex-shrink-0"
+            whileHover={{ scale: 1.05 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           >
-            <span>Login</span>
-            <FaArrowRight className="w-4 h-4" />
-          </motion.button>
+            <a href="#" className="flex items-center gap-2">
+              <img src="/T2O.png" alt="Tap2Order" className="h-8 w-auto" />
+              <Logo className="text-2xl" />
+            </a>
+          </motion.div>
+
+          {/* Nav items */}
+          <div className="flex items-center gap-2 sm:gap-6">
+            <div className="hidden lg:flex items-center gap-1">
+              {navItems.map((item) => (
+                <motion.a
+                  key={item}
+                  href={item === 'Contact' ? '#' : `#${item.toLowerCase().replace(/\s+/g, '-')}`}
+                  onClick={item === 'Contact' ? (e) => { e.preventDefault(); onContactClick(); } : undefined}
+                  className="text-sm font-medium text-gray-700 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-white/50 transition-all duration-200 cursor-pointer"
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {item}
+                </motion.a>
+              ))}
+            </div>
+
+            {/* Login button */}
+            <motion.button
+              className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all duration-200"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => window.location.href = '/login'}
+            >
+              <span>Login</span>
+              <FaArrowRight className="w-3.5 h-3.5" />
+            </motion.button>
+          </div>
         </div>
       </div>
     </motion.nav>

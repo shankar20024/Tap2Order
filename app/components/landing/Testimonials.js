@@ -23,46 +23,64 @@ const testimonials = [
 
 export default function Testimonials() {
   return (
-    <section id="testimonials" className="py-20 sm:py-32 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
-            Loved by restaurants Everywhere
-          </h2>
-          <p className="mt-4 text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
-            Don't just take our word for it. Here's what our partners have to say about Tap2Order.
-          </p>
+    <section id="testimonials" className="py-24 sm:py-32 bg-gray-50">
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+        <div className="text-center mb-20 max-w-3xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <span className="inline-block text-sm font-semibold text-amber-600 mb-4 tracking-wide uppercase">
+              Testimonials
+            </span>
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 tracking-tight leading-tight">
+              Loved by Restaurants
+              <span className="block mt-1">Everywhere</span>
+            </h2>
+            <p className="mt-6 text-lg text-gray-600 leading-relaxed">
+              Don't just take our word for it. Here's what our partners have to say.
+            </p>
+          </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {testimonials.map((testimonial, index) => (
             <motion.div
               key={index}
-              className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col"
-              initial={{ opacity: 0, y: 50 }}
+              className="group relative bg-white p-8 rounded-3xl border border-gray-200/60 hover:border-gray-300 hover:shadow-xl hover:shadow-gray-900/5 transition-all duration-300 flex flex-col"
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: index * 0.1, ease: 'easeOut' }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, delay: index * 0.1, ease: [0.16, 1, 0.3, 1] }}
+              whileHover={{ y: -4 }}
             >
-              <div className="flex-grow mb-6">
-                <div className="flex items-center mb-4">
+              {/* Quote mark decoration */}
+              <div className="absolute top-6 right-6 text-6xl text-amber-500/10 font-serif leading-none">&ldquo;</div>
+              
+              <div className="flex-grow mb-6 relative z-10">
+                <div className="flex items-center gap-1 mb-5">
                   {[...Array(5)].map((_, i) => (
-                    <FaStar key={i} className="h-5 w-5 text-amber-400" />
+                    <FaStar key={i} className="h-4 w-4 text-amber-400 fill-current" />
                   ))}
                 </div>
-                <p className="text-gray-600 italic">"{testimonial.quote}"</p>
+                <p className="text-gray-700 leading-relaxed text-base">"{testimonial.quote}"</p>
               </div>
 
-              {/* Letter Avatar */}
-              <div className="flex items-center">
-                <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-lg font-bold mr-4 border-2 border-amber-200 shadow-sm">
+              {/* Author */}
+              <div className="flex items-center pt-6 border-t border-gray-100">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center text-lg font-bold mr-4 shadow-lg shadow-amber-500/20">
                   {testimonial.name.charAt(0)}
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900">{testimonial.name}</p>
-                  <p className="text-sm text-gray-500">{testimonial.title}</p>
+                  <p className="font-semibold text-gray-900 tracking-tight">{testimonial.name}</p>
+                  <p className="text-sm text-gray-600">{testimonial.title}</p>
                 </div>
               </div>
+              
+              {/* Hover accent */}
+              <div className="absolute bottom-0 left-8 right-8 h-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
             </motion.div>
           ))}
         </div>

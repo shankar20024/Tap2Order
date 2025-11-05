@@ -24,8 +24,18 @@ export default function Header({ className = "", className2 = "" }) {
 
   useEffect(() => {
     if (status === "authenticated") {
-      const bn = session?.user?.businessName || "";
-      setUsername(bn);
+      
+      
+      // Try different possible username fields
+      const username = 
+        session?.user?.name || 
+        session?.user?.username || 
+        session?.user?.email?.split('@')[0] || 
+        'User';
+      
+      setUsername(username);
+    } else {
+      setUsername('');
     }
   }, [status, session]);
 

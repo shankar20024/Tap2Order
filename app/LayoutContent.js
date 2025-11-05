@@ -43,7 +43,7 @@ function LayoutContentInner({ children }) {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100 overflow-hidden">
+      <div className={`flex ${showSidebar ? 'h-screen overflow-hidden' : 'min-h-screen'} bg-gray-100`}>
       {showSidebar && <Sidebar />}
       <main 
         className={`flex-1 overflow-y-auto overflow-x-hidden transition-[margin-left] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] ${
