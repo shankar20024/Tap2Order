@@ -13,7 +13,9 @@ import {
   FaBars,
   FaHeadset,
   FaBuilding,
-  FaUtensils
+  FaUtensils,
+  FaEnvelope,
+  FaQuestionCircle
 } from 'react-icons/fa';
 import { signOut } from 'next-auth/react';
 
@@ -31,6 +33,7 @@ export default function AdminSidebar({
     { id: 'dashboard', label: 'Dashboard', icon: FaHome, badge: null },
     { id: 'users', label: 'Hotel Owners', icon: FaBuilding, badge: userCount },
     { id: 'admins', label: 'Admins', icon: FaUserShield, badge: adminCount },
+    { id: 'contacts', label: 'Customer Contacts', icon: FaQuestionCircle, badge: null },
     { id: 'analytics', label: 'Analytics', icon: FaChartLine, badge: null },
     { id: 'support', label: 'Support Tickets', icon: FaHeadset, badge: null },
     { id: 'activity', label: 'Activity Log', icon: FaHistory, badge: null },

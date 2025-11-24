@@ -1,59 +1,80 @@
-import React from 'react';
+import React from "react";
 
-const PrivacyPolicy = () => {
+export default function PrivacyPolicy() {
   return (
-    <div className="prose prose-invert mx-auto p-6">
-      <h1>Privacy Policy for Tap2Order</h1>
-      <p>Last updated: September 01, 2025</p>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-6">
+      <div className="max-w-3xl w-full bg-white shadow-xl rounded-2xl p-10 border border-gray-100">
+        <h1 className="text-4xl font-bold text-gray-900 mb-3">Privacy Policy</h1>
+        <p className="text-sm text-gray-500 mb-8">Last updated: September 01, 2025</p>
 
-      <h2>Our Commitment to Your Privacy</h2>
-      <p>
-        Welcome to Tap2Order! Your privacy is important to us. This policy explains what information we collect when you use our service to order food and how we use it to make your experience smooth and enjoyable.
-      </p>
+        <section className="space-y-4 mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800">Our Commitment to Your Privacy</h2>
+          <p className="text-gray-600 leading-relaxed">
+            Welcome to Tap2Order! Your privacy matters to us. This policy explains what
+            information we collect when you place orders and how we use it to provide a smooth
+            and enjoyable experience.
+          </p>
+        </section>
 
-      <h2>Information We Collect to Process Your Order</h2>
-      <p>
-        To help you place your order with the restaurant, we may ask for a few details:
-      </p>
-      <ul>
-        <li>
-          <strong>Your Details:</strong> This includes your name and phone number, which helps the restaurant identify your order and contact you if needed.
-        </li>
-        <li>
-          <strong>Order Information:</strong> We keep track of the items you order, any special instructions, and your table number so the kitchen can get it just right.
-        </li>
-         <li>
-          <strong>Technical Info:</strong> When you use our app, our servers note some technical details like your browser type and IP address. This helps us understand how our service is being used so we can improve it.
-        </li>
-      </ul>
+        <section className="space-y-4 mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800">Information We Collect</h2>
+          <p className="text-gray-600 leading-relaxed">
+            To process your order efficiently, we collect the following details:
+          </p>
+          <ul className="list-disc pl-6 space-y-2 text-gray-600">
+            <li>
+              <span className="font-semibold text-gray-800">Your Details:</span> Your name
+              and phone number help the restaurant identify your order and contact you if
+              needed.
+            </li>
+            <li>
+              <span className="font-semibold text-gray-800">Order Information:</span> Items
+              ordered, special instructions, and your table number.
+            </li>
+            <li>
+              <span className="font-semibold text-gray-800">Technical Information:</span>
+              Browser type, IP address, and other usage data that help us improve functionality.
+            </li>
+          </ul>
+        </section>
 
-      <h2>How We Use Your Information</h2>
-      <p>
-        We use the information we collect for a few key purposes:
-      </p>
-      <ul>
-        <li>To send your order to the restaurant accurately.</li>
-        <li>To allow the restaurant to manage your order and provide service.</li>
-        <li>To improve our application and fix any issues that arise.</li>
-        <li>To communicate with you about your order if necessary.</li>
-      </ul>
+        <section className="space-y-4 mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800">How We Use Your Information</h2>
+          <p className="text-gray-600 leading-relaxed">We use your information to:</p>
+          <ul className="list-disc pl-6 space-y-2 text-gray-600">
+            <li>Send your order details directly to the restaurant.</li>
+            <li>Help the restaurant manage and prepare your order accurately.</li>
+            <li>Improve our platform performance and fix issues.</li>
+            <li>Communicate with you if your order requires clarification.</li>
+          </ul>
+        </section>
 
-      <h2>Sharing Your Information</h2>
-      <p>
-        Your order details are shared directly with the restaurant you are ordering from. We only share information with other parties if required by law or to protect our service and users. We do not sell your personal data to third parties.
-      </p>
+        <section className="space-y-4 mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800">Sharing Your Information</h2>
+          <p className="text-gray-600 leading-relaxed">
+            Your order details are shared only with the restaurant preparing your food. We do
+            not sell your information to third parties. Information may be shared only if
+            required by law or necessary to protect the platform.
+          </p>
+        </section>
 
-      <h2>Keeping Your Information Safe</h2>
-      <p>
-        We take sensible steps to protect your information. While we work hard to keep your data secure, please remember that no online service is 100% foolproof. We do our best to ensure your information is handled safely.
-      </p>
+        <section className="space-y-4 mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800">Keeping Your Information Safe</h2>
+          <p className="text-gray-600 leading-relaxed">
+            We take reasonable steps to protect your personal information. While no online
+            service is 100% secure, we are committed to safeguarding your data and ensuring it
+            is handled responsibly.
+          </p>
+        </section>
 
-      <h2>Contact Us</h2>
-      <p>
-        If you have any questions about this Privacy Policy, feel free to reach out to us at: [Your Contact Information]
-      </p>
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold text-gray-800">Contact Us</h2>
+          <p className="text-gray-600 leading-relaxed">
+            Have questions about this Privacy Policy? Reach us at:
+          </p>
+          <p className="text-gray-900 font-medium">info@tap2order.com</p>
+        </section>
+      </div>
     </div>
   );
-};
-
-export default PrivacyPolicy;
+}

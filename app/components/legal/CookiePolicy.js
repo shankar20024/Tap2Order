@@ -1,40 +1,56 @@
-import React from 'react';
+import React from "react";
 
-const CookiePolicy = () => {
+export default function CookiePolicy() {
   return (
-    <div className="prose prose-invert mx-auto p-6">
-      <h1>Cookie Policy for Tap2Order</h1>
-      <p>Last updated: September 01, 2025</p>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-6">
+      <div className="max-w-3xl w-full bg-white shadow-xl rounded-2xl p-10 border border-gray-100">
+        <h1 className="text-4xl font-bold text-gray-900 mb-3">Cookie Policy</h1>
+        <p className="text-sm text-gray-500 mb-8">Last updated: September 01, 2025</p>
 
-      <h2>What Are Cookies?</h2>
-      <p>
-        A cookie is a small text file that a website saves on your computer or mobile device when you visit the site. It helps the site remember your actions and preferences over a period of time, so you don’t have to keep re-entering them whenever you come back to the site or browse from one page to another.
-      </p>
+        <section className="space-y-4 mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800">What Are Cookies?</h2>
+          <p className="text-gray-600 leading-relaxed">
+            Cookies are small text files stored on your device when you visit a website. They
+            help remember your preferences, login state, and improve your browsing experience
+            across pages.
+          </p>
+        </section>
 
-      <h2>How We Use Cookies</h2>
-      <p>
-        We use cookies for a few simple reasons:
-      </p>
-      <ul>
-        <li>
-          <strong>To Keep You Logged In:</strong> If you have an account, we use cookies to remember that you are logged in as you navigate through the app. This is essential for the service to work.
-        </li>
-        <li>
-          <strong>To Improve Our Service:</strong> We may use cookies to understand how you use our app, which helps us find areas to improve and make your experience better.
-        </li>
-      </ul>
+        <section className="space-y-4 mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800">How We Use Cookies</h2>
+          <p className="text-gray-600 leading-relaxed">
+            We use cookies strictly to enhance your app experience:
+          </p>
+          <ul className="list-disc pl-6 space-y-2 text-gray-600">
+            <li>
+              <span className="font-semibold text-gray-800">Keeping You Logged In:</span> If
+              you have an account, cookies let us maintain your login session securely as you
+              navigate.
+            </li>
+            <li>
+              <span className="font-semibold text-gray-800">Improving Performance:</span> Cookies
+              help us understand usage patterns so we can improve features and user experience.
+            </li>
+          </ul>
+        </section>
 
-      <h2>Your Choices</h2>
-      <p>
-        Our use of cookies is minimal and focused on making the app functional. Most browsers allow you to control cookies through their settings. However, if you limit the ability of websites to set cookies, you may worsen your overall user experience, since it will no longer be personalized to you.
-      </p>
+        <section className="space-y-4 mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800">Your Choices</h2>
+          <p className="text-gray-600 leading-relaxed">
+            Our app uses minimal cookies required for functionality. You may control cookie
+            permissions through your browser settings. Disabling cookies may affect your
+            personalized experience or login functionality.
+          </p>
+        </section>
 
-      <h2>Contact Us</h2>
-      <p>
-        If you have any questions about our use of cookies, please contact us at: [Your Contact Information]
-      </p>
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold text-gray-800">Contact Us</h2>
+          <p className="text-gray-600 leading-relaxed">
+            If you have questions regarding our cookie usage, please reach out at:
+          </p>
+          <p className="text-gray-900 font-medium">info@tap2order.com</p>
+        </section>
+      </div>
     </div>
   );
-};
-
-export default CookiePolicy;
+}

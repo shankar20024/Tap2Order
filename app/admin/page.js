@@ -17,6 +17,7 @@ import AnalyticsSection from "../components/admin/sections/AnalyticsSection";
 import SupportSection from "../components/admin/sections/SupportSection";
 import ActivitySection from "../components/admin/sections/ActivitySection";
 import SettingsSection from "../components/admin/sections/SettingsSection";
+import ContactsSection from "../components/admin/sections/ContactsSection";
 
 export default function AdminPanel() {
   const { data: session, status } = useSession();
@@ -335,6 +336,8 @@ export default function AdminPanel() {
             onAddNew={handleAddNew}
           />
         );
+      case 'contacts':
+        return <ContactsSection />;
       case 'analytics':
         return <AnalyticsSection />;
       case 'support':

@@ -18,20 +18,20 @@ export default function Footer({ onContactClick }) {
     product: [
       { name: "Features", href: "#features" },
       { name: "Pricing", href: "#pricing" },
-      { name: "Demo", href: "#demo" },
-      { name: "API", href: "/api-docs" }
+      // { name: "Demo", href: "#demo" },
+      // { name: "API", href: "/api-docs" }
     ],
     company: [
-      { name: "About Us", href: "/about" },
-      { name: "Careers", href: "/careers" },
+      // { name: "About Us", href: "/about" },
+      // { name: "Careers", href: "/careers" },
       { name: "Blog", href: "/blog" },
-      { name: "Press", href: "/press" }
+      // { name: "Press", href: "/press" }
     ],
     support: [
-      { name: "Help Center", href: "/help" },
+      // { name: "Help Center", href: "/help" },
       { name: "Contact Us", href: "#", onClick: onContactClick },
-      { name: "Status", href: "/status" },
-      { name: "Community", href: "/community" }
+      // { name: "Status", href: "/status" },
+      // { name: "Community", href: "/community" }
     ],
     legal: [
       { name: "Privacy Policy", href: "/legal/privacy" },
