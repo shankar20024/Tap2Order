@@ -36,8 +36,7 @@ export default function Footer({ onContactClick }) {
     legal: [
       { name: "Privacy Policy", href: "/legal/privacy" },
       { name: "Terms of Service", href: "/legal/terms" },
-      { name: "Cookie Policy", href: "/legal/cookies" },
-      
+      { name: "Cookie Policy", href: "/legal/cookies" }
     ]
   };
 

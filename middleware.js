@@ -12,6 +12,7 @@ export async function middleware(req) {
     path === "/login" ||
     path.startsWith("/qr") ||
     path.startsWith("/customer-bill") ||
+    path.startsWith("/legal") ||
     path.startsWith("/api/auth") ||
     path.startsWith("/api/order/") ||
     path.startsWith("/api/business/info") ||
