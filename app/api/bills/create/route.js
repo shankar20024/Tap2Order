@@ -118,7 +118,7 @@ export async function POST(request) {
         price: item.price,
         selectedSize: item.selectedSize || 'Regular',
         quantity: item.quantity || 1,
-        category: item.category,
+        category: item.category === 'beverage' ? 'beverages' : item.category || 'none',
         subcategory: item.subcategory
       })),
       customerInfo: {
@@ -164,7 +164,7 @@ export async function POST(request) {
         price: item.price,
         selectedSize: item.selectedSize || 'Regular',
         quantity: item.quantity || 1,
-        category: item.category,
+        category: item.category === 'beverage' ? 'beverages' : item.category || 'none',
         subcategory: item.subcategory || 'main-course'
       })),
       orderType: isOnlyBeverages ? 'beverages' : 'food', // Use valid enum values

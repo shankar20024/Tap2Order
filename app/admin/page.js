@@ -18,6 +18,7 @@ import SupportSection from "../components/admin/sections/SupportSection";
 import ActivitySection from "../components/admin/sections/ActivitySection";
 import SettingsSection from "../components/admin/sections/SettingsSection";
 import ContactsSection from "../components/admin/sections/ContactsSection";
+import NotificationsSection from "../components/admin/sections/NotificationsSection";
 
 export default function AdminPanel() {
   const { data: session, status } = useSession();
@@ -39,6 +40,11 @@ export default function AdminPanel() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  // Notifications state
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -58,6 +64,7 @@ export default function AdminPanel() {
     if (status === "authenticated") {
       fetchUsers();
       fetchAnalytics();
+      fetchNotifications();
     }
   }, [status]);
 
@@ -106,8 +113,21 @@ export default function AdminPanel() {
     }
   };
 
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch('/api/notifications');
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+        setUnreadCount(data.unreadCount || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
   const handleRefresh = async () => {
-    await Promise.all([fetchUsers(), fetchAnalytics()]);
+    await Promise.all([fetchUsers(), fetchAnalytics(), fetchNotifications()]);
     toast.success('Data refreshed successfully');
   };
 
@@ -280,6 +300,65 @@ export default function AdminPanel() {
     }
   };
 
+  // Notification Management Functions
+  const markNotificationAsRead = async (notificationId) => {
+    try {
+      const res = await fetch('/api/notifications/read', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notificationId }),
+      });
+
+      if (res.ok) {
+        setNotifications(notifications.map(n => 
+          n._id === notificationId ? { ...n, read: true } : n
+        ));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const markAllNotificationsAsRead = async () => {
+    try {
+      const res = await fetch('/api/notifications/read', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ markAll: true }),
+      });
+
+      if (res.ok) {
+        setNotifications(notifications.map(n => ({ ...n, read: true })));
+        setUnreadCount(0);
+      }
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  };
+
+  const deleteNotification = async (notificationId) => {
+    try {
+      const res = await fetch(`/api/notifications?notificationId=${notificationId}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        setNotifications(notifications.filter(n => n._id !== notificationId));
+        setUnreadCount(prev => {
+          const notification = notifications.find(n => n._id === notificationId);
+          return notification && !notification.read ? Math.max(0, prev - 1) : prev;
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
   // Loading State
   if (status === "loading" || loading) {
     return (
@@ -346,6 +425,15 @@ export default function AdminPanel() {
         return <ActivitySection />;
       case 'settings':
         return <SettingsSection />;
+      case 'notifications':
+        return (
+          <NotificationsSection 
+            notifications={notifications}
+            onMarkAsRead={markNotificationAsRead}
+            onDelete={deleteNotification}
+            onMarkAllRead={markAllNotificationsAsRead}
+          />
+        );
       default:
         return <DashboardSection analytics={analytics} users={users} admins={admins} />;
     }
@@ -363,21 +451,28 @@ export default function AdminPanel() {
         adminCount={admins.length}
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
+        unreadNotificationCount={unreadCount}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
       {/* Main Content */}
-      <div className="lg:ml-72">
+      <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-72'}`}>
         {/* Header */}
         <AdminHeader
           activeSection={activeSection}
           stats={{
-            totalUsers: users.length,
-            totalAdmins: admins.length,
-            activeUsers: users.filter(u => u.isActive !== false).length,
+            totalUsers: analytics.totalUsers,
+            totalAdmins: analytics.totalAdmins,
+            activeUsers: analytics.activeUsers,
             totalTables: analytics.totalTables
           }}
           onRefresh={handleRefresh}
           isRefreshing={isRefreshing}
+          notifications={notifications}
+          unreadCount={unreadCount}
+          onNotificationRead={markNotificationAsRead}
+          onMarkAllRead={markAllNotificationsAsRead}
         />
 
         {/* Content Area */}

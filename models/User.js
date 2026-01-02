@@ -44,24 +44,29 @@ const userSchema = new mongoose.Schema({
     index: true,
     validate: {
       validator: function(value) {
-        // Hotel code is required for user role, forbidden for admin role
+        // Skip validation if role is not set yet (during initial creation)
+        if (!this.role) return true;
+        
+        // Hotel code is required for user role
         if (this.role === 'user') {
           return value != null && value !== '';
-        } else if (this.role === 'admin') {
+        }
+        
+        // Admin users should not have a hotel code
+        if (this.role === 'admin') {
           return value == null || value === '';
         }
+        
         return true;
       },
       message: function(props) {
-        if (this.role === 'user') {
+        if (props.reason === 'required') {
           return 'Hotel code is required for hotel owners (user role)';
-        } else if (this.role === 'admin') {
-          return 'Hotel code should not be assigned to admin users';
         }
         return 'Invalid hotel code validation';
       }
     }
-  },
+},
   
   // Hotel/Business Information
   businessName: {
