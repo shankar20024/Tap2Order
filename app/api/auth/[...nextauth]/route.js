@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { connectDB } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
 // Function to generate the next hotel code
 async function getNextHotelCode() {
@@ -75,7 +76,7 @@ export const authOptions = {
           user = await User.create({
             name: credentials.name || credentials.email.split("@")[0],
             email: credentials.email,
-            password: credentials.password,
+            password: await bcrypt.hash(credentials.password, 12),
             role: "user",
             isActive: true,
             hotelCode: hotelCode, // Assign the generated hotel code
@@ -99,7 +100,7 @@ export const authOptions = {
         }
 
         // Password check
-        const isValid = credentials.password === user.password;
+        const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) throw new Error("Invalid password");
 
         return {
@@ -133,6 +134,7 @@ export const authOptions = {
             // Generate next hotel code for new users
             const hotelCode = await getNextHotelCode();
             
+            const randomPassword = require('crypto').randomBytes(16).toString('hex');
             const userData = {
               name: user.name || user.email.split('@')[0],
               email: user.email,
@@ -142,7 +144,7 @@ export const authOptions = {
               createdBy: DEFAULT_ADMIN_ID,
               hotelCode: hotelCode, // Assign the generated hotel code
               // Set a random password for OAuth users
-              password: require('crypto').randomBytes(16).toString('hex')
+              password: await bcrypt.hash(randomPassword, 12)
             };
             
             // Create the user with the generated password and hotel code

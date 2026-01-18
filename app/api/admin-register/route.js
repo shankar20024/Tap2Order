@@ -3,11 +3,16 @@ import { User } from "@/models/User";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { generateHotelCode } from "@/lib/hotelCodeGenerator";
+import bcrypt from "bcryptjs";
 
 export async function POST(req) {
+  console.log("POST /api/admin-register called");
+  
   const session = await getServerSession(authOptions);
+  console.log("Session:", session);
 
   if (!session || session.user.role !== "admin") {
+    console.log("Unauthorized access attempt");
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -25,6 +30,8 @@ export async function POST(req) {
       hotelPhone,
       address = {}, // { street, city, state, zipCode, country }
     } = await req.json();
+    console.log("Request body:", { name, email, role, tableLimit, staffLimit, businessName });
+    
     await connectDB();
 
     const existing = await User.findOne({ email });
@@ -41,7 +48,7 @@ export async function POST(req) {
     const newUser = new User({ 
       name, 
       email, 
-      password: password, 
+      password: await bcrypt.hash(password, 12), 
       role: userRole,
       tableLimit: tableLimit || 10,
       // Only meaningful for hotel owners; default 5 and clamp to 1..50
@@ -94,6 +101,7 @@ export async function POST(req) {
     });
     
   } catch (error) {
+    console.error("Error in admin-register:", error);
     return new Response(error.message || "Failed to create user", { status: 500 });
   }
 }
