@@ -7,6 +7,9 @@ import bcrypt from "bcryptjs";
 
 export async function POST(req) {
   console.log("POST /api/admin-register called");
+  console.log("Environment:", process.env.NODE_ENV);
+  console.log("DB_USER exists:", !!process.env.DB_USER);
+  console.log("DB_PASS exists:", !!process.env.DB_PASS);
   
   const session = await getServerSession(authOptions);
   console.log("Session:", session);
@@ -32,7 +35,13 @@ export async function POST(req) {
     } = await req.json();
     console.log("Request body:", { name, email, role, tableLimit, staffLimit, businessName });
     
-    await connectDB();
+    try {
+      await connectDB();
+      console.log("Database connected successfully");
+    } catch (error) {
+      console.error("Database connection failed:", error);
+      return new Response("Database connection failed", { status: 500 });
+    }
 
     const existing = await User.findOne({ email });
     if (existing) return new Response("User exists", { status: 400 });
@@ -75,6 +84,7 @@ export async function POST(req) {
     });
 
     await newUser.save();
+    console.log("User saved successfully:", userObject);
     
     // Return the created user object for local state update
     const userObject = newUser.toObject();
