@@ -198,7 +198,8 @@ export default function AdminPanel() {
       setIsModalOpen(false);
     } else {
       const text = await res.text();
-      toast.error(text);
+      console.error("User creation failed:", text);
+      toast.error(text || "Failed to create user");
     }
   };
 
