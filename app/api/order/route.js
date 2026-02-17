@@ -8,6 +8,7 @@ import { setTableOccupied, setTableFree } from "@/lib/tableStatus";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import ably from "@/lib/ably";
+import { checkSubscription, requireActiveSubscription } from "@/lib/subscription-middleware";
 
 // Helper function to create bill for order
 async function createBillForOrder(order, userId) {
@@ -128,6 +129,25 @@ async function createBillForOrder(order, userId) {
 export async function POST(req) {
   try {
     await connectDB();
+    
+    // Check subscription first
+    const subscriptionCheck = await checkSubscription(req, {}, () => {});
+    if (!subscriptionCheck.success) {
+      return NextResponse.json(
+        { error: subscriptionCheck.error, code: subscriptionCheck.code },
+        { status: subscriptionCheck.status }
+      );
+    }
+
+    // Require active subscription for creating orders
+    const activeCheck = await requireActiveSubscription(req, {}, () => {});
+    if (!activeCheck.success) {
+      return NextResponse.json(
+        { error: activeCheck.error, code: activeCheck.code },
+        { status: activeCheck.status }
+      );
+    }
+    
     const { tableNumber, cart, userId, orderMessage, status, customerId, customerInfo, totalAmount: frontendTotalAmount, gstDetails, orderType, paymentStatus } = await req.json();
 
     // Validate cart items

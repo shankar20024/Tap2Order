@@ -933,7 +933,7 @@ export default function Dashboard() {
       )}
       <main className="p-3 xs:p-4 sm:p-6 lg:p-8 w-full max-w-full">
         {/* Modern Dashboard Header */}
-        <div className="mb-2 mt-20 sm:mt-16 lg:mt-16 w-full max-w-full">
+        <div className="mb-4 mt-20 sm:mt-16 lg:mt-16 w-full max-w-full">
           <div className="flex items-start gap-2 xs:gap-3 sm:gap-4">
             {/* Icon Container */}
             <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-orange-600 p-2 xs:p-2.5 sm:p-3 rounded-xl sm:rounded-2xl shadow-lg flex-shrink-0">

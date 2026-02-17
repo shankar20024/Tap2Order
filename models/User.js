@@ -210,12 +210,27 @@ const userSchema = new mongoose.Schema({
   // Subscription & Billing
   subscriptionStatus: {
     type: String,
-    enum: ["active", "inactive", "suspended", "trial"],
+    enum: ["active", "inactive", "suspended", "trial", "read_only", "expired"],
     default: "trial",
   },
   subscriptionExpiry: {
     type: Date,
     default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial
+  },
+  subscriptionStartDate: {
+    type: Date,
+    default: Date.now,
+  },
+  dataResetDate: {
+    type: Date,
+    default: () => new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days for complete reset
+  },
+  isDataReset: {
+    type: Boolean,
+    default: false,
+  },
+  lastDataReset: {
+    type: Date,
   },
   
   // Security & Tracking
@@ -267,6 +282,64 @@ userSchema.virtual('isSubscriptionActive').get(function() {
   return this.subscriptionStatus === 'active' && 
          (!this.subscriptionExpiry || this.subscriptionExpiry > new Date());
 });
+
+// Virtual for subscription days remaining
+userSchema.virtual('subscriptionDaysRemaining').get(function() {
+  if (!this.subscriptionExpiry) return 0;
+  const now = new Date();
+  const diffTime = this.subscriptionExpiry - now;
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+});
+
+// Virtual for data reset days remaining
+userSchema.virtual('dataResetDaysRemaining').get(function() {
+  if (!this.dataResetDate) return 0;
+  const now = new Date();
+  const diffTime = this.dataResetDate - now;
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+});
+
+// Virtual for current access level
+userSchema.virtual('accessLevel').get(function() {
+  const now = new Date();
+  
+  // Active subscription
+  if (this.subscriptionStatus === 'active' && this.subscriptionExpiry > now) {
+    return 'full';
+  }
+  
+  // Trial period
+  if (this.subscriptionStatus === 'trial' && this.subscriptionExpiry > now) {
+    return 'full';
+  }
+  
+  // Read-only period (1 month + 15 days)
+  const readOnlyEndDate = new Date(this.subscriptionExpiry);
+  readOnlyEndDate.setDate(readOnlyEndDate.getDate() + 15);
+  
+  if (now > this.subscriptionExpiry && now <= readOnlyEndDate) {
+    return 'read_only';
+  }
+  
+  // Expired - needs data reset
+  return 'expired';
+});
+
+// Method to update subscription status based on dates
+userSchema.methods.updateSubscriptionStatus = function() {
+  const now = new Date();
+  const accessLevel = this.accessLevel;
+  
+  if (accessLevel === 'full') {
+    this.subscriptionStatus = this.subscriptionStatus === 'trial' ? 'trial' : 'active';
+  } else if (accessLevel === 'read_only') {
+    this.subscriptionStatus = 'read_only';
+  } else {
+    this.subscriptionStatus = 'expired';
+  }
+  
+  return this.save();
+};
 
 // Account locking logic
 userSchema.virtual('isLocked').get(function() {

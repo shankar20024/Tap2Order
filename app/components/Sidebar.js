@@ -1,7 +1,8 @@
 'use client';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useSidebar } from '../contexts/SidebarContext';
+import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FaUtensils,
@@ -20,9 +21,9 @@ import {
   FaReceipt,
 } from 'react-icons/fa';
 import { HiUserCircle } from 'react-icons/hi';
+import Link from 'next/link';
 import LogoutButton from './Logout';
-import { useSidebar } from '../contexts/SidebarContext';
-import { useSession } from 'next-auth/react';
+// import StorageProgressBar from './dashboard/SubscriptionProgressBar';
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: <FaUtensils /> },
@@ -167,6 +168,11 @@ export default function Sidebar() {
                 );
               })}
             </motion.nav>
+
+            {/* Subscription Progress Bar - DISABLED */}
+            {/* <div className="px-4 pb-2">
+              <StorageProgressBar userId={session?.user?.id} />
+            </div> */}
 
             {/* Sticky Logout Button */}
             <motion.div 

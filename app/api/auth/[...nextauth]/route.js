@@ -67,6 +67,13 @@ export const authOptions = {
 
         // FIND USER
         let user = await User.findOne({ email: credentials.email });
+        
+        console.log('User found:', user ? 'Yes' : 'No');
+        if (user) {
+          console.log('User has password field:', !!user.password);
+          console.log('Password field type:', typeof user.password);
+          console.log('Password field length:', user.password ? user.password.length : 'N/A');
+        }
 
         // AUTO SIGN-UP IF NOT EXIST
         if (!user) {
@@ -94,14 +101,15 @@ export const authOptions = {
           };
         }
 
-        // Subscription check
-        if (user.isActive === false) {
-          throw new Error("Your subscription has expired. Please contact support.");
-        }
-
-        // Password check
+        // Password check first
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) throw new Error("Invalid password");
+
+        // Subscription check (allow login even if expired, but show warning)
+        if (user.isActive === false) {
+          console.log(`User ${user.email} subscription expired, but allowing login with warning`);
+          // Don't throw error, just log it - user will see subscription status in dashboard
+        }
 
         return {
           id: user._id.toString(),
