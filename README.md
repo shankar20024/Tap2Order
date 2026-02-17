@@ -10,6 +10,12 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC)](https://tailwindcss.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Visit_Site-blue)](https://tap2orders.com)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000)](https://vercel.com)
+[![Production Ready](https://img.shields.io/badge/Status-Production_Ready-green)]()
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+[![Version](https://img.shields.io/badge/Version-1.0.0-blue)]()
+
 ## 🌟 Overview
 
 Tap2Order is a modern restaurant management platform designed to transform traditional dining experiences into digital-first operations. Built for Indian restaurants, it offers complete digitization from customer ordering to kitchen management, billing, and business analytics.
@@ -114,7 +120,7 @@ Before running this application, make sure you have:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/tap2order.git
+   git clone https://github.com/shankar20024/tap2order.git
    cd tap2order
    ```
 
@@ -218,34 +224,6 @@ npm test
 - [ ] Billing and GST calculations
 - [ ] Staff authentication and role access
 
-## 🚢 Deployment
-
-### Vercel Deployment (Recommended)
-1. **Connect Repository**: Link GitHub repo to Vercel
-2. **Configure Environment**: Set environment variables in Vercel dashboard
-3. **Deploy**: Automatic deployment on push to main branch
-4. **Domain Setup**: Configure custom domain if needed
-
-### Manual Deployment
-1. **Build Application**
-   ```bash
-   npm run build
-   ```
-
-2. **Start Production Server**
-   ```bash
-   npm start
-   ```
-
-3. **Configure Reverse Proxy**: Use nginx or similar for production
-
-### Environment Variables for Production
-```env
-MONGODB_URI=mongodb+srv://...
-ABLY_API_KEY=...
-NEXTAUTH_SECRET=...
-NEXTAUTH_URL=https://yourdomain.com
-```
 
 ## 🤝 Contributing
 
@@ -273,21 +251,6 @@ We welcome contributions! Please follow these steps:
 - Update documentation as needed
 - Maintain mobile-first responsive design
 
-## 📝 API Documentation
-
-### Authentication Endpoints
-- `POST /api/auth/signin` - User authentication
-- `POST /api/staff-login` - Staff login with passcode
-
-### Core API Endpoints
-- `GET/POST /api/menu` - Menu management
-- `GET/POST /api/order` - Order operations
-- `GET/POST /api/table` - Table management
-- `GET /api/analytics` - Business analytics
-
-### Real-Time Events
-- `orders:{hotelId}` - Order status updates
-- `payment:completed` - Payment confirmations
 
 ## 🐛 Troubleshooting
 
@@ -355,24 +318,19 @@ Error: MongoServerError: bad auth
 - [ ] **Advanced Analytics**: Predictive analytics and AI insights
 - [ ] **API SDK**: Developer tools for third-party integrations
 
-### Version History
-- **v1.0.0** - Initial release with core ordering features
-- **v1.1.0** - Added analytics dashboard
-- **v1.2.0** - Implemented multi-tenant architecture
-- **v1.3.0** - Added thermal printer integration
 
 ## 📞 Support
 
 ### Getting Help
-- **Documentation**: Check this README and inline code comments
-- **Issues**: Report bugs via GitHub Issues
-- **Discussions**: Join community discussions on GitHub
-- **Email**: Contact support at support@tap2order.com
+- **Email**: [shankarpradhan2004@gmail.com](mailto:shankarpradhan2004@gmail.com)
+- **GitHub Issues**: Report bugs and request features
+- **Telegram**: [Join Telegram Group](https://t.me/Shankar8090)
+- **Twitter (X)**: [Follow on Twitter](https://x.com/shankarpra17366)
 
 ### Community
-- **GitHub**: [https://github.com/yourusername/tap2order](https://github.com/yourusername/tap2order)
-- **Website**: [https://tap2order.com](https://tap2order.com)
-- **LinkedIn**: Follow for updates and insights
+- **GitHub**: [https://github.com/shankar20024/tap2order](https://github.com/shankar20024/tap2order)
+- **Website**: [https://tap2orders.com](https://tap2orders.com)
+- **LinkedIn**: [Shankar Pradhan](https://www.linkedin.com/in/shankar-pradhan-4b8967238)
 
 ## 📄 License
 
