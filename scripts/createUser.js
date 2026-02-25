@@ -2,7 +2,16 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { User } from "../models/User.js";
 
-const uri = `mongodb+srv://Shankar:Shankar%409702525966@tap2order.rqgxvsv.mongodb.net/tap2order?retryWrites=true&w=majority&appName=Tap2Order`;
+// Use same DB variables as lib/mongodb.js
+const {
+  DB_USER,
+  DB_PASS,
+  DB_CLUSTER,
+  DB_NAME,
+  DB_APP_NAME
+} = process.env;
+
+const uri = `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_CLUSTER}/${DB_NAME}?retryWrites=true&w=majority&appName=${DB_APP_NAME}`;
 
 async function createAdmin() {
   await mongoose.connect(uri);
