@@ -129,26 +129,31 @@ async function createBillForOrder(order, userId) {
 export async function POST(req) {
   try {
     await connectDB();
-    
-    // Check subscription first
-    const subscriptionCheck = await checkSubscription(req, {}, () => {});
-    if (!subscriptionCheck.success) {
-      return NextResponse.json(
-        { error: subscriptionCheck.error, code: subscriptionCheck.code },
-        { status: subscriptionCheck.status }
-      );
-    }
 
-    // Require active subscription for creating orders
-    const activeCheck = await requireActiveSubscription(req, {}, () => {});
-    if (!activeCheck.success) {
-      return NextResponse.json(
-        { error: activeCheck.error, code: activeCheck.code },
-        { status: activeCheck.status }
-      );
-    }
-    
     const { tableNumber, cart, userId, orderMessage, status, customerId, customerInfo, totalAmount: frontendTotalAmount, gstDetails, orderType, paymentStatus } = await req.json();
+
+    // Check if this is a QR order (no authentication session)
+    const isQROrder = !req.headers.get('authorization') && !req.cookies.get('next-auth.session-token');
+
+    if (!isQROrder) {
+      // For authenticated orders (from dashboard/staff), apply subscription checks
+      const subscriptionCheck = await checkSubscription(req, {}, () => {});
+      if (!subscriptionCheck.success) {
+        return NextResponse.json(
+          { error: subscriptionCheck.error, code: subscriptionCheck.code },
+          { status: subscriptionCheck.status }
+        );
+      }
+
+      // Require active subscription for creating orders
+      const activeCheck = await requireActiveSubscription(req, {}, () => {});
+      if (!activeCheck.success) {
+        return NextResponse.json(
+          { error: activeCheck.error, code: activeCheck.code },
+          { status: activeCheck.status }
+        );
+      }
+    }
 
     // Validate cart items
     if (!Array.isArray(cart) || cart.length === 0) {
